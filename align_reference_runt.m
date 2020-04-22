@@ -4,14 +4,22 @@
 % NPMitchell 2020
 
 %% ADD PATHS
-basicsDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/basics/' ;
-tiffDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/tiff_handling/' ;
-plottingDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/plotting/' ;
-codeDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/' ;
+gitDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/' ;
+gutDir = fullfile(gitDir, 'gut_matlab') ;
+basicsDir = fullfile(gutDir, 'basics') ;
+tiffDir = fullfile(gutDir, 'tiff_handling') ;
+plottingDir = fullfile(gutDir, 'plotting') ;
+codeDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos/' ;
+fmDir = fullfile(gutDir, 'toolbox_fast_marching/toolbox_fast_marching/') ;
+fmDir2 = fullfile(fmDir, 'mex') ;
+fmDir3 = fullfile(fmDir, 'toolbox') ;
 addpath(basicsDir) ;
 addpath(tiffDir) ;
 addpath(plottingDir) ;
 addpath(codeDir) ;
+addpath(fmDir) ;
+addpath(fmDir2) ;
+addpath(fmDir3) ;
 
 %% OPTIONS
 % Save each runt nanobody (curated) MIP as ./date/cylinder1_max.tif
@@ -20,11 +28,20 @@ mipfn = 'cylinder1_max.tif' ;
 outdir = './alignment' ;
 ssfactor = 4 ;              % subsampling factor before computing corr
 % Correlation options
-corr_method = 'phase' ; % realspace or phase method for correlation 
+corr_method = 'realspace' ; % realspace or phase method for correlation 
                             % If realspace, does not tranlate, phase allows
                             % dx,dy then computes realspace corr on shifted
                             % image.
-stripe7corr_method
+stripe7corr_method = 'dist' ; 
+corrOutDir = fullfile(outdir, [corr_method '_corr']) ;
+
+dirs2make = {outdir, corrOutDir} ;
+for ii = 1:length(dirs2make)
+    dir2make = dirs2make{ii} ;
+    if ~exist(dir2make, 'dir')
+        mkdir(dir2make)
+    end
+end
 
 % General options
 preview = false ;           % display intermediate results
@@ -157,7 +174,7 @@ for ii = 1:length(expts)
                     close all
                     imshow(bw2)
                     msg = [timestr ': Enter=OK, ', ...
-                        'Backspace=manual ROI, a=anteriorCC, e=erode, d=dilate, r=reuse prev ROI'] ;
+                        'Backspace=manual ROI, c=clear, a=anteriorCC, e=erode, d=dilate, r=reuse prev ROI, u=undo'] ;
                     title(msg)
                     disp(msg)
                     button = waitforbuttonpress() ;
@@ -168,7 +185,7 @@ for ii = 1:length(expts)
                         move_on = true;
                         good_enough = false ;
                     elseif button && strcmp(get(gcf, 'CurrentKey'), 'c')
-                        % Clear and reset to autogen
+                        % Clear and reset to autogenerate
                         aux_auto_stripe7
                     elseif button && strcmp(get(gcf, 'CurrentKey'), 'r')
                         if exist('BWmask', 'var')
@@ -316,7 +333,7 @@ for ii = 1:length(expts)
     for jj = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(outdir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+        cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not
@@ -353,14 +370,8 @@ for ii = 1:length(expts)
                     if strcmp(corr_method, 'phase')
                         [dxij(ti, tj), dyij(ti,tj), ~] = ...
                             xcorr2fft(imI, imJ) ;
-                        sz1 = min(size(imI, 1), size(imJ, 1)) ;
-                        sz2 = min(size(imI, 2), size(imJ, 2)) ;
-                        
-                        IR = zeros(sz1, sz2) ;
-                        JR = zeros(sz1, sz2) ;
-                        IR() ;
-                        alignImageX()
-                        cij(ti, tj) = corr2(imI, imJ) ;
+                        [imIshift, imJshift] = shiftImagesX(dxij(ti, tj), imI, imJ, 0) ;
+                        cij(ti, tj) = corr2(imIshift, imJshift) ;
                     else
                         cij(ti, tj) = corr2(imI, imJ) ;
                     end
@@ -396,7 +407,7 @@ for ii = 1:length(expts)
             xlabel(['timepoint for dataset ' num2str(jj)])
             ylabel(['timepoint for dataset ' num2str(ii)])
             axis equal
-            cfn = fullfile(outdir, sprintf(['cij' ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(outdir, sprintf(['cij_' corr_method ijstr '.png'], ii, jj)) ;
             cb = colorbar() ;
             ylabel(cb, 'correlation')
             set(gca,'YDir','normal')
@@ -415,33 +426,398 @@ for ii = 1:length(expts)
                 xlabel(['timepoint for dataset ' num2str(jj)])
                 ylabel(['timepoint for dataset ' num2str(ii)])
                 axis equal
-                cfn = fullfile(outdir, sprintf(['dxij' ijstr '.png'], ii, jj)) ;
+                cfn = fullfile(outdir, sprintf(['dxij_' corr_method ijstr '.png'], ii, jj)) ;
                 cb = colorbar() ;
-                ylabel(cb, 'correlation')
+                ylabel(cb, '\deltax')
                 set(gca,'YDir','normal')
                 axis tight
                 title('phase correlation offset \deltax')
                 saveas(gcf, cfn)        
                 % delta y 
                 clf
-                imagesc(dxij)
+                imagesc(dyij)
                 xlabel(['timepoint for dataset ' num2str(jj)])
                 ylabel(['timepoint for dataset ' num2str(ii)])
                 axis equal
-                cfn = fullfile(outdir, sprintf(['dyij' ijstr '.png'], ii, jj)) ;
+                cfn = fullfile(outdir, sprintf(['dyij_' corr_method ijstr '.png'], ii, jj)) ;
                 cb = colorbar() ;
-                ylabel(cb, 'correlation')
+                ylabel(cb, '\deltay')
                 set(gca,'YDir','normal')
                 axis tight
                 title('phase correlation offset \deltay')
                 saveas(gcf, cfn)           
             end
+        elseif ii > jj 
+            disp('Skipping since ii > jj')
         else
             disp('Skipping since already done')
         end
-        
     end
 end
+
+%% ID peaks in correlation to draw curves -- possibly use fast marcher?
+clearvars imI imJ imA imB
+for ii = 1:length(expts)
+    disp(['dataset ii = ', num2str(ii)])
+    for jj = 1:length(expts)
+        % Define the correlation matrix filename
+        ijstr = [ '_%02d_%02d' extn ] ;
+        cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+        disp(['Seeking cfn = ' cfn])
+        cpathfn = fullfile(corrOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
+        cpathImFn = fullfile(corrOutDir, sprintf(['cpathImFn' ijstr '.mat'], ii, jj)) ;
+        
+        % Decide to compute the correlations or not
+        if ii < jj && (~exist(cpathfn, 'file') || overwrite)
+            this_ijstr = sprintf(ijstr, ii, jj) ;
+
+            % Create directory for overlays
+            overlayDir = fullfile(corrOutDir, ['overlay' this_ijstr]) ;
+            if ~exist(overlayDir, 'dir')
+                mkdir(overlayDir) 
+            end
+            outfnBase = fullfile(overlayDir, ['overlay' this_ijstr '_%04d']) ;
+                        
+            % load the correlations
+            load(cfn, 'cij') ;
+            % detect which dimension is smaller
+            if size(cij, 2) < size(cij, 1) 
+                swap = true ;
+                cij = cij' ;
+                imA = mipJ ;
+                imB = mipI ;
+            else
+                swap = false ;
+                imA = mipI ;
+                imB = mipJ ;
+            end
+            
+            % find the path
+            tpath = zeros(size(cij, 1), 2) ;
+            tpath(:, 1) = 1:size(cij, 1) ;
+            for tq = 1:size(cij, 1)
+                [~, ind] = max(cij(tq, :)) ;
+                tpath(tq, 2) = ind ;
+            end
+            
+            % Use correlation heatmap
+            close all
+            imagesc(cij);
+            hold on;
+            plot(tpath(:, 2), tpath(:, 1), 'o') 
+            axis equal
+            axis tight
+            msg = 'Does path look ok? Enter=yes, backspace=no' ;
+            xlabel(['time, dataset ', num2str(ii)])
+            ylabel(['time, dataset ', num2str(jj)])
+            title(msg)
+            disp(msg)
+            good_button = false ;
+            while ~good_button
+                button = waitforbuttonpress() ;
+                if button && strcmp(get(gcf, 'CurrentKey'), 'return')
+                    move_on = true ;
+                    good_button = true ;
+                elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
+                    move_on = false;
+                    good_button = true ;
+                end
+            end
+            
+            % Shortest path 
+            Woffset = 0. ;
+            while ~move_on
+                close all
+                imagesc(cij);
+                hold on;
+                plot(tpath(:, 2), tpath(:, 1), 'ro') 
+                plot(tpath(1, 2), tpath(1, 1), 'ks')
+                plot(tpath(end, 2), tpath(end, 1), 'k^')
+                msg = 'Do endpoints look ok? Enter=yes, backspace=no/select' ;
+                title(msg)
+                disp(msg)
+                xlabel(['time, dataset ', num2str(ii)])
+                ylabel(['time, dataset ', num2str(jj)])
+                button = waitforbuttonpress() ;
+                if button && strcmp(get(gcf, 'CurrentKey'), 'return')
+                    move_on = true ;
+                    startpt = tpath(1, :) ;
+                    endpt = tpath(end, :) ;
+                elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
+                    move_on = false;
+                    msg = 'Select startpoint' ;
+                    % This function is from Gabriel Peyre for picking pts
+                    msg = 'Select endpoint' ;
+                    title(msg)
+                    disp(msg)
+                    [startpt, endpt] = pick_start_end_point(cij) ;
+                end
+                
+                % get shortest path via fastmarching by Gabriel Peyre
+                options.propagation_type = 'normal';
+                options.Tmax = sum(size(cij))*1.2;
+                options.start_points = startpt';
+                clf;
+                disp('Performing FM');
+                options.reduc_factor = 1.0 ;
+                options.weight = 1.0;
+                %   'W' is the weight matrix (the highest, the slowest the front will move).
+                %   'start_points' is a 2 x k array, start_points(:,i) is the ith starting point .
+                %   'end_points' is a 2 x 1 array, it is the goal.
+                % Define speed of pixels' movement for marching
+                % Blur the image a bit to straighten lines, then find curve
+                % WW = imgaussfilt((max(cij(:)) - cij) - min(cij(:)), 1) ;
+                % WW = imgaussfilt(cij) ;
+                % !!!
+                WW = imgaussfilt(cij - min(cij(:)) + Woffset) ;
+                % WW = WW - min(WW(:)) + 1e-2 ;
+                % WW = cij - min(cij(:)) + 1e-2;
+                % Compute distance transform
+                % didn't get slow version to work
+                % [DD,S] = perform_front_propagation_2d_slow(WW',...
+                %     [startpt(2);startpt(1)], [endpt(2); endpt(1)], 4000, []);
+                %
+                [DD,S] = perform_fast_marching(WW', [startpt(2)+1; startpt(1)+1], options) ;
+                imagesc(DD)
+                button = waitforbuttonpress() ;
+                
+                % perform_fmstar_2d(WW', spt, ept, options);    
+                disp('Extracting Paths');
+                stepsize = 0.1 ;
+                str_options = [stepsize 10000];
+                
+                % path extraction
+                options.str_options = str_options ;
+                options.trim_path = true ;
+                options.startpt = [startpt(2), startpt(1)] ;
+                options.thres_dist = 2 ;
+                str_options = options.str_options ;
+
+                % grad = compute_grad(DD);
+                % grad = -perform_vf_normalization(grad);
+                % Dx = squeeze(grad(:, :, 1)) ;
+                % Dy = squeeze(grad(:, :, 2)) ;
+
+                % figure;
+                % subplot(1, 2, 1)
+                % imagesc(squeeze(grad(:, :, 1))); title('grad(1)')
+                % colormap(bwr)
+                % caxis([-1,1])
+                % subplot(1, 2, 2)
+                % imagesc(Dy); title('Dy')
+                % colormap(bwr)
+                % caxis([-0.01,0.01])
+                % 
+                % figure;
+                % subplot(1, 2, 1)
+                % imagesc(squeeze(grad(:, :, 2))); title('grad(2)')
+                % colormap(bwr)
+                % caxis([-1,1])
+                % subplot(1, 2, 2)
+                % imagesc(Dx); title('Dx')
+                % colormap(bwr)
+                % caxis([-1,1])
+
+
+                [Dy, Dx] = gradient(DD) ;
+                Dx = - Dx ;
+                Dy = - Dy ;
+                
+                normalization = (Dx.^2 + Dy.^2);
+                stationary = find(normalization < 1e-6) ;
+                normalization(stationary) = 1;
+                Dx = Dx .* (1./sqrt(normalization)) ;
+                Dy = Dy .* (1./sqrt(normalization)) ;
+                
+                imagesc(DD'); hold on;
+                quiver(Dx', Dy', 1)
+                title('DT with gradient')
+                button = waitforbuttonpress() ;
+                
+                % Plot with streamlines
+                xx2=xx(1:10:size(xx, 1), 1:10:size(xx, 2));
+                yy2=yy(1:10:size(yy, 1), 1:10:size(yy, 2));
+                cxyz = stream2(xx, yy, Dx', Dy', xx2', yy2') ;
+                imagesc(cij); hold on;
+                quiver(xx, yy, Dy', Dx', 0)
+                title('cij with gradient')
+                plot(startpt(2), startpt(1), 'ko')
+                plot(endpt(2), endpt(1), 'ko')
+                streamline(cxyz)
+                figure(5);
+                imagesc(cij); hold on;
+                quiver(Dx', Dy', 0)
+                plot(startpt(2), startpt(1), 'ko')
+                plot(endpt(2), endpt(1), 'ko')
+                streamline(cxyz)
+                button = waitforbuttonpress() ;
+
+                % path extraction
+                % grad = cat(3, Dx, Dy) ;
+                % grad = perform_vf_normalization(grad) ;
+                % Dx = squeeze(grad(:, :, 1)) ;
+                % Dy = squeeze(grad(:, :, 2)) ;
+                [xx, yy ] = meshgrid(1:size(Dx, 1), 1:size(Dx, 2)) ;
+                % works but is uphill
+                % path = stream2(Dx, Dy, endpt(1),endpt(2), str_options);
+                % messing around here
+                path = stream2(xx, yy, Dx', Dy', endpt(2)-1, endpt(1)-1, str_options);
+                % works but does not connect to startpt
+                % path = stream2(Dy, Dx, endpt(1), endpt(2), str_options) ;
+                % path = stream2(-Dx', -Dy', startpt(1), startpt(2), str_options) ;
+                path = path{1} ;
+                path = [path(:, 2), path(:, 1)] ;
+               
+                figure(1)
+                imagesc(DD') ;
+                title('DT')
+                colorbar()
+                hold on;
+                plot(path(:, 2), path(:, 1), '.-')
+                plot(startpt(:, 2), startpt(:, 1), 'o')
+                plot(endpt(:, 2), endpt(:, 1), 'o')
+                button = waitforbuttonpress() ;
+
+                figure(2);
+                imagesc(Dx') ;
+                colormap(bwr)
+                title('Dx')
+                colorbar()
+                %caxis([-1,1])
+                hold on;
+                plot(path(:, 2), path(:, 1), '.-')
+                plot(startpt(:, 2), startpt(:, 1), 'o')
+                plot(endpt(:, 2), endpt(:, 1), 'o')
+                button = waitforbuttonpress() ;
+
+                figure(3);
+                imagesc(Dy') ;
+                title('Dy')
+                colormap(bwr)
+                colorbar()
+                %caxis([-1,1])
+                hold on; 
+                plot(path(:, 2), path(:, 1), '.-')
+                plot(startpt(:, 2), startpt(:, 1), 'o')
+                plot(endpt(:, 2), endpt(:, 1), 'o')
+                button = waitforbuttonpress() ;
+
+                figure(4);
+                imagesc(cij) ;
+                title('cij')
+                colormap(bwr)
+                colorbar()
+                caxis([-1,1])
+                hold on; 
+                plot(path(:, 2), path(:, 1), '.-')
+                plot(startpt(:, 2), startpt(:, 1), 'o')
+                plot(endpt(:, 2), endpt(:, 1), 'o')
+                button = waitforbuttonpress() ;
+
+                % TEST
+                xx2=xx(1:10:size(xx, 1), 1:10:size(xx, 2));
+                yy2=yy(1:10:size(yy, 1), 1:10:size(yy, 2));
+                cxyz = stream2(xx, yy, Dx', Dy', xx2', yy2') ;
+                figure(5);
+                imagesc(cij); hold on;
+                quiver(Dx', Dy', 0)
+                streamline(cxyz)
+                button = waitforbuttonpress() ;
+                                
+                % cpath = compute_geodesic(DD, flipud(ept), opt);
+                % Clip the path near the start point
+                d2start = vecnorm(path-startpt,2,2) ;
+                path = path(d2start > thres_dist, :) ;
+                [tmp, ind] = unique(path(:, 1)) ;
+                inds = sort(ind) ;
+                path = path(inds, :) ;
+                cpath = [endpt; path; startpt] ;
+               
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Visualize resulting path
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                close all
+                imagesc(cij);
+                hold on;
+                plot(startpt(2), startpt(1), 'ro') 
+                plot(endpt(2), endpt(1), 'ks')
+                plot(cpath(:, 2), cpath(:, 1), '-') ;
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Convert cpath to tpath
+                % Remember that the first dimension (rows) is shorter
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                ntimeptsA = round(endpt(1) - startpt(1) + 1) ; 
+                xxx = round(startpt(1)):round(endpt(1)) ;
+                yyy = interp1(flipud(cpath(:, 1)), ...
+                    flipud(cpath(:, 2)), xxx) ;
+                tpath = round([xxx; yyy]') ;
+                
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Continue visualization
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%
+                plot(tpath(:, 2), tpath(:, 1), 'o') ;
+                xlabel(['time, dataset ', num2str(ii)])
+                ylabel(['time, dataset ', num2str(jj)])
+                title('Path ok? Enter=yes, backspace=no/redo')
+                button = waitforbuttonpress() ;
+                if button && strcmp(get(gcf, 'CurrentKey'), 'return')
+                    move_on = true ;
+                elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
+                    move_on = false;
+                    disp('starting over with path detection')
+                    Woffset = input('Set weight offset = ') ;
+                    disp(' --> new Woffset')
+                    if isempty(Woffset)
+                        Woffset = input('Set weight offset = ') ;
+                    end
+                end
+            end
+            
+            % Save image
+            figfn = fullfile(corrOutDir, ['correspondence' this_ijstr '.png']) ;
+            disp(['Saving ' figfn])
+            title(['Correspondences between ' num2str(ii) ' and ' num2str(jj) ])
+            saveas(gcf, figfn) ;
+            
+            % For each match, plot overlay as cyan magenta
+            overlayDir = fullfile(corrOutDir, ['overlay' this_ijstr]) ;
+            if ~exist(overlayDir, 'dir')
+                mkdir(overlayDir) 
+            end
+            outfn = fullfile(overlayDir, ['overlay' this_ijstr '_%04d.png']) ;
+            
+            % Save overlays
+            close all
+            for qq = 1:size(cij, 1)
+                if mod(qq, 10) == 0
+                    disp(['Saving overlaid stripes ' num2str(qq)])
+                end
+                set(gcf, 'visible', 'off')
+                ima = double(imadjustn(squeeze(imA(:, :, qq)))) ;
+                imb = double(imadjustn(squeeze(imB(:, :, tpath(qq, 2))))) ;
+                ima = uint8(255*mat2gray(ima, [0 max(ima(:))])) ;
+                imb = uint8(255*mat2gray(imb, [0 max(imb(:))])) ;
+                [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
+                rgb = zeros(size(ima, 1), size(ima, 2), 3, 'uint8') ;
+                rgb(:, :, 1) = ima ;
+                rgb(:, :, 2) = imb ;
+                rgb(:, :, 3) = min(ima + imb, 255) ;
+                % save rgb image
+                imshow(rgb)
+                title(['Correspondence between ' num2str(ii) ' and ' num2str(jj)])
+                set(gcf, 'PaperUnits', 'centimeters');
+                set(gcf, 'PaperSize', [16, 16]) ;
+                saveas(gcf, sprintf(outfn, qq))
+            end
+            
+            % Save the path
+            time_correspondences = tpath;
+            save(cpathfn, 'time_correspondences') ;
+        end
+    end
+end
+
 
 %% Align Stripe 7 for each frame -- correlations in position
 for ii = 1:length(expts)
@@ -490,9 +866,11 @@ for ii = 1:length(expts)
                     % grab the timepoint tj of MIPs dataset jj
                     cJ = curvJ{tj} ;
                     if strcmp(stripe7corr_method, 'dist')
-                        d = pdist2(cI, cJ);
-                        [mindist, idx] = min(d, [], 2);
-                        cij(ti, tj) = mean(mindist) ;
+                        d1 = pdist2(cI, cJ);
+                        mindist1 = min(d1, [], 2);
+                        d2 = pdist2(cJ, cI);
+                        mindist2 = min(d2, [], 2);
+                        cij(ti, tj) = mean(sqrt(mindist1)) * mean(sqrt(mindist2)) ;
                     else
                         cij = correlation ;
                     end
@@ -539,12 +917,15 @@ for ii = 1:length(expts)
             set(gca,'YDir','normal')
             axis tight
             saveas(gcf, cfn)
+        elseif ii > jj 
+            disp('Skipping since ii > jj')
         else
             disp('Skipping since already done')
         end
         
     end
 end
+disp('done')
 
 
 %% Minimize difference between timing points
