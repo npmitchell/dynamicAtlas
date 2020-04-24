@@ -1292,7 +1292,7 @@ for use_BL = [true false]
 
             title(['Time relaxation network: dataset ' num2str(ii)])
             ylim([0, 7])
-            saveas(gcf, sprintf('./alignment/pairwise_corr_timeline_BL_%03d.png', ii))
+            saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
             waitforbuttonpress()
         else
             % Add bonds to plot using NL,KL 
@@ -1309,7 +1309,7 @@ for use_BL = [true false]
             end
             title(['Time relaxation network: dataset ' num2str(ii)])
             ylim([0, 7])
-            saveas(gcf, sprintf('./alignment/pairwise_corr_timeline_%03d.png', ii))
+            saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
             waitforbuttonpress()
         end
     end
@@ -1358,7 +1358,7 @@ title(['Time relaxation network'])
 ylim([0, 7])
 set(gcf, 'Units', 'centimeters');
 set(gcf, 'Position', [0 0 36 16]) ;
-saveas(gcf, sprintf('./alignment/relaxation_results.png'))
+saveas(gcf, fullfile(outdir, sprintf('relaxation_results.png')))
 
 %% Now look at stripe 7 with standard deviations
 
