@@ -564,7 +564,7 @@ for ii = 1:length(expts)
                 % Blur the image a bit to straighten lines, then find curve
                 % WW = imgaussfilt((max(cij(:)) - cij) - min(cij(:)), 1) ;
                 % WW = imgaussfilt(cij) ;
-                WW = imgaussfilt((cij - min(cij(:)).^ cij_exponent) + Woffset) ;
+                WW = imgaussfilt((cij - min(cij(:))).^ cij_exponent + Woffset) ;
                 % WW = WW - min(WW(:)) + 1e-2 ;
                 % WW = cij - min(cij(:)) + 1e-2;
                 % Compute distance transform
