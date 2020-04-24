@@ -479,7 +479,7 @@ for ii = 1:length(expts)
             tpath = [(1:size(mipI, 3))', (1:size(mipI, 3))'] ;
             time_correspondences = tpath;
             save(cpathfn, 'time_correspondences') ;
-        elseif ii < jj && (~exist(cpathfn, 'file') || overwrite)
+        elseif ~exist(cpathfn, 'file') || overwrite
             % Load time sequence MIPs of dataset jj
             disp([' --> Loading MIPs tiff for jj=', num2str(jj), ...
                 ': ', fullfile(expts{jj}, mipfn)])
@@ -553,6 +553,7 @@ for ii = 1:length(expts)
             
             % Shortest path 
             Woffset = 0. ;
+            cij_exponent = 1. ; 
             while ~move_on
                 close all
                 imagesc(cij);
@@ -638,7 +639,7 @@ for ii = 1:length(expts)
                 % Blur the image a bit to straighten lines, then find curve
                 % WW = imgaussfilt((max(cij(:)) - cij) - min(cij(:)), 1) ;
                 % WW = imgaussfilt(cij) ;
-                WW = imgaussfilt(cij - min(cij(:)) + Woffset) ;
+                WW = imgaussfilt((cij - min(cij(:)).^ cij_exponent) + Woffset) ;
                 % WW = WW - min(WW(:)) + 1e-2 ;
                 % WW = cij - min(cij(:)) + 1e-2;
                 % Compute distance transform
@@ -646,7 +647,7 @@ for ii = 1:length(expts)
                 % [DD,S] = perform_front_propagation_2d_slow(WW',...
                 %     [startpt(2);startpt(1)], [endpt(2); endpt(1)], 4000, []);
                 %
-                [DD,S] = perform_fast_marching(WW', [startpt(2)+1; startpt(1)+1], options) ;
+                [DD,S] = perform_fast_marching(WW', [startpt(2)+0.1; startpt(1)+0.1], options) ;
                 
                 % Check DD
                 % imagesc(DD)
@@ -891,6 +892,12 @@ for ii = 1:length(expts)
                     if isempty(Woffset)
                         Woffset = input('Set weight offset = ') ;
                     end
+                    
+                    cij_exponent = input('Set cij potential exponent = ') ;
+                    disp(' --> new cij exponent')
+                    if isempty(cij_exponent)
+                        cij_exponent = input('Set cij potential exponent = ') ;
+                    end
                 end
             end
             
@@ -899,6 +906,10 @@ for ii = 1:length(expts)
                 if swap
                     tpath = [tpath(:, 2), tpath(:, 1)];
                 end
+                
+                % Save Woffset and cij_exponent        
+                cpath_param_fn = fullfile(corrOutDir, sprintf(['cpath_params' ijstr '.mat'], ii, jj)) ;
+                save(cpath_param_fn, 'Woffset', 'cij_exponent')
                 
                 % Save image
                 figfn = fullfile(corrOutDir, ['correspondence' this_ijstr '.png']) ;
@@ -1329,7 +1340,6 @@ xnew1 = xf(1:fixed_ind(1)-1) ;
 xnew2 = xf(fixed_ind(1):end) ;
 xnew = [xnew1; fixed_xx; xnew2 ] ;
 
-
 %% post-relaxation network visualization
 close all
 offset = -0.25 ;
@@ -1360,6 +1370,29 @@ set(gcf, 'Units', 'centimeters');
 set(gcf, 'Position', [0 0 36 16]) ;
 saveas(gcf, fullfile(outdir, sprintf('relaxation_results.png')))
 
+% Save the result
+i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
+fn = fullfile(outdir, 'i_tau0j_tau0jrelaxed.mat') ;
+save(fn, i_tau0j)
+
 %% Now look at stripe 7 with standard deviations
+for ii = 1:length(expts)
+    disp(['dataset ii = ', num2str(ii)])
+    % Load time sequence MIPs of dataset ii
+    curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
+    disp(['  Loading curves: ' curvIfn])
+    curvI = load(curvIfn, 'stripe7curves');
+    curvI = curvI.stripe7curves ;
+    ntpI = length(curvI) ;
+    
+    for jj = 1:length(expts)
+        % Define the correlation matrix filename
+        ijstr = [ '_%02d_%02d' extn ] ;
+        cfn = fullfile(outdir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
+        disp(['Seeking cfn = ' cfn])
+        
+    end
+end
+
 
 
