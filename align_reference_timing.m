@@ -901,12 +901,12 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' extn ] ;
+        ijstr = [ '_%02d_%02d' ] ;
         cfn = fullfile(outdir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not
-        if ii < jj && (~exist(cfn, 'file') || overwrite)
+        if ~exist(cfn, 'file') || overwrite
             if ~exist(cfn, 'file')
                 disp('Computing stripe7 correlations')
             else
