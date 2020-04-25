@@ -30,6 +30,7 @@ minsz = 5e3 ;
 maxsz = 1e6 ;
 for ii = 1:length(expts)
     disp(['Extracting stripe 7 for expt ' num2str(ii)])
+    fns = dir(fullfile(expts{ii}, [ mipfnBase substr '_Probabilities.h5'])) ;
     try
         assert(length(fns) == 1)
     catch
@@ -51,7 +52,7 @@ for ii = 1:length(expts)
         continue_curves = true ;
     end
         
-    if continue_curves || overwrite
+    if continue_curves || overwrite        
         % Announce what is going on
         if exist(curvfn, 'file')
             disp('Overwriting curv on disk')
@@ -65,7 +66,6 @@ for ii = 1:length(expts)
         end
         
         % Get all timepoints for this dataset
-        fns = dir(fullfile(expts{ii}, [ mipfnBase substr '_Probabilities.h5'])) ;
         pfn = fullfile(fns(1).folder, fns(1).name) ;
         disp(['Reading ' pfn])
         dat = h5read(pfn, '/exported_data') ;
@@ -153,7 +153,9 @@ for ii = 1:length(expts)
                     elseif button
                         disp('Bad button press. Use a,e,d,u,return,backspace')
                     end
-                    bwprev2 = bwprev ;
+                    if exist('bwprev', 'var')
+                        bwprev2 = bwprev ;
+                    end
                     bwprev = bw ;
                     disp('outside selection loop')
                 end
