@@ -334,7 +334,7 @@ for ii = 1:length(expts)
             xlabel(['timepoint for dataset ' num2str(jj)])
             ylabel(['timepoint for dataset ' num2str(ii)])
             axis equal
-            cfn = fullfile(outdir, sprintf(['cij_' corr_method ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(outdir, sprintf(['cij_' ijstr '.png'], ii, jj)) ;
             cb = colorbar() ;
             ylabel(cb, 'correlation')
             set(gca,'YDir','normal')
