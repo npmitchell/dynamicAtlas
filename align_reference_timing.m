@@ -264,7 +264,7 @@ for ii = 1:length(expts)
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not 
-        if ii <= jj && (~exist(cfn, 'file') || overwrite)
+        if ~exist(cfn, 'file') || overwrite
             if ~exist(cfn, 'file')
                 disp('Computing correlations')
             else
@@ -374,8 +374,6 @@ for ii = 1:length(expts)
                 title('phase correlation offset \deltay')
                 saveas(gcf, cfn)           
             end
-        elseif ii > jj 
-            disp('Skipping since ii > jj')
         else
             disp('Skipping since already done')
         end
@@ -421,13 +419,13 @@ for ii = 1:length(expts)
             % load the correlations
             disp(['Loading cfn from: ' cfn])
             load(cfn, 'cij') ;
-            % detect which dimension is smaller
-            if size(cij, 2) < size(cij, 1) 
-                swap = true ;
-                cij = cij' ;
-            else
-                swap = false ;
-            end
+            % % detect which dimension is smaller
+            % if size(cij, 2) < size(cij, 1) 
+            %     swap = true ;
+            %     cij = cij' ;
+            % else
+            %     swap = false ;
+            % end
             
             % find the path (rough path via maxima) 
             tpath = zeros(size(cij, 1), 2) ;
@@ -827,10 +825,10 @@ for ii = 1:length(expts)
             end
             
             if ~abort
-                % Swap back if we swapped I<->J. Do this before plotting
-                if swap
-                    tpath = [tpath(:, 2), tpath(:, 1)];
-                end
+                % % Swap back if we swapped I<->J. Do this before plotting
+                % if swap
+                %     tpath = [tpath(:, 2), tpath(:, 1)];
+                % end
                 
                 % Save Woffset and cij_exponent        
                 cpath_param_fn = fullfile(corrOutDir, sprintf(['cpath_params' ijstr '.mat'], ii, jj)) ;
@@ -1298,25 +1296,73 @@ saveas(gcf, fullfile(outdir, sprintf('relaxation_results.png')))
 % Save the result
 i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
 fn = fullfile(outdir, 'i_tau0j_tau0jrelaxed.mat') ;
-save(fn, i_tau0j)
+save(fn, 'i_tau0j_tau0jrelaxed')
 
 %% Now look at stripe 7 with standard deviations
+% Gather all stripes
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
     disp(['  Loading curves: ' curvIfn])
-    curvI = load(curvIfn, 'stripe7curves');
-    curvI = curvI.stripe7curves ;
-    ntpI = length(curvI) ;
-    
-    for jj = 1:length(expts)
-        % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(outdir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
-        disp(['Seeking cfn = ' cfn])
-        
+    load(curvIfn, 'stripe7curves');
+    if ii == 1
+        allstripes = stripe7curves ;
+    else
+        allstripes = cat(1, allstripes, stripe7curves) ;
     end
 end
 
+% Get xlim, ylim
+xmax = 0 ;
+xmin = 0 ;
+ymin = 0 ;
+ymax = 0 ;
+for qq = 1:length(allstripes)
+    stripe = allstripes{qq} ;
+    xmin = min(xmin, min(stripe(:, 1))) ;
+    xmax = max(xmax, max(stripe(:, 1))) ;
+    ymin = max(ymin, min(stripe(:, 2))) ;
+    ymax = max(ymax, max(stripe(:, 2))) ;
+end
 
+%%
+stripeTauDir = fullfile(corrOutDir, 'aligned_stripes') ;
+if ~exist(stripeTauDir, 'dir')
+    mkdir(stripeTauDir)
+end
+times2do = ttc{hard}{hard}(:, 1) ;
+window = 0.5 + 1e-5;
+for qi = 1:length(times2do)
+    close all
+    fig = figure('visible', 'off') ;
+    qq = times2do(qi) ;
+    disp(['qq = ' num2str(qq)])
+    % for this time, get all curves with matching time
+    inds = find(abs(i_tau0j_tau0jrelaxed(:, 2) - qq) < window) ;
+    stripes = allstripes(inds) ;
+        
+    for sn = 1:length(stripes)  
+        stripe = stripes{sn} ;
+        plot(stripe(:, 1), stripe(:, 2), '-', 'color', blue)
+        hold on;
+        
+        % Chop into two curves: leading, trailing
+        segs = cutCurveIntoLeadingTrailingSegments(stripe) ;
+        
+        % Take mean and variance for leading, trailing
+        leading = mean(segs{1}) ;
+        trailing = mean(segs{2}) ;
+    end
+    xlim([xmin xmax])
+    ylim([ymin ymax])
+    axis equal
+    xlim([xmin xmax])
+    title(['stripe 7, t=' num2str(qq)])
+    xlabel('AP position [subsampled pixels]')
+    ylabel('DV position [subsampled pixels]')
+    saveas(fig, fullfile(stripeTauDir, sprintf('%04d.png', qq)))
+end
+
+
+    

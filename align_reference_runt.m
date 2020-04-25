@@ -74,4 +74,5 @@ green = colorset(5, :) ;
 sky = colorset(6, :) ;
 colors = [yellow; sky] ;
 
+%%
 align_reference_timing
