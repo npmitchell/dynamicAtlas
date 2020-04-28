@@ -36,7 +36,17 @@ se2 = strel('disk', 2) ;
 bw = imdilate(datbw, se2) ;
 bw = imerode(bw, se2) ;
 % Filter out small regions
-bw = bwareafilt(bw, [minsz maxsz]) ;
+regions_exist = false ;
+minsz_tmp = minsz ;
+while ~regions_exist
+    bwtest = bwareafilt(bw, [minsz_tmp maxsz]) ;
+    if any(bwtest)
+        regions_exist = true ;
+    else
+        minsz_tmp = minsz_tmp * 0.9 ;
+    end
+end
+bw = bwtest ;
 
 % Prepare for case where we use previous mask
 prevmaskfn = fullfile(stripeDir, ['mask_' ...
