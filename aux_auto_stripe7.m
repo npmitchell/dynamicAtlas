@@ -38,13 +38,25 @@ bw = imerode(bw, se2) ;
 % Filter out small regions
 regions_exist = false ;
 minsz_tmp = minsz ;
+dmyk = 0 ;
 while ~regions_exist
+    disp(['checking that regions exist: pass ' num2str(dmyk)])
     bwtest = bwareafilt(bw, [minsz_tmp maxsz]) ;
-    if any(bwtest)
+    if any(bwtest(:))
         regions_exist = true ;
     else
-        minsz_tmp = minsz_tmp * 0.9 ;
+        % get largest region size and display it
+        regs = regionprops(bw) ;
+        regsizes = zeros(length(regs), 1) ;
+        for dmyq = 1:length(regs)
+            regsizes(dmyq) = regs(dmyq).Area ;
+        end
+        biggestreg = max(regsizes) ;
+        disp(['Largest region size is ' num2str(biggestreg)])
+        disp('Using that size as minsize')
+        minsz_tmp = biggestreg - 1 ;
     end
+    dmyk = dmyk + 1 ;
 end
 bw = bwtest ;
 
