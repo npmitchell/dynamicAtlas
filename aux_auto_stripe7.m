@@ -2,14 +2,14 @@
 % default stripe7 finding protocol
 % 
 % NPMitchell 2020
-
-% Find the center pixel (rounded)
-midx = round(0.5 * size(dat, 2)) ;
-% Crop the image to right and center
-dcrop = squeeze(dat(1, midx:end, :, tt)) ;
-dsz = [size(dat, 2), size(dat, 3)] ;
-addx = midx ;
-addy = 0 ;
+ 
+% % Find the center pixel (rounded)
+% midx = round(0.5 * size(dat, 2)) ;
+% % Crop the image to right and center
+% dcrop = squeeze(dat(1, midx:end, :, tt)) ;
+% dsz = [size(dat, 2), size(dat, 3)] ;
+% addx = midx ;
+% addy = 0 ;
 
 % Obtain the back of stripe 7
 % % Create BW image by thresholding

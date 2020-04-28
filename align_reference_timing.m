@@ -87,10 +87,23 @@ for ii = 1:length(expts)
             end
             
             maskfn = fullfile(stripeDir, ['mask_' timestr '.tif']);  
+            
+            % Here, we cut the image in half, assuming that the time we are
+            % interested in finishes before stripe 7 extends halfway across
+            % the dorsal side
+            % Find the center pixel (rounded to nearest integer)
+            midx = round(0.5 * size(dat, 2)) ;
+            % Crop the image to right and center
+            dcrop = squeeze(dat(1, midx:end, :, tt)) ;
+            dsz = [size(dat, 2), size(dat, 3)] ;
+            addx = midx ;
+            addy = 0 ;
+
             if exist(maskfn, 'file')
                 bw2 = imread(maskfn);
             else
                 disp(['mask does not exist: ' maskfn])
+                
                 aux_auto_stripe7
                 
                 % Check if this automatic way is good enough
