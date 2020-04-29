@@ -1120,14 +1120,18 @@ for use_offset = [true false]
     axis off
     set(gcf, 'Units', 'centimeters');
     set(gcf, 'Position', [0 0 16 30]) ;
+    version_of_matlab = version ;
     if use_offset
-        exportgraphics(gcf, ...
-            fullfile(outdir, 'time_correspondences_offset.png'), ...
-            'Resolution', '300')
+        figurefn = fullfile(outdir, 'time_correspondences_offset.png') ;
     else
-        exportgraphics(gcf, fullfile(outdir, 'time_correspondences.png'),...
-            'Resolution', '300')
+        figurefn = fullfile(outdir, 'time_correspondences.png')) ;
     end
+    if contains(version_of_matlab, '2020')
+        exportgraphics(gcf, figurefn)
+    else
+        saveas(gcf, figurefn)
+    end
+    
     close all
 end
 

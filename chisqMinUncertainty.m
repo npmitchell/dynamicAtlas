@@ -38,6 +38,7 @@ end
 % fitresult = fit(id2fit, c2fit, 'poly2') ;
 % ci = confint(fitresult, 0.95) ;
 [pp, SS, mu] = polyfit(id2fit, c2fit, 2) ;
+% xtilde = (x - meanx) / stdx
 meanx = mu(1) ;
 stdx = mu(2) ;
 % y = a*((x-m)/s)^2 + b*((x-m)/s) + c ;
@@ -46,6 +47,12 @@ bb = pp(2) ;
 cc = pp(3) ;
 
 % Minimum time is (-b/2a), with minimum y value of -(b^2-4ac) / 4a
+minxtilde = -bb / (2* aa) ;
+% Convert to xstar via mu transformation
+xstar = minxtilde * stdx + meanx ;
+
+% Find where in xstar where y rises by 1
+
 
 
 
