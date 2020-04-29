@@ -1180,8 +1180,8 @@ ntp_tot = sum(ntps) ;
 
 %% Next build BL of correspondences
 % preallocate Nxlarge array for NL, KL, do not preallocate BL
-NL = zeros(ntp_tot, 10) ;
-KL = zeros(ntp_tot, 10) ;
+NL = zeros(ntp_tot, 30) ;
+KL = zeros(ntp_tot, 30) ;
 first = true ;
 for ii = 1:length(ttc)
     for jj = ii+1:length(ttc)
@@ -1261,7 +1261,7 @@ for use_BL = [true false]
             end
 
             title(['Time relaxation network: dataset ' num2str(ii)])
-            ylim([0, 7])
+            ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
             waitforbuttonpress()
         else
@@ -1278,7 +1278,7 @@ for use_BL = [true false]
                 end
             end
             title(['Time relaxation network: dataset ' num2str(ii)])
-            ylim([0, 7])
+            ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
             disp('press any button')
             waitforbuttonpress()
@@ -1332,7 +1332,7 @@ else
     xlabel('time, $t_0$', 'Interpreter', 'latex')
     xlim([1, 150])
     title(['Time relaxation network'])
-    ylim([0, 7])
+    ylim([0, max(i_tau0j(:, 1)) + 1])
     set(gcf, 'Units', 'centimeters');
     set(gcf, 'Position', [0 0 36 16]) ;
     saveas(gcf, fullfile(outdir, sprintf('relaxation_results.png')))
