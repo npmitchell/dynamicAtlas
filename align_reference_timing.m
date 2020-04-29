@@ -355,7 +355,7 @@ for ii = 1:length(expts)
             xlabel(['timepoint for dataset ' num2str(jj)])
             ylabel(['timepoint for dataset ' num2str(ii)])
             axis equal
-            cfn = fullfile(corrDatOutDir, sprintf(['cij_' ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(corrDatOutDir, sprintf(['cij' ijstr '.png'], ii, jj)) ;
             cb = colorbar() ;
             ylabel(cb, 'correlation')
             set(gca,'YDir','normal')
@@ -400,6 +400,7 @@ for ii = 1:length(expts)
         end
     end
 end
+disp('Done with cross-correlation')
 
 %% ID peaks in correlation to draw curves using fast marching
 clear imI imJ imA imB
@@ -421,7 +422,7 @@ for ii = 1:length(expts)
     for jj = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+        cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
         disp(['Seeking cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
                 
@@ -917,9 +918,15 @@ for ii = 1:length(expts)
         end
     end
 end
+disp('Done with correspondence curves')
 
 
 %% Align Stripe 7 for each frame -- correlations in position
+stripe7CorrDatDir = fullfile(outdir, sprintf('stripe7corr_ss%02d', ssfactor)) ;
+if ~exist(stripe7CorrDatDir, 'dir')
+    mkdir(stripe7CorrDatDir)
+end
+
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
     % Load time sequence MIPs of dataset ii
@@ -931,8 +938,8 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' ] ;
-        cfn = fullfile(outdir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
+        ijstr = [ '_%02d_%02d_' stripe7corr_method ] ;
+        cfn = fullfile(stripe7CorrDatDir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not
@@ -1004,8 +1011,8 @@ for ii = 1:length(expts)
             xlabel(['timepoint for dataset ' num2str(jj)])
             ylabel(['timepoint for dataset ' num2str(ii)])
             axis equal
-            cfn = fullfile(outdir, ...
-                sprintf(['stripe7cij_' stripe7corr_method ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(stripe7CorrDatDir, ...
+                sprintf(['stripe7cij' ijstr '.png'], ii, jj)) ;
             cb = colorbar() ;
             cmap = colormap ;
             colormap(flipud(cmap))
@@ -1027,31 +1034,46 @@ for ii = 1:length(expts)
         
     end
 end
-disp('done')
+disp('done with correspondence curves')
 
 
 %% Minimize difference between timing points
-% {tj} = {dtj} + frame, where 
-% Fit line of best fit to each ridge extraction
-ttc = cell(length(expts), 1) ;
-for ii = 1:length(expts)
-    % create the cell
-    ttc{ii} = cell(length(expts), 1) ;
+% {tj} = {dtj} + frame
+% Fit line of best fit to each ridge extraction using time-time-corr cell
+
+timelineDir = fullfile(outdir, sprintf('timeline_ss%02d_realspacecorr', ssfactor)) ;
+if ~exist(timelineDir, 'dir')
+    mkdir(timelineDir)
 end
-% Populate the correspondences into cell from mat files
-for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
-    for jj = ii:length(expts)
-        % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
-        disp(['Seeking cfn = ' cfn])
-        cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
-        if exist(cpathfn, 'file')
-            load(cpathfn, 'time_correspondences');
-            ttc{ii}{jj} = time_correspondences ;
+
+% Build ttc: time-time correlation cell
+ttcfn = fullfile(timelineDir, 'ttc.mat') ;
+if exist(ttcfn, 'file') && ~overwrite
+    ttc = load(ttcfn, 'ttc') ;
+else
+    ttc = cell(length(expts), 1) ;
+    for ii = 1:length(expts)
+        % create the cell
+        ttc{ii} = cell(length(expts), 1) ;
+    end
+    % Populate the correspondences into cell from mat files
+    for ii = 1:length(expts)
+        disp(['dataset ii = ', num2str(ii)])
+        for jj = ii:length(expts)
+            % Define the correlation matrix filename
+            ijstr = [ '_%02d_%02d' extn ] ;
+            cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+            disp(['Seeking cfn = ' cfn])
+            cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
+            if exist(cpathfn, 'file')
+                load(cpathfn, 'time_correspondences');
+                ttc{ii}{jj} = time_correspondences ;
+            end
         end
     end
+    
+    % Save the time-time corr cell
+    save(ttcfn, 'ttc')
 end
 
 % Plot the dynamics
@@ -1122,20 +1144,20 @@ for use_offset = [true false]
     set(gcf, 'Position', [0 0 16 30]) ;
     version_of_matlab = version ;
     if use_offset
-        figurefn = fullfile(outdir, 'time_correspondences_offset.png') ;
+        figurefn = fullfile(timelineDir, 'time_correspondences_offset.png') ;
     else
-        figurefn = fullfile(outdir, 'time_correspondences.png') ;
+        figurefn = fullfile(timelineDir, 'time_correspondences.png') ;
     end
     if contains(version_of_matlab, '2020')
         exportgraphics(gcf, figurefn)
     else
         saveas(gcf, figurefn)
     end
-    
+
     close all
 end
 
-%% Relax timepoints to reference curve (time of dataset4)
+%% Relax timepoints to reference curve (time of dataset #hard)
 % so-called 'hard reference' is the master timeline
 to_relax = 1:length(ttc) ;
 to_relax = setdiff(to_relax, hard) ;
@@ -1156,85 +1178,112 @@ for ii = 1:length(ttc)
     end
 end
 
-%% Build NL, KL, BL
-% First get #tps in each dataset, which is stored in diagonals of ttc
-ntps = zeros(length(ttc), 1) ;
-addt = zeros(length(ttc), 1) ;
-tpid = [] ;
-for ii = 1:length(ttc)
-    addt(ii) = sum(ntps) ;
-    ntps(ii) = length(ttc{ii}{ii}) ;
-    % Now label each timepoint in linear indexing
-    if ii == 1
-        tpid = cat(2, tpid, 1:ntps(ii)) ;
-    else
-        tpid = cat(2, tpid, addt(ii) + (1:ntps(ii))) ;
+%% Build i_tau0j master timeline lookup table
+
+% Check for existing result
+itau0jfn = fullfile(timelineDir, 'i_tau0j.mat') ;
+if exist(itau0jfn, 'file') && ~overwrite
+    load(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps')
+else
+    % First get #tps in each dataset, which is stored in diagonals of ttc
+    ntps = zeros(length(ttc), 1) ;
+    addt = zeros(length(ttc), 1) ;
+    tpid = [] ;
+    for ii = 1:length(ttc)
+        addt(ii) = sum(ntps) ;
+        ntps(ii) = length(ttc{ii}{ii}) ;
+        % Now label each timepoint in linear indexing
+        if ii == 1
+            tpid = cat(2, tpid, 1:ntps(ii)) ;
+        else
+            tpid = cat(2, tpid, addt(ii) + (1:ntps(ii))) ;
+        end
+
+        % Store all indices in one array
+        tau0extra = fnxtr(tau0(ii), 2) ;
+        tauv = ppval(tau0extra, (1:ntps(ii))) ;
+        i_tau0j(addt(ii) + (1:ntps(ii)), :) = [ii * ones(ntps(ii), 1), tauv'] ;
     end
+    ntp_tot = sum(ntps) ;
     
-    % Store all indices in one array
-    tau0extra = fnxtr(tau0(ii), 2) ;
-    tauv = ppval(tau0extra, (1:ntps(ii))) ;
-    i_tau0j(addt(ii) + (1:ntps(ii)), :) = [ii * ones(ntps(ii), 1), tauv'] ;
+    % save data
+    save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps') ;
+    
+    % de-clutter
+    clearvars tauv tau0extra tpid ii
 end
-ntp_tot = sum(ntps) ;
 
-%% Next build BL of correspondences
-% preallocate Nxlarge array for NL, KL, do not preallocate BL
-NL = zeros(ntp_tot, 30) ;
-KL = zeros(ntp_tot, 30) ;
-first = true ;
-for ii = 1:length(ttc)
-    for jj = ii+1:length(ttc)
-        % Ensure that there are some correspondences
-        if ~isempty(ttc{ii}{jj})
-            nodei = round(ttc{ii}{jj}(:, 1)) + addt(ii);
-            nodej = round(ttc{ii}{jj}(:, 2)) + addt(jj);
-            bladd = [nodei, nodej] ;
+%% Next build NL, KL, BL of correspondences for master timeline
+% NL = neighbor list, KL = spring constant list, and BL = bond list
+NLKLBLfn = fullfile(timelineDir, 'NL_KL_BL.mat') ;
 
-            % Add to BL
-            if first
-                BL = bladd ;
-                first = false ;
-            else
-                BL = cat(1, BL, bladd) ;
-            end
+if exist(NLKLBLfn, 'file') && ~overwrite
+    load(NLKLBLfn, 'NL', 'KL', 'BL') ;
+    disp('loaded bond list BL, neighbor list NL, k list KL from disk')
+else
+    % preallocate Nxlarge array for NL, KL, do not preallocate BL
+    NL = zeros(ntp_tot, 30) ;
+    KL = zeros(ntp_tot, 30) ;
+    first = true ;
+    for ii = 1:length(ttc)
+        for jj = ii+1:length(ttc)
+            % Ensure that there are some correspondences
+            if ~isempty(ttc{ii}{jj})
+                nodei = round(ttc{ii}{jj}(:, 1)) + addt(ii);
+                nodej = round(ttc{ii}{jj}(:, 2)) + addt(jj);
+                bladd = [nodei, nodej] ;
 
-            % build NL, KL with redundancy of correspondences built into KL
-            for id = 1:length(bladd)
-                pair = bladd(id, :) ;
-                nodei = pair(1) ; 
-                nodej = pair(2) ;
-                % ij
-                if ismember(nodej, NL(nodei, :))
-                    ind = find(NL(nodei, :) == nodej) ;
-                    assert(NL(nodei, ind) == nodej) ;
-                    KL(nodei, ind) = KL(nodei, ind) + 1 ;
+                % Add to BL
+                if first
+                    BL = bladd ;
+                    first = false ;
                 else
-                    firstzero = find(NL(nodei, :)==0, 1) ; 
-                    assert(~isempty(firstzero)) 
-                    NL(nodei, firstzero) = nodej ; 
-                    KL(nodei, firstzero) = 1 ;
+                    BL = cat(1, BL, bladd) ;
                 end
-                
-                % ji
-                if ismember(nodei, NL(nodej, :))
-                    ind = find(NL(nodej, :) == nodei) ;
-                    assert(NL(nodej, ind) == nodei) ;
-                    KL(nodej, ind) = KL(nodej, ind) + 1 ;
-                else
-                    firstzero = find(NL(nodej, :)==0, 1) ; 
-                    assert(~isempty(firstzero)) 
-                    NL(nodej, firstzero) = nodei ; 
-                    KL(nodej, firstzero) = 1 ;
+
+                % build NL, KL with redundancy of correspondences built into KL
+                for id = 1:length(bladd)
+                    pair = bladd(id, :) ;
+                    nodei = pair(1) ; 
+                    nodej = pair(2) ;
+                    % ij
+                    if ismember(nodej, NL(nodei, :))
+                        ind = find(NL(nodei, :) == nodej) ;
+                        assert(NL(nodei, ind) == nodej) ;
+                        KL(nodei, ind) = KL(nodei, ind) + 1 ;
+                    else
+                        firstzero = find(NL(nodei, :)==0, 1) ; 
+                        assert(~isempty(firstzero)) 
+                        NL(nodei, firstzero) = nodej ; 
+                        KL(nodei, firstzero) = 1 ;
+                    end
+
+                    % ji
+                    if ismember(nodei, NL(nodej, :))
+                        ind = find(NL(nodej, :) == nodei) ;
+                        assert(NL(nodej, ind) == nodei) ;
+                        KL(nodej, ind) = KL(nodej, ind) + 1 ;
+                    else
+                        firstzero = find(NL(nodej, :)==0, 1) ; 
+                        assert(~isempty(firstzero)) 
+                        NL(nodej, firstzero) = nodei ; 
+                        KL(nodej, firstzero) = 1 ;
+                    end
                 end
             end
         end
     end
+    disp('done building bond list BL, neighbor list NL, k list KL ')
 end
-disp('done')
 
-%% Build network visualization
+%% Build network visualization (pairwise_corr_timeline_XXX.png)
+
 for use_BL = [true false]
+    if use_BL
+        disp('Visualizing network using BL')
+    else
+        disp('VIsualizing network using KL, NL')
+    end
     for ii = 1:1:length(ttc)    
         close all
         for qq = 1:size(i_tau0j, 1)
@@ -1244,7 +1293,7 @@ for use_BL = [true false]
         % labels
         ylabel('dataset $i$', 'Interpreter', 'Latex')
         xlabel('time, $t_0$', 'Interpreter', 'latex')
-        xlim([0, max(i_tau0j(:, 2) + 1])
+        xlim([0, max(i_tau0j(:, 2)) + 1])
 
         if use_BL
             % Add bonds to plot using BL (non-reciprocal)
@@ -1262,8 +1311,9 @@ for use_BL = [true false]
 
             title(['Time relaxation network: dataset ' num2str(ii)])
             ylim([0, max(i_tau0j(:, 1)) + 1])
-            saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
-            waitforbuttonpress()
+            saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
+            % disp('press any button on figure')
+            pause(1)
         else
             % Add bonds to plot using NL,KL 
             % cycle only through the linear point indices that belong to ii
@@ -1279,17 +1329,20 @@ for use_BL = [true false]
             end
             title(['Time relaxation network: dataset ' num2str(ii)])
             ylim([0, max(i_tau0j(:, 1)) + 1])
-            saveas(gcf, fullfile(outdir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
-            disp('press any button')
-            waitforbuttonpress()
+            saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
+            % disp('press any button')
+            pause(1)
         end
     end
 end
-disp('done')
+disp('done with network visualization')
+close all
 
-%% post-relaxation network visualization
-fn = fullfile(outdir, 'i_tau0j_tau0jrelaxed.mat') ;
-if exist(fn, 'file')
+%% post-relaxation network visualization (i_tau0j_tau0jrelaxed.mat)
+
+% check for existing result
+fn = fullfile(timelineDir, 'i_tau0j_tau0jrelaxed.mat') ;
+if exist(fn, 'file') && ~overwrite
     load(fn, 'i_tau0j_tau0jrelaxed')
 else
     % Relax: fix the time nodes of the hard reference dataset, move all others
@@ -1330,7 +1383,7 @@ else
     % labels
     ylabel('dataset $i$', 'Interpreter', 'Latex')
     xlabel('time, $t_0$', 'Interpreter', 'latex')
-    xlim([0, max(i_tau0j(:, 2) + 1])
+    xlim([0, max(i_tau0j(:, 2)) + 1])
 
     title(['Time relaxation network'])
     ylim([0, max(i_tau0j(:, 1)) + 1])
@@ -1341,25 +1394,35 @@ else
     % Save the result
     i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
     save(fn, 'i_tau0j_tau0jrelaxed')
-    disp('done')
 end
+disp('done')
 
 %% Now look at stripe 7 with standard deviations
-% Gather all stripes
-for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
-    % Load time sequence MIPs of dataset ii
-    curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
-    disp(['  Loading curves: ' curvIfn])
-    load(curvIfn, 'stripe7curves');
-    if ii == 1
-        allstripes = stripe7curves ;
-    else
-        allstripes = cat(1, allstripes, stripe7curves) ;
+% check for existing result
+allstripeFn = fullfile(timelineDir, 'allstripes.mat') ;
+
+if exist(allstripeFn, 'file') && ~overwrite
+    load(allstripeFn, 'allstripes') ;
+else
+    % Gather all stripes
+    for ii = 1:length(expts)
+        disp(['dataset ii = ', num2str(ii)])
+        % Load time sequence MIPs of dataset ii
+        curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
+        disp(['  Loading curves: ' curvIfn])
+        load(curvIfn, 'stripe7curves');
+        if ii == 1
+            allstripes = stripe7curves ;
+        else
+            allstripes = cat(1, allstripes, stripe7curves) ;
+        end
     end
+    
+    % Save the data allstripes
+    save(allstripeFn, 'allstripes')    
 end
 
-% Get xlim, ylim
+% Get xlim, ylim for plotting
 xmax = 0 ;
 xmin = 0 ;
 ymin = 0 ;
@@ -1498,96 +1561,101 @@ end
 disp('done with mean and variances of leading and trailing curves')
 
 %% Smooth mean curves in master time
-% Grab xx from first timepoint's lstat 
-load(sprintf(statfn, 1), 'leading') ;
-xx = leading(:, 1) ;
+curv7MatFn = fullfile(corrOutDir, 'curve7states_filtered.mat') ;
+if exist(curv7MatFn, 'file')
+    disp('Loading leading and trailing stripe7 matrices from disk')
+    load(curv7MatFn)
+else
+    % Grab xx from first timepoint's lstat
+    load(sprintf(statfn, 1), 'leading') ;
+    xx = leading(:, 1) ;
 
-% Preallocate matrices of positions and variances in position of leading
-% and trailing stripes
-LX = zeros(length(xx), length(times2do)) ;
-LV = zeros(length(xx), length(times2do)) ;
-LS = zeros(length(xx), length(times2do)) ;
-TX = zeros(length(xx), length(times2do)) ;
-TV = zeros(length(xx), length(times2do)) ;
-TS = zeros(length(xx), length(times2do)) ;
-for qi = 1:length(times2do)
-    disp(['Collating time ' num2str(qi)])
-    close all
-    fig = figure('visible', 'off') ;
-    qq = times2do(qi) ;
-    load(sprintf(statfn, qi), 'leadfrac', 'trailfrac') ;
-    LX(:, qi) = leadfrac(:, 2) ; % position
-    LV(:, qi) = leadfrac(:, 3) ; % variance
-    LS(:, qi) = leadfrac(:, 4) ; % stdev
-    TX(:, qi) = trailfrac(:, 2) ; % position
-    TV(:, qi) = trailfrac(:, 3) ; % variance
-    TS(:, qi) = trailfrac(:, 4) ; % stdev
-end
-
-% Now smooth along time dim
-hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
-LXs = LX ; 
-LVs = LV ; 
-LSs = LS ;
-TXs = TX ; 
-TVs = TV ; 
-TSs = TS ;
-% Filter each row BEFORE NANs only
-for xi = 1:size(LX, 1) 
-    disp(['filtering row ' num2str(xi)])
-    % Leading
-    xrow = LX(xi, :) ;
-    vrow = LV(xi, :) ;
-    srow = LS(xi, :) ;
-    last = find(isnan(xrow), 1) ;
-    rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
-    vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
-    ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
-    LXs(xi, 1:last-1) = rsm ;
-    LVs(xi, 1:last-1) = vsm ;
-    LSs(xi, 1:last-1) = ssm ;
-    clear rsm vsm ssm 
-    
-    % Trailing
-    xrow = TX(xi, :) ;
-    vrow = TV(xi, :) ;
-    srow = TS(xi, :) ;
-    rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
-    vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
-    ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
-    TXs(xi, 1:last-1) = rsm ;
-    TVs(xi, 1:last-1) = vsm ;
-    TSs(xi, 1:last-1) = ssm ;
-end
-% Save to disk
-save(fullfile(corrOutDir, 'curve7states_filtered.mat'), ...
-    'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', 'TX')
-
-% Save the figure versions
-todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
-labels = {'AP position of stripe 7 (raw)', ...
-    'AP stdev of stripe 7 (raw)', ...
-    'AP position of trailing edge stripe 7 (raw)', ...
-    'AP stdev of trailing edge stripe 7 (raw)', ...
-    'AP position of stripe 7 (smoothed)', ...
-    'AP stdev of stripe 7 (smoothed)', ...
-    'AP position of trailing edge stripe 7 (smoothed)', ...
-    'AP stdev of trailing edge stripe 7 (smoothed)'} ;
-names = {'posL_raw', 'stdL_raw', 'posT_raw', 'stdT_raw', ...
-    'posL_smooth', 'stdL_smooth', 'posT_smooth', 'stdT_smooth'} ;
-for i = 1:length(todo)
-    close all
-    imagesc(todo{i})
-    xlabel('master time')
-    ylabel('DV position, [\phi/C]')
-    title(labels{i})
-    cb = colorbar() ;
-    if mod(i, 2) == 1
-        ylabel(cb, 'AP position') 
-    else
-        ylabel(cb, '\sigma_{x/L}')
+    % Preallocate matrices of positions and variances in position of leading
+    % and trailing stripes
+    LX = zeros(length(xx), length(times2do)) ;
+    LV = zeros(length(xx), length(times2do)) ;
+    LS = zeros(length(xx), length(times2do)) ;
+    TX = zeros(length(xx), length(times2do)) ;
+    TV = zeros(length(xx), length(times2do)) ;
+    TS = zeros(length(xx), length(times2do)) ;
+    for qi = 1:length(times2do)
+        disp(['Collating time ' num2str(qi)])
+        close all
+        fig = figure('visible', 'off') ;
+        qq = times2do(qi) ;
+        load(sprintf(statfn, qi), 'leadfrac', 'trailfrac') ;
+        LX(:, qi) = leadfrac(:, 2) ; % position
+        LV(:, qi) = leadfrac(:, 3) ; % variance
+        LS(:, qi) = leadfrac(:, 4) ; % stdev
+        TX(:, qi) = trailfrac(:, 2) ; % position
+        TV(:, qi) = trailfrac(:, 3) ; % variance
+        TS(:, qi) = trailfrac(:, 4) ; % stdev
     end
-    saveas(gcf, fullfile(corrOutDir, ['position_heatmap' names{i} '.png'])) ;
+
+    % Now smooth along time dim
+    hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
+    LXs = LX ; 
+    LVs = LV ; 
+    LSs = LS ;
+    TXs = TX ; 
+    TVs = TV ; 
+    TSs = TS ;
+    % Filter each row BEFORE NANs only
+    for xi = 1:size(LX, 1) 
+        disp(['filtering row ' num2str(xi)])
+        % Leading
+        xrow = LX(xi, :) ;
+        vrow = LV(xi, :) ;
+        srow = LS(xi, :) ;
+        last = find(isnan(xrow), 1) ;
+        rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
+        vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
+        ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
+        LXs(xi, 1:last-1) = rsm ;
+        LVs(xi, 1:last-1) = vsm ;
+        LSs(xi, 1:last-1) = ssm ;
+        clear rsm vsm ssm 
+
+        % Trailing
+        xrow = TX(xi, :) ;
+        vrow = TV(xi, :) ;
+        srow = TS(xi, :) ;
+        rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
+        vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
+        ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
+        TXs(xi, 1:last-1) = rsm ;
+        TVs(xi, 1:last-1) = vsm ;
+        TSs(xi, 1:last-1) = ssm ;
+    end
+    % Save to disk
+    save(curv7MatFn, 'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', 'TX', 'xx')
+
+    % Save the figure versions
+    todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
+    labels = {'AP position of stripe 7 (raw)', ...
+        'AP stdev of stripe 7 (raw)', ...
+        'AP position of trailing edge stripe 7 (raw)', ...
+        'AP stdev of trailing edge stripe 7 (raw)', ...
+        'AP position of stripe 7 (smoothed)', ...
+        'AP stdev of stripe 7 (smoothed)', ...
+        'AP position of trailing edge stripe 7 (smoothed)', ...
+        'AP stdev of trailing edge stripe 7 (smoothed)'} ;
+    names = {'posL_raw', 'stdL_raw', 'posT_raw', 'stdT_raw', ...
+        'posL_smooth', 'stdL_smooth', 'posT_smooth', 'stdT_smooth'} ;
+    for i = 1:length(todo)
+        close all
+        imagesc(todo{i})
+        xlabel('master time')
+        ylabel('DV position, [\phi/C]')
+        title(labels{i})
+        cb = colorbar() ;
+        if mod(i, 2) == 1
+            ylabel(cb, 'AP position') 
+        else
+            ylabel(cb, '\sigma_{x/L}')
+        end
+        saveas(gcf, fullfile(corrOutDir, ['position_heatmap' names{i} '.png'])) ;
+    end
 end
 disp('done with time filtering')
 
@@ -1609,260 +1677,279 @@ for di = 1:length(dirs2make)
     end
 end
 
-% Consider all times
+% Check if this has already been done
+redo_optimization = false ;
 for qi = 1:length(times2do)
-    close all
-    qq = times2do(qi) ;
-    disp(['qq = ' num2str(qq)])
-    % for this time, get all curves with matching time
-    inds = find(abs(i_tau0j_tau0jrelaxed(:, 2) - qq) < window) ;
-    stripes = allstripes(inds) ;
-        
-    for sn = 1:length(stripes)  
-        stripe = stripes{sn} ;        
-        % Chop into two curves: leading, trailing
-        segs = cutCurveIntoLeadingTrailingSegments(stripe) ;
-        lead = segs{1} ;
-        trail = segs{2} ;
-        lead(:, 1) = lead(:, 1) / wAP ;
-        lead(:, 2) = lead(:, 2) / wDV ;
-        trail(:, 1) = trail(:, 1) / wAP ;
-        trail(:, 2) = trail(:, 2) / wDV ;
-        % swap xy
-        lead(:, [1 2]) = lead(:, [2 1]) ;
-        trail(:, [1 2]) = trail(:, [2 1]) ;
-        
-        % Optimize for DV motion, add to list of leading for this TP
-        x0 = [0., 0.] ;
-        refcurv = zeros(length(LXs(:, qi)), 2) ;
-        refcurv(:, 1) = double(1:length(LXs(:, qi))) / double(length(LXs(:, qi))) ;
-        refcurv(:, 2) = LXs(:, qi) ;
-        fun = @(x)ssrCurves(lead + [x(1) x(2)], refcurv, true, true) ;
-        shifts = fminsearch(fun, x0) ;
-        leado = lead + [shifts(1), shifts(2)] ;
-        % Modulo for wDV
-        leado(:, 1) = mod(leado(:, 1), 1) ;
-        
-        % % check it
-        % plot(lead(:, 1), lead(:, 2), '.'); hold on;
-        % plot(leado(:, 1), leado(:, 2), '.'); hold on;
-        % plot(refcurv(:, 1), refcurv(:, 2), '.')
-        
-        % trailing optimization
-        refcurv = zeros(length(TXs(:, qi)), 2) ;
-        refcurv(:, 1) = double(1:length(TXs(:, qi))) / double(length(TXs(:, qi))) ;
-        refcurv(:, 2) = TXs(:, qi) ;
-        fun = @(x)ssrCurves(trail + [x(1) x(2)], refcurv, true, true) ;
-        shifts = fminsearch(fun, x0) ;
-        trailo = trail + [shifts(1), shifts(2)] ;
-        % Modulo for wDV
-        trailo(:, 1) = mod(trailo(:, 1), 1) ;
-        
-        % % check it
-        % close all
-        % plot(trail(:, 1), trail(:, 2), '.'); hold on;
-        % plot(trailo(:, 1), trailo(:, 2), '.'); hold on;
-        % plot(refcurv(:, 1), refcurv(:, 2), '.')
-        % pause(1)
-        
-        if sn == 1
-            leading = leado ;
-            trailing = trailo ;
-        else
-            leading = cat(1, leading, leado) ;
-            trailing = cat(1, trailing, trailo) ;
-        end
-    end
-    % Do stats
-    dx = 1.0 / size(xx, 1) ;
-    edges = 0:dx:1.0 ;
-    lstat = binnedstats(leading, edges) ;
-    tstat = binnedstats(trailing, edges) ;
-    
-    % Plot the curves
-    close all
-    fig = figure('visible', 'off') ;
-    plot(leading(:, 2), leading(:, 1), '.', 'color', blue)
-    hold on;
-    plot(trailing(:, 2), trailing(:, 1), '.', 'color', red)
-    plot(lstat(:, 2), lstat(:, 1), 'k.')
-    plot(tstat(:, 2), tstat(:, 1), 'k.')
-
-    % Save figure
-    daspect([wAP, wDV, 1])
-    xlim([0 1])
-    ylim([0 1])
-    title(['collapsed stripe 7, t=' num2str(qq)])
-    xlabel('AP position [x/L]')
-    ylabel('DV position [\phi/C]')
-    outfn = fullfile(stripeTauCollRawDir, ...
-        sprintf('collapsed_raw_statcurve7_%04d.png', qq)) ;
-    disp(['Saving ' outfn])
-    saveas(fig, outfn)
-    
-    % Convert to matrix-style curves (all same width, same sampling)
-    % Get full range of lateral positions (assume contained in first timepoint)
-    if qi == 1
-        xx = lstat(:, 1) ;
-    end
-    
-    % match indices
-    % [~, inds] = min(abs(pdist2(xx, lstat(:, 1))), [], 2) ;
-    inds = false(size(xx)) ;
-    for dmyk = 1:length(inds)
-        if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.5)
-            inds(dmyk) = true ;
-        end
-    end
-    yy = -ones(size(xx)) ;
-    zz = -ones(size(xx)) ;
-    yy(inds) = lstat(:, 2) ;
-    zz(inds) = lstat(:, 3) ;
-    yy(yy<0) = NaN ;
-    zz(zz<0) = NaN ;
-    leadfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
-
-    % trailing
-    % [~, inds] = min(abs(pdist2(xx, tstat(:, 1))), [], 2) ;
-    inds = false(size(xx)) ;
-    for dmyk = 1:length(inds)
-        if any(abs(xx(dmyk) - tstat(:, 1)) < dx * 0.5)
-            inds(dmyk) = true ;
-        end
-    end
-    yy = -ones(size(xx)) ;
-    zz = -ones(size(xx)) ;
-    yy(inds) = tstat(:, 2) ;
-    zz(inds) = tstat(:, 3) ;
-    yy(yy<0) = NaN ;
-    zz(zz<0) = NaN ;
-    trailfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
-
-    % Save statistics
-    leading = lstat ;
-    trailing = tstat ; 
     datfn = sprintf(statCollapseFn, qi) ;
-    disp(['Saving data to ' datfn])
-    save(datfn, 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
-    clear leading trailing lstat tstat stripes
-
-    % Check
-    close all
-    fig = figure('visible', 'off') ;
-    plot(leadfrac(:, 2), leadfrac(:, 1), '.'); hold on
-    plot(leadfrac(:, 2) - leadfrac(:, 4), leadfrac(:, 1), '.')
-    plot(leadfrac(:, 2) + leadfrac(:, 4), leadfrac(:, 1), '.')
-    % Save figure
-    daspect([wAP, wDV, 1])
-    xlim([0 1])
-    ylim([0 1])
-    title(['collapsed stripe 7, t=' num2str(qq)])
-    xlabel('AP position [x/L]')
-    ylabel('DV position [\phi/C]')
-    outfn = fullfile(stripeTauCollStatDir, ...
-        sprintf('collapsed_statcurve7_%04d.png', qq)) ;
-    disp(['Saving ' outfn])
-    saveas(fig, outfn)
+    if ~exist(datfn, 'file')
+        redo_optimization = true ;
+    end
 end
-disp('Done with collapsing curves')
 
+% Consider all times
+if redo_optimization || overwrite 
+    for qi = 1:length(times2do)
+        close all
+        qq = times2do(qi) ;
+        disp(['qq = ' num2str(qq)])
+        % for this time, get all curves with matching time
+        inds = find(abs(i_tau0j_tau0jrelaxed(:, 2) - qq) < window) ;
+        stripes = allstripes(inds) ;
+
+        for sn = 1:length(stripes)  
+            stripe = stripes{sn} ;        
+            % Chop into two curves: leading, trailing
+            segs = cutCurveIntoLeadingTrailingSegments(stripe) ;
+            lead = segs{1} ;
+            trail = segs{2} ;
+            lead(:, 1) = lead(:, 1) / wAP ;
+            lead(:, 2) = lead(:, 2) / wDV ;
+            trail(:, 1) = trail(:, 1) / wAP ;
+            trail(:, 2) = trail(:, 2) / wDV ;
+            % swap xy
+            lead(:, [1 2]) = lead(:, [2 1]) ;
+            trail(:, [1 2]) = trail(:, [2 1]) ;
+
+            % Optimize for DV motion, add to list of leading for this TP
+            x0 = [0., 0.] ;
+            refcurv = zeros(length(LXs(:, qi)), 2) ;
+            refcurv(:, 1) = double(1:length(LXs(:, qi))) / double(length(LXs(:, qi))) ;
+            refcurv(:, 2) = LXs(:, qi) ;
+            fun = @(x)ssrCurves(lead + [x(1) x(2)], refcurv, true, true) ;
+            shifts = fminsearch(fun, x0) ;
+            leado = lead + [shifts(1), shifts(2)] ;
+            % Modulo for wDV
+            leado(:, 1) = mod(leado(:, 1), 1) ;
+
+            % % check it
+            % plot(lead(:, 1), lead(:, 2), '.'); hold on;
+            % plot(leado(:, 1), leado(:, 2), '.'); hold on;
+            % plot(refcurv(:, 1), refcurv(:, 2), '.')
+
+            % trailing optimization
+            refcurv = zeros(length(TXs(:, qi)), 2) ;
+            refcurv(:, 1) = double(1:length(TXs(:, qi))) / double(length(TXs(:, qi))) ;
+            refcurv(:, 2) = TXs(:, qi) ;
+            fun = @(x)ssrCurves(trail + [x(1) x(2)], refcurv, true, true) ;
+            shifts = fminsearch(fun, x0) ;
+            trailo = trail + [shifts(1), shifts(2)] ;
+            % Modulo for wDV
+            trailo(:, 1) = mod(trailo(:, 1), 1) ;
+
+            % % check it
+            % close all
+            % plot(trail(:, 1), trail(:, 2), '.'); hold on;
+            % plot(trailo(:, 1), trailo(:, 2), '.'); hold on;
+            % plot(refcurv(:, 1), refcurv(:, 2), '.')
+            % pause(1)
+
+            if sn == 1
+                leading = leado ;
+                trailing = trailo ;
+            else
+                leading = cat(1, leading, leado) ;
+                trailing = cat(1, trailing, trailo) ;
+            end
+        end
+        % Do stats
+        dx = 1.0 / size(xx, 1) ;
+        edges = 0:dx:1.0 ;
+        lstat = binnedstats(leading, edges) ;
+        tstat = binnedstats(trailing, edges) ;
+
+        % Plot the curves
+        close all
+        fig = figure('visible', 'off') ;
+        plot(leading(:, 2), leading(:, 1), '.', 'color', blue)
+        hold on;
+        plot(trailing(:, 2), trailing(:, 1), '.', 'color', red)
+        plot(lstat(:, 2), lstat(:, 1), 'k.')
+        plot(tstat(:, 2), tstat(:, 1), 'k.')
+
+        % Save figure
+        daspect([wAP, wDV, 1])
+        xlim([0 1])
+        ylim([0 1])
+        title(['collapsed stripe 7, t=' num2str(qq)])
+        xlabel('AP position [x/L]')
+        ylabel('DV position [\phi/C]')
+        outfn = fullfile(stripeTauCollRawDir, ...
+            sprintf('collapsed_raw_statcurve7_%04d.png', qq)) ;
+        disp(['Saving ' outfn])
+        saveas(fig, outfn)
+
+        % Convert to matrix-style curves (all same width, same sampling)
+        % Get full range of lateral positions (assume contained in first timepoint)
+        if qi == 1
+            xx = lstat(:, 1) ;
+        end
+
+        % match indices
+        % [~, inds] = min(abs(pdist2(xx, lstat(:, 1))), [], 2) ;
+        inds = false(size(xx)) ;
+        for dmyk = 1:length(inds)
+            if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.5)
+                inds(dmyk) = true ;
+            end
+        end
+        yy = -ones(size(xx)) ;
+        zz = -ones(size(xx)) ;
+        yy(inds) = lstat(:, 2) ;
+        zz(inds) = lstat(:, 3) ;
+        yy(yy<0) = NaN ;
+        zz(zz<0) = NaN ;
+        leadfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
+
+        % trailing
+        % [~, inds] = min(abs(pdist2(xx, tstat(:, 1))), [], 2) ;
+        inds = false(size(xx)) ;
+        for dmyk = 1:length(inds)
+            if any(abs(xx(dmyk) - tstat(:, 1)) < dx * 0.5)
+                inds(dmyk) = true ;
+            end
+        end
+        yy = -ones(size(xx)) ;
+        zz = -ones(size(xx)) ;
+        yy(inds) = tstat(:, 2) ;
+        zz(inds) = tstat(:, 3) ;
+        yy(yy<0) = NaN ;
+        zz(zz<0) = NaN ;
+        trailfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
+
+        % Save statistics
+        leading = lstat ;
+        trailing = tstat ; 
+        datfn = sprintf(statCollapseFn, qi) ;
+        disp(['Saving data to ' datfn])
+        save(datfn, 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
+        clear leading trailing lstat tstat stripes
+
+        % Check
+        close all
+        fig = figure('visible', 'off') ;
+        plot(leadfrac(:, 2), leadfrac(:, 1), '.'); hold on
+        plot(leadfrac(:, 2) - leadfrac(:, 4), leadfrac(:, 1), '.')
+        plot(leadfrac(:, 2) + leadfrac(:, 4), leadfrac(:, 1), '.')
+        % Save figure
+        daspect([wAP, wDV, 1])
+        xlim([0 1])
+        ylim([0 1])
+        title(['collapsed stripe 7, t=' num2str(qq)])
+        xlabel('AP position [x/L]')
+        ylabel('DV position [\phi/C]')
+        outfn = fullfile(stripeTauCollStatDir, ...
+            sprintf('collapsed_statcurve7_%04d.png', qq)) ;
+        disp(['Saving ' outfn])
+        saveas(fig, outfn)
+    end
+    disp('Done with collapsing curves')
+else
+    disp('Already did collapse of curves')
+end
+disp('done with curve collapse')
 
 %% Smooth collapsed mean curves in master time
-% Grab xx from first timepoint's lstat 
-load(sprintf(statCollapseFn, 1), 'leading') ;
-xx = leading(:, 1) ;
 
-% Preallocate matrices of positions and variances in position of leading
-% and trailing stripes
-LX = zeros(length(xx), length(times2do)) ;
-LV = zeros(length(xx), length(times2do)) ;
-LS = zeros(length(xx), length(times2do)) ;
-TX = zeros(length(xx), length(times2do)) ;
-TV = zeros(length(xx), length(times2do)) ;
-TS = zeros(length(xx), length(times2do)) ;
-for qi = 1:length(times2do)
-    disp(['Collating time ' num2str(qi)])
-    close all
-    fig = figure('visible', 'off') ;
-    qq = times2do(qi) ;
-    load(sprintf(statCollapseFn, qi), 'leadfrac', 'trailfrac') ;
-    LX(:, qi) = leadfrac(:, 2) ; % position
-    LV(:, qi) = leadfrac(:, 3) ; % variance
-    LS(:, qi) = leadfrac(:, 4) ; % stdev
-    TX(:, qi) = trailfrac(:, 2) ; % position
-    TV(:, qi) = trailfrac(:, 3) ; % variance
-    TS(:, qi) = trailfrac(:, 4) ; % stdev
-end
+c7MatFiltFn = fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat') ;
+if ~exist(c7MatFiltFn, 'file') || overwrite 
+    % Grab xx from first timepoint's lstat 
+    load(sprintf(statCollapseFn, 1), 'leading') ;
+    xx = leading(:, 1) ;
 
-% Now smooth along time dim
-hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
-LXs = LX ; 
-LVs = LV ; 
-LSs = LS ;
-TXs = TX ; 
-TVs = TV ; 
-TSs = TS ;
-% Filter each row BEFORE NANs only, take sliding max with nans set to zero
-for xi = 1:size(LX, 1) 
-    disp(['filtering row ' num2str(xi)])
-    % Leading
-    xrow = LX(xi, :) ;
-    vrow = LV(xi, :) ;
-    srow = LS(xi, :) ;
-    last = find(isnan(xrow), 1) ;
-    rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
-    vsm = slidingmax(vrow, length(hh)) ;
-    vsm = imfilter(vsm, hh, 'replicate') ;
-    ssm = slidingmax(srow, length(hh)) ;
-    ssm = imfilter(ssm, hh, 'replicate') ;
-    LXs(xi, 1:last-1) = rsm ;
-    LVs(xi, :) = vsm ;
-    LSs(xi, :) = ssm ;
-    clear rsm vsm ssm 
-    
-    % Trailing
-    xrow = TX(xi, :) ;
-    vrow = TV(xi, :) ;
-    srow = TS(xi, :) ;
-    rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
-    vsm = slidingmax(vrow, length(hh), true) ;
-    vsm = imfilter(vsm, hh, 'replicate') ;
-    ssm = slidingmax(srow, length(hh), true) ;
-    ssm = imfilter(ssm, hh, 'replicate') ;
-    TXs(xi, 1:last-1) = rsm ;
-    TVs(xi, :) = vsm ;
-    TSs(xi, :) = ssm ;
-end
-% Save to disk
-save(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
-    'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', ...
-    'TX', 'TV', 'TS', 'TXs', 'TVs', 'TSs', 'xx')
-
-% Save the figure versions
-todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
-labels = {'AP position of stripe 7 (raw)', ...
-    'AP stdev of stripe 7 (raw)', ...
-    'AP position of trailing edge stripe 7 (raw)', ...
-    'AP stdev of trailing edge stripe 7 (raw)', ...
-    'AP position of stripe 7 (smoothed)', ...
-    'AP stdev of stripe 7 (smoothed)', ...
-    'AP position of trailing edge stripe 7 (smoothed)', ...
-    'AP stdev of trailing edge stripe 7 (smoothed)'} ;
-names = {'posL_raw', 'stdL_raw', 'posT_raw', 'stdT_raw', ...
-    'posL_smooth', 'stdL_smooth', 'posT_smooth', 'stdT_smooth'} ;
-for i = 1:length(todo)
-    close all
-    imagesc(todo{i})
-    xlabel('master time')
-    ylabel('DV position, [\phi/C]')
-    title(labels{i})
-    cb = colorbar() ;
-    if mod(i, 2) == 1
-        ylabel(cb, 'AP position') 
-    else
-        ylabel(cb, '\sigma_{x/L}')
+    % Preallocate matrices of positions and variances in position of leading
+    % and trailing stripes
+    LX = zeros(length(xx), length(times2do)) ;
+    LV = zeros(length(xx), length(times2do)) ;
+    LS = zeros(length(xx), length(times2do)) ;
+    TX = zeros(length(xx), length(times2do)) ;
+    TV = zeros(length(xx), length(times2do)) ;
+    TS = zeros(length(xx), length(times2do)) ;
+    for qi = 1:length(times2do)
+        disp(['Collating time ' num2str(qi)])
+        close all
+        fig = figure('visible', 'off') ;
+        qq = times2do(qi) ;
+        load(sprintf(statCollapseFn, qi), 'leadfrac', 'trailfrac') ;
+        LX(:, qi) = leadfrac(:, 2) ; % position
+        LV(:, qi) = leadfrac(:, 3) ; % variance
+        LS(:, qi) = leadfrac(:, 4) ; % stdev
+        TX(:, qi) = trailfrac(:, 2) ; % position
+        TV(:, qi) = trailfrac(:, 3) ; % variance
+        TS(:, qi) = trailfrac(:, 4) ; % stdev
     end
-    saveas(gcf, fullfile(corrOutDir, ['position_heatmap_collapsed_' names{i} '.png'])) ;
+
+    % Now smooth along time dim
+    hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
+    LXs = LX ; 
+    LVs = LV ; 
+    LSs = LS ;
+    TXs = TX ; 
+    TVs = TV ; 
+    TSs = TS ;
+    % Filter each row BEFORE NANs only, take sliding max with nans set to zero
+    for xi = 1:size(LX, 1) 
+        disp(['filtering row ' num2str(xi)])
+        % Leading
+        xrow = LX(xi, :) ;
+        vrow = LV(xi, :) ;
+        srow = LS(xi, :) ;
+        last = find(isnan(xrow), 1) ;
+        rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
+        vsm = slidingmax(vrow, length(hh)) ;
+        vsm = imfilter(vsm, hh, 'replicate') ;
+        ssm = slidingmax(srow, length(hh)) ;
+        ssm = imfilter(ssm, hh, 'replicate') ;
+        LXs(xi, 1:last-1) = rsm ;
+        LVs(xi, :) = vsm ;
+        LSs(xi, :) = ssm ;
+        clear rsm vsm ssm 
+
+        % Trailing
+        xrow = TX(xi, :) ;
+        vrow = TV(xi, :) ;
+        srow = TS(xi, :) ;
+        rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
+        vsm = slidingmax(vrow, length(hh), true) ;
+        vsm = imfilter(vsm, hh, 'replicate') ;
+        ssm = slidingmax(srow, length(hh), true) ;
+        ssm = imfilter(ssm, hh, 'replicate') ;
+        TXs(xi, 1:last-1) = rsm ;
+        TVs(xi, :) = vsm ;
+        TSs(xi, :) = ssm ;
+    end
+    % Save to disk
+    save(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
+        'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', ...
+        'TX', 'TV', 'TS', 'TXs', 'TVs', 'TSs', 'xx')
+
+    % Save the figure versions
+    todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
+    labels = {'AP position of stripe 7 (raw)', ...
+        'AP stdev of stripe 7 (raw)', ...
+        'AP position of trailing edge stripe 7 (raw)', ...
+        'AP stdev of trailing edge stripe 7 (raw)', ...
+        'AP position of stripe 7 (smoothed)', ...
+        'AP stdev of stripe 7 (smoothed)', ...
+        'AP position of trailing edge stripe 7 (smoothed)', ...
+        'AP stdev of trailing edge stripe 7 (smoothed)'} ;
+    names = {'posL_raw', 'stdL_raw', 'posT_raw', 'stdT_raw', ...
+        'posL_smooth', 'stdL_smooth', 'posT_smooth', 'stdT_smooth'} ;
+    for i = 1:length(todo)
+        close all
+        imagesc(todo{i})
+        xlabel('master time')
+        ylabel('DV position, [\phi/C]')
+        title(labels{i})
+        cb = colorbar() ;
+        if mod(i, 2) == 1
+            ylabel(cb, 'AP position') 
+        else
+            ylabel(cb, '\sigma_{x/L}')
+        end
+        saveas(gcf, fullfile(corrOutDir, ['position_heatmap_collapsed_' names{i} '.png'])) ;
+    end
+else
+    disp('Filtered curve7 matrix already on disk')
 end
 disp('done with final collapsed output')
 
@@ -1871,11 +1958,18 @@ outdir = './alignment_calibration/' ;
 load(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
+% create dir to put snapshots
+figdir = fullfile(outdir, sprintf('dataset_%04d_snaps', num2str(ii))) ;
+if ~exist(figdir, 'dir')
+    mkdir(figdir)
+end
+
 refcurvX = xx ;
 refcurvsY = LXs' ;
 refvars = LVs' ;
 % Align Stripe 7 for each frame with chisquare analysis
 for ii = 1:length(expts)
+    close all
     disp(['dataset ii = ', num2str(ii)])
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
@@ -1889,17 +1983,26 @@ for ii = 1:length(expts)
         lead = segs{1} ;
         curv = lead(:, [2 1]) ;
         [chisq, chisqn] = chisquareCurves(curv, refcurvX, refcurvsY, refvars) ;
-        [tmatch, unc] = chisqMinUncertainty(chisqn) ;
+        [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
+        
+        % Plot the result
+        time = 1:length(chisqn) ;
+        % minimimum of the fit is cstar
+        cstar = fit_coefs.ystar ;
         plot(chisqn, '.-')
+        hold on;
+        yy = polyval(fit_coefs.p, time, fit_coefs.S, fit_coefs.mu) ;
+        plot(time, yy, '--')
+        errorbar(tmatch, cstar, unc*0.5, 'horizontal')
         ylim([0, 10])
         ylabel('\chi^2 / N')
         xlabel(['time [min], dataset' num2str(ii)])
-        figdir = fullfile(outdir, sprintf('dataset_%04d_snaps', num2str(ii))) ;
-        if ~exist(figdir, 'dir')
-            mkdir(figdir)
-        end
+        title(['dataset ' num2str(ii) ': $t=$' sprintf('%04d', qq)], ...
+            'Interpreter', 'Latex')
         figfn = fullfile(figdir, sprintf('chisq_snap_%04d.png', qq)) ;
         saveas(gcf, figfn)
+        error('here')
+        close all
     end
 end
 
