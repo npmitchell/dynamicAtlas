@@ -1124,7 +1124,7 @@ for use_offset = [true false]
     if use_offset
         figurefn = fullfile(outdir, 'time_correspondences_offset.png') ;
     else
-        figurefn = fullfile(outdir, 'time_correspondences.png')) ;
+        figurefn = fullfile(outdir, 'time_correspondences.png') ;
     end
     if contains(version_of_matlab, '2020')
         exportgraphics(gcf, figurefn)
@@ -1244,7 +1244,7 @@ for use_BL = [true false]
         % labels
         ylabel('dataset $i$', 'Interpreter', 'Latex')
         xlabel('time, $t_0$', 'Interpreter', 'latex')
-        xlim([1, 150])
+        xlim([0, max(i_tau0j(:, 2) + 1])
 
         if use_BL
             % Add bonds to plot using BL (non-reciprocal)
@@ -1330,7 +1330,8 @@ else
     % labels
     ylabel('dataset $i$', 'Interpreter', 'Latex')
     xlabel('time, $t_0$', 'Interpreter', 'latex')
-    xlim([1, 150])
+    xlim([0, max(i_tau0j(:, 2) + 1])
+
     title(['Time relaxation network'])
     ylim([0, max(i_tau0j(:, 1)) + 1])
     set(gcf, 'Units', 'centimeters');
