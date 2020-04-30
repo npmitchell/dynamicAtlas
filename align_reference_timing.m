@@ -1788,7 +1788,7 @@ if redo_optimization || overwrite
         % [~, inds] = min(abs(pdist2(xx, lstat(:, 1))), [], 2) ;
         inds = false(size(xx)) ;
         for dmyk = 1:length(inds)
-            if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.5)
+            if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.6)
                 inds(dmyk) = true ;
             end
         end
@@ -1849,7 +1849,10 @@ end
 disp('done with curve collapse')
 
 %% Smooth collapsed mean curves in master time
-
+filtWidth = 10;
+filtSigma = 6;
+imageFilter = fspecial('gaussian',filtWidth,filtSigma);
+        
 c7MatFiltFn = fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat') ;
 if ~exist(c7MatFiltFn, 'file') || overwrite 
     % Grab xx from first timepoint's lstat 
@@ -1917,6 +1920,11 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
         TVs(xi, :) = vsm ;
         TSs(xi, :) = ssm ;
     end
+    
+    % Smooth in 2D 
+    vsm = nanconv(vsm,imageFilter, 'nanout');
+    ssm = nanconv(ssm,imageFilter, 'nanout');
+    
     % Save to disk
     save(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
         'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', ...
@@ -1954,55 +1962,94 @@ end
 disp('done with final collapsed output')
 
 %% How accurate can we measure the timing?
-outdir = './alignment_calibration/' ;
+calibDir = './alignment_calibration/' ;
 load(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
-% create dir to put snapshots
-figdir = fullfile(outdir, sprintf('dataset_%04d_snaps', num2str(ii))) ;
-if ~exist(figdir, 'dir')
-    mkdir(figdir)
-end
-
+smooth_var = true ;
 refcurvX = xx ;
 refcurvsY = LXs' ;
 refvars = LVs' ;
 % Align Stripe 7 for each frame with chisquare analysis
+close all
+fig = figure('visible', 'off') ;
 for ii = 1:length(expts)
-    close all
+    clf
     disp(['dataset ii = ', num2str(ii)])
+    
+    % create dir to put snapshots
+    figdir = fullfile(calibDir, sprintf('dataset_%04d_snaps', ii)) ;
+    if ~exist(figdir, 'dir')
+        mkdir(figdir)
+    end
+
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
     tmp = load(curvIfn, 'stripe7curves') ;
     chisq = zeros([length(stripe7curves), 1]) ;
-    for qq = 1:length(stripe7curves)
+    
+    % preallocate
+    tmatches = zeros(length(stripe7curves), 1) ;
+    tuncs = zeros(length(stripe7curves), 1) ;
+    tt = 1:length(stripe7curves) ;
+    for qq = tt 
+        if mod(qq, 10) == 0
+            disp(['qq = ' num2str(qq)])
+        end
         stripe = stripe7curves{qq} ;
         xx = stripe(:, 1) / wAP ;
         yy = stripe(:, 2) / wDV ;
         segs = cutCurveIntoLeadingTrailingSegments([xx, yy]) ;
         lead = segs{1} ;
         curv = lead(:, [2 1]) ;
-        [chisq, chisqn] = chisquareCurves(curv, refcurvX, refcurvsY, refvars) ;
+        [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, refcurvsY, refvars, smooth_var) ;
+        % error('here')
         [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
         
         % Plot the result
-        time = 1:length(chisqn) ;
+        timedense = 1:0.1:length(chisqn) ;
         % minimimum of the fit is cstar
         cstar = fit_coefs.ystar ;
         plot(chisqn, '.-')
         hold on;
-        yy = polyval(fit_coefs.p, time, fit_coefs.S, fit_coefs.mu) ;
-        plot(time, yy, '--')
-        errorbar(tmatch, cstar, unc*0.5, 'horizontal')
-        ylim([0, 10])
+        yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
+        plot(timedense, yy, '--')
+        errorbar(tmatch, cstar, unc, 'horizontal')
+        ylim([0, 30])
+        xlims = xlim() ;
+        xlim([0 xlims(2)])
         ylabel('\chi^2 / N')
         xlabel(['time [min], dataset' num2str(ii)])
         title(['dataset ' num2str(ii) ': $t=$' sprintf('%04d', qq)], ...
             'Interpreter', 'Latex')
         figfn = fullfile(figdir, sprintf('chisq_snap_%04d.png', qq)) ;
-        saveas(gcf, figfn)
-        error('here')
-        close all
+        saveas(fig, figfn)
+        clf
+        
+        tmatches(qq) = tmatch ;
+        tuncs(qq) = unc ;
     end
+    
+    % Plot best fit with errors on cij plot with hard reference
+    ijstr = [ '_%02d_%02d' extn ] ;
+    cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, hard)) ;
+    load(cfn, 'cij')
+    close all
+    fig = figure('visible', 'off') ;
+    imagesc(cij)
+    hold on;
+    plot(tmatches, tt, 'o-', 'color', gray)
+    plot(tmatches - tuncs, tt, '--', 'color', gray)
+    plot(tmatches + tuncs, tt, '--', 'color', gray)
+    ylabel(['time, dataset ' num2str(ii) ])
+    xlabel(['time, dataset ' num2str(hard) ])
+    cb = colorbar() ;
+    ylabel(cb, 'cross correlation')
+    figoutfn = fullfile(calibDir, ...
+        sprintf('dset%02d_calibration_cij_tmatches.png', ii)) ;
+    saveas(fig, figoutfn)
+    error('here')
+    
 end
+
 

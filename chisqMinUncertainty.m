@@ -23,21 +23,31 @@ end
 
 % Fit the domain of chisquareds to a parabola
 if pidx - nidx > minN2fit
-    if pidx - nidx  < maxN2fit
-        id2fit = nidx:pidx ;
-    else
-        n2shave = floor(0.5 * (maxN2fit - (pidx - nidx))) ;
-        id2fit = (nidx + n2shave):(pidx - n2shave) ;
+    if pidx - nidx > maxN2fit
+        while pidx - nidx > maxN2fit
+            if pidx - 1 > nidx + 1
+                pidx = pidx - 1 ;
+            end
+            if nidx + 1 < pidx - 1
+                nidx = nidx + 1 ;
+            end
+        end
     end
+    id2fit = nidx:pidx ;
 else
     while pidx - nidx < minN2fit
         % increase the domain to fit
-        pidx = pidx + 1 ;
-        nidx = nidx - 1 ;
+        if pidx + 1 < length(chisq)
+            pidx = pidx + 1 ;
+        end
+        if nidx - 1 > 0
+            nidx = nidx - 1 ;
+        end
     end
     id2fit = nidx:pidx ;    
 end
 c2fit = chisq(id2fit) ;
+
 
 %% Fit the data
 % fitresult = fit(id2fit, c2fit, 'poly2') ;
@@ -64,13 +74,17 @@ minxtilde = -bb / (2* aa) ;
 xstar = minxtilde * stdx + meanx ;
 
 % Find where in xstar where y rises by 1
-% --> a*xt^2 + b*xt + c = (1-(b^2-4ac)) / 4a + 1 
-% --> a*xt^2 + b*xt + {c - 1 - [1-(b^2-4ac)] / 4a } = 0 
+% --> a*xt^2 + b*xt + c = (-(b^2-4ac)) / 4a + 1 = c - b^2/(4a) + 1
+% --> a*xt^2 + b*xt + {c - 1 - (c -b^2/4a) } = 0 
+% --> a*xt^2 + b*xt + {- 1 + [b^2/4a] } = 0 
 % define xt +/- Dxt to be the solutions
-% --> Dxt = sqrt(b^2 - 4*a* {c - 1 - [1-(b^2-4ac)] / 4a }) / (2*a) ;
+% --> Dxt = sqrt(b^2 - 4*a*cnew) / (2*a) ;
+% --> Dxt = sqrt(b^2 - 4*a*(b^2/4a - 1)) / (2*a) ;
+% --> Dxt = sqrt(b^2 - b^2 + 4a)) / (2*a) ;
+% --> Dxt = sqrt(4a) / (2*a) ;
+% --> Dxt = 1 / sqrt(a) ;
 % Then convert Dxt into Dx = Dxt * stdx ;
-cterm = cc - 1 - ((1-(bb^2 -4*aa*cc)) / (4*aa)) ;
-err = stdx * (sqrt(bb^2 - 4*aa* cterm ) / (2*aa)) ; 
+err = stdx / sqrt(aa) ; 
 
 
 

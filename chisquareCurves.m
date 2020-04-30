@@ -1,4 +1,5 @@
-function [chisq, chisqn] = chisquareCurves(curv, refcurvsX, refcurvsY, refvars)
+function [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvsX, ...
+    refcurvsY, refvars, smooth_var)
 % chisquareCurves(curv, refcurvs, refvar, take_mean, symmetrize)
 % 
 % todo: enable refcurvs and refvar to be cell instead of 2D array
@@ -26,6 +27,9 @@ function [chisq, chisqn] = chisquareCurves(curv, refcurvsX, refcurvsY, refvars)
 chisq = zeros(size(refcurvsY, 1), 1) ;
 if nargout > 1
     chisqn = zeros(size(refcurvsY, 1), 1) ;
+    if nargout > 2
+        ssr = zeros(size(refcurvsY, 1), 1) ;
+    end
 end
 
 
@@ -45,7 +49,11 @@ for ii = 1:size(refcurvsY, 1)
     
     d2 = pdist2(curv, refcurv, 'squaredeuclidean');
     [dists, idx] = nanmin(d2, [], 2);
-    chisq(ii) = nansum(dists' ./ refvar(idx), 2) ;
+    if smooth_var
+        chisq(ii) = nansum(dists' ./ nanmean(refvar(idx)), 2) ;
+    else
+        chisq(ii) = nansum(dists' ./ refvar(idx), 2) ;
+    end
     
     % check it 
     % imagesc(d2) 
@@ -54,6 +62,9 @@ for ii = 1:size(refcurvsY, 1)
     
     if nargout > 1
         chisqn(ii) = chisq(ii) / sum(~isnan(refvar(idx))) ;
+        if nargout > 2
+            ssr(ii) = nansum(dists, 1) ;
+        end
     end
 end
 

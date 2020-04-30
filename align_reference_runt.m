@@ -11,6 +11,7 @@ basicsDir = fullfile(gutDir, 'basics') ;
 tiffDir = fullfile(gutDir, 'tiff_handling') ;
 plottingDir = fullfile(gutDir, 'plotting') ;
 codeDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos/' ;
+addpath(fullfile(codeDir, 'nanconv')) ;
 fmDir = fullfile(gutDir, 'toolbox_fast_marching/toolbox_fast_marching/') ;
 fmDir2 = fullfile(fmDir, 'mex') ;
 fmDir3 = fullfile(fmDir, 'toolbox') ;
@@ -35,7 +36,7 @@ corr_method = 'realspace' ; % realspace or phase method for correlation
                             % image.
 stripe7corr_method = 'dist' ; 
 hard = 4 ;                  % which experiment is the master timeline -- hard is its index
-corrOutDir = fullfile(outdir, [corr_method '_corr']) ;
+corrOutDir = fullfile(outdir, sprintf([corr_method '_corr_%02d', ssfactor])) ;
 
 dirs2make = {outdir, corrOutDir} ;
 for ii = 1:length(dirs2make)
@@ -73,6 +74,7 @@ purple = colorset(4, :) ;
 green = colorset(5, :) ;
 sky = colorset(6, :) ;
 colors = [yellow; sky] ;
+gray = [0.5, 0.5, 0.5] ;
 
 %%
 align_reference_timing
