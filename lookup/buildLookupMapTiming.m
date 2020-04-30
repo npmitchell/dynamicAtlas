@@ -1,14 +1,14 @@
-function [map] = buildLookupMapTiming(mutantDir, prepend, postpend, timematfn, timematfn2, save_map) 
+function [map] = buildLookupMapTiming(genoDir, prepend, exten, timematfn, timematfn2, save_map) 
 %BUILDLOOKUPMAPTIMING Principal function for lookupTable Class object construction
 %
 % Parameters
 % ----------
-% mutantDir : str
+% genoDir : str
 %   directory path where the staining/label dirs containing experiments, each with pullbacks, are located
 % prepend : str
 %   prepended string in filename of pullback
-% postpend : str
-%   postpended string in filename of pullback
+% exten : str
+%   extened string in filename of pullback
 % timematfn : str
 %   name of the .mat file containing 'matchtime' and 'matchtime_unc'
 % timematfn2 : str
@@ -23,7 +23,7 @@ function [map] = buildLookupMapTiming(mutantDir, prepend, postpend, timematfn, t
 %
 
 
-% If prepend and postpend are not defined, give them a default value
+% If prepend and exten are not defined, give them a default value
 if nargin < 7 
     save_map = false ;
     if nargin < 6
@@ -31,7 +31,7 @@ if nargin < 7
         if nargin < 5
             timematfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
             if nargin < 4
-                postpend = '_rot_scaled_view1.tif' ;
+                exten = '_rot_scaled_view1.tif' ;
                 % Similar for prepend
                 if nargin < 3
                     prepend = 'Max_Cyl*_2_000001_c' ;
@@ -45,113 +45,58 @@ end
 %% Build a lookuptable for finding embryos at a given time of a given datatype
 map = containers.Map() ;
 
-%% Automatically detect all the labeltype folders in this mutantDir
-labelDirs = dir(mutantDir) ;
+%% Automatically detect all the labeltype folders in this genoDir
+labelDirs = dir(genoDir) ;
 genoParentDir = labelDirs.folder ;
 labelDirs = {labelDirs([labelDirs.isdir]).name} ;
 labelDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
 
-%% For each labelDir, split into different channels
+%% For each labelDir
 % Get the channel names from the name of each labelDir
-allChannels = {} ;
-labelMap = {} ;
-% runtMap = zeros(length(labelDirs), 1) ;  % runtMap{i} gives index of channel for labelDirs{i}
-for j = 1:length(labelDirs)
-    chSetDir = labelDirs{j} ;
-    channels = strsplit(chSetDir, '_') ;
-    labelMap{j} = channels ;
-    for i = 1:length(channels)
-        channel = channels{i} ;
-        if ~any(strcmp(allChannels, channel))
-            allChannels{length(allChannels) + 1} = channel ;
-        end
-    end
-end
-% Remove 'Blank' from allChannels
-allChannels = allChannels(~ismember(allChannels, 'Blank')) ;
+% allChannels = {} ;
+% labelMap = {} ;
+% % runtMap = zeros(length(labelDirs), 1) ;  % runtMap{i} gives index of channel for labelDirs{i}
+% for j = 1:length(labelDirs)
+%     chSetDir = labelDirs{j} ;
+%     channels = strsplit(chSetDir, '_') ;
+%     labelMap{j} = channels ;
+%     for i = 1:length(channels)
+%         channel = channels{i} ;
+%         if ~any(strcmp(allChannels, channel))
+%             allChannels{length(allChannels) + 1} = channel ;
+%         end
+%     end
+% end
+% % Remove 'Blank' from allChannels
+% allChannels = allChannels(~ismember(allChannels, 'Blank')) ;
 
-%% Examine each channel in turn 
-for chii = 1:length(allChannels)
-    channel = allChannels{chii} ;
-    
-    % Make an output directory for this channel only in the mutantDir
-    outFigDir = fullfile(mutantDir, ['figures' filesep channel filesep]) ;
-
-    if ~exist(outFigDir, 'dir')
-        mkdir(outFigDir)
-    end
-
+%% Examine each fluorescent label in turn 
+for ii = 1:length(labelDirs)
+    label = labelDirs(ii).name ;
+    labelDir = fullfile(genoParentDir, labelDirs{ii}) ;
+   
     % Select selected Channels: debug
-    if any(contains(allChannels, channel))
-        disp(['Examining channel ' num2str(chii) ': ' channel])
+    if any(contains(allChannels, label))
+        disp(['Examining label ' num2str(ii) ': ' label])
 
         % Compile list of filenames
         fileNames = {} ;
-        channelDirs = {} ;
-        channelTimes = [] ;
-        channelTimesUnc = [] ;
-        channelsForExperiment = {} ;
-        channelNumForExperiment = [] ;
-        channelNumsForExperiment = {} ;
+        embryoTimes = [] ;
+        embryoTimesUnc = [] ;
         
-        for i = 1:length(labelDirs)
-            % Note that the runt channel is runtMap(i)
-            disp(['Seeking channel in labelDir: ', labelDirs{i}])
+        % Cycle through all embryos in this labelDir
+        embryos = dir(fullfile(labelDir{ii}.folder, labelDir{ii}.name)) ;
+        embryoDirs = {labelDirs([labelDirs.isdir]).name} ;
+        embryoDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
 
-            % Check if this labelDir contains the current channel
-            if contains(labelDirs{i}, channel) 
-                labelDir = fullfile(genoParentDir, labelDirs{i}) ;
-                
-                % Get all channels in this labelDir
-                chSetDir = labelDirs{i} ;
-                channels_this_labelDir = strsplit(chSetDir, '_') ;
-                
+        for ee = 1:length(embryoDirs)
+            % Obtain embryo's datestamp
+            embryo = embryoDirs{ee} ;
+            disp(['Examining embryo ' embryo ' in labelDir: ', labelDirs{ee}])
 
-                % This labelDir contains the current channel: Which index?
-                chstr = "0" ;
-                match = 1 ;
-                mapii = labelMap{i} ;
-                while strcmp(chstr, "0")
-                    if strcmp(mapii{match}, channel)
-                        chstr = num2str(match) ;
-                    else
-                        if match > length(mapii)
-                            msg = ['No matching channel despite' ...
-                                   ' labelDirNames containing string'] ;
-                            error(msg) 
-                        else
-                            match = match + 1;
-                        end
-                    end
-                end
-                disp(['Found matching channel in ' labelDirs{i}])
+            % Assign the filename to be seeking
+            filename_pattern = [prepend exten ] ;    
                 
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Get all possible channel numbers
-                if any(contains(channels_this_labelDir, 'Blank'))
-                    channelnums = [] ;
-                    for qq = 1:length(channels_this_labelDir)
-                        if any(contains(allChannels, channels_this_labelDir{qq}))
-                            channels_this_labelDir{qq} ;
-                            channelnums = [channelnums qq] ;
-                        end
-                    end
-%                     labelDirs{i}
-%                     error('ppop')
-%                     if strcmp('Slp_Blank_Runt', labelDirs{i})
-%                         channelnums
-%                         error('here')
-%                     end
-                else
-                    channelnums = 1:length(channels_this_labelDir) ;
-                end
-                disp(['Found all possible channel numbers in ' labelDirs{i}])
-                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-                % Assign the filename to be seeking
-                filename_pattern = [prepend chstr postpend ] ;    
-                % runtname_pattern = [prepend runt_chstr postpend ] ;
-                % Note: runt_pattern must uniquely identify the runt file name
 
                 %% Automatically detect all the exptDirs in this labelDir
                 exptDirs = dir(fullfile(labelDir, '*')) ;
@@ -167,7 +112,6 @@ for chii = 1:length(allChannels)
                     end
                 end
                 exptDirs = exptDirs_new ;
-                
 
                 %% Iterate through each experiment directory
                 for expii = 1:length(exptDirs) 
@@ -240,7 +184,7 @@ end
 
 if save_map
     % Save the lookup Map
-    save_map(fullfile(mutantDir, 'lookuptable_containersMap.mat'), 'map')
+    save_map(fullfile(genoDir, 'lookuptable_containersMap.mat'), 'map')
 end
 disp('done building map')
 

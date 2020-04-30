@@ -31,19 +31,18 @@ classdef lookupTable
     
     
     methods
-        function obj = buildLookup(obj, mutantDir, prepend, postpend)
+        function obj = buildLookup(obj, genoDir, timerfn, prepend, exten)
             %BUILDLOOKUP Construct the lookup table
             if nargin < 2
-                error('Must supply a directory to use (mutantDir) for class method buildLookup')
+                error('Must supply a directory to use (genoDir) for class method buildLookup')
             elseif nargin < 3
-                prepend = 'Max_Cyl*_2_000001_c' ;       % string before channel index
+                prepend = 'Max_Cyl1_2_000001_c*' ;       % string before channel index
             end
             if nargin < 4
-                postpend = '_rot_scaled_view1.tif' ;    % string after channel index
+                exten = '.tif' ;    % string after channel index
             end
-            timematfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
-            timematfn2 = 'timematch_eve_tmin27_tmax45.mat' ;
-            out = buildLookupMapTiming(mutantDir, prepend, postpend, timematfn, timematfn2, false) ;
+            timerfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
+            out = buildLookupMapTiming(genoDir, prepend, exten, timematfn, timematfn2, false) ;
             obj.map = out ;
         end
             

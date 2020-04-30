@@ -2,15 +2,15 @@
 % Script for aligning dynamic runt nanobody data against each other
 % 
 % NPMitchell 2020
-cd /Users/npmitchell/Desktop/tmp
 
 %% ADD PATHS
-gitDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/' ;
+% gitDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/' ;
+gitDir = '/data/code/' ;
 gutDir = fullfile(gitDir, 'gut_matlab') ;
 basicsDir = fullfile(gutDir, 'basics') ;
 tiffDir = fullfile(gutDir, 'tiff_handling') ;
 plottingDir = fullfile(gutDir, 'plotting') ;
-codeDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos/' ;
+codeDir = '/data/code/time_align_embryos/' ;
 addpath(fullfile(codeDir, 'nanconv')) ;
 fmDir = fullfile(gutDir, 'toolbox_fast_marching/toolbox_fast_marching/') ;
 fmDir2 = fullfile(fmDir, 'mex') ;
@@ -24,10 +24,10 @@ addpath(fmDir2) ;
 addpath(fmDir3) ;
 
 %% OPTIONS
-% Save each runt nanobody (curated) MIP as ./date/cylinder1_max.tif
+% Save each runt nanobody (curated)ï¿½MIP as ./date/cylinder1_max.tif
 runtNBodyDir = './Runt-Nanobody/' ;
 mipfn = 'cylinder1_max.tif' ;
-outdir = './alignment' ;
+outdir = './Runt-Nanobody_time_alignment' ;
 ssfactor = 4 ;              % subsampling factor before computing corr
 % Correlation options
 corr_method = 'realspace' ; % realspace or phase method for correlation 
@@ -36,7 +36,7 @@ corr_method = 'realspace' ; % realspace or phase method for correlation
                             % image.
 stripe7corr_method = 'dist' ; 
 hard = 4 ;                  % which experiment is the master timeline -- hard is its index
-corrOutDir = fullfile(outdir, sprintf([corr_method '_corr_%02d', ssfactor])) ;
+corrOutDir = fullfile(outdir, sprintf([corr_method '_corr_%02d'], ssfactor)) ;
 
 dirs2make = {outdir, corrOutDir} ;
 for ii = 1:length(dirs2make)

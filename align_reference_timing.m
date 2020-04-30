@@ -406,7 +406,7 @@ disp('Done with cross-correlation')
 clear imI imJ imA imB
 corrImOutDir = fullfile(corrOutDir, 'correspondence_images') ;
 corrPathOutDir = fullfile(corrOutDir, 'cpath') ;
-dirs2make = {corrImOutDir} ;
+dirs2make = {corrImOutDir, corrPathOutDir} ;
 for di = 1:length(dirs2make) 
     dir2make = dirs2make{di} ;
     if ~exist(dir2make, 'dir')
@@ -425,6 +425,7 @@ for ii = 1:length(expts)
         cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
         disp(['Seeking cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
+        
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
@@ -571,8 +572,20 @@ for ii = 1:length(expts)
                     if button && strcmp(get(gcf, 'CurrentKey'), 'return')
                         disp('Great, all done.')
                     elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
-                        endpt = ginput(1) ;
-                        endpt = [endpt(2) endpt(1)] ;
+                        % New guess for startpoint is maximum along column
+                        [~, endpt(1, 1)] = max(cij(:, end)) ;
+                        endpt(1, 2) = size(cij, 2) ;
+                        scatter(endpt(2), endpt(1), 100, 'r', 'filled')
+                        msg = 'Ok, how about startpt now? Enter=yes, Backspace=no' ;
+                        disp(msg)
+                        title(msg)
+                        button = waitforbuttonpress() ;
+                        if button && strcmp(get(gcf, 'CurrentKey'), 'return')
+                            disp('Great, all done.')
+                        elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
+                            endpt = ginput(1) ;
+                            endpt = [endpt(2) endpt(1)] ;
+                        end
                     end
                 else
                     error('bad button press')

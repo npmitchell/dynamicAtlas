@@ -1,21 +1,18 @@
 %% Determine time of runt image from depth of last stripe
-
-% Use Runt to time each image to Eve dynamic data
+% example fn: /mnt/crunch/Atlas_Data/final_for_box/WT/Runt/201908021230
+%
+% Use Runt to time each image against Runt Nanobody reference data
 save_fancy = true; 
 allow_rotation = false ;
 overwrite = false ;
 overwrite_ROI = false ;
-mutantDir = '../WT/' ;
-postpend = '_rot_scaled_view1.tif' ;
-prepend = 'Max_Cyl*_2_000001_c' ;
+prepend = 'Max_Cyl1_2_000001_c1_rot_scaled_view1.tif' ;
 cdf_min = 0.01 ;
 cdf_max = 0.999 ;
 sigma = 5 ;
 kernel = 5*sigma;
 step = 1 ;
 exten = sprintf('_sigma%03d_step%03d', sigma, step) ;
-labelDir = fullfile(mutantDir, 'Eve_Runt') ;
-channel = 'Runt' ;
 thres = 0.77 ;
 width = 500 ;
 dt = 75 ;
@@ -28,7 +25,7 @@ addpath('./ploterr')
 
 %% Build the lookuptable
 a = lookupTable ;
-a = a.buildLookup('../WT') ;
+a = a.buildLookup('') ;
 lut = a.map('Runt') ;
 lut2 = a.map('Slp') ;
 for q = 1:length(lut2.channelnums)
