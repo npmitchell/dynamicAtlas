@@ -40,14 +40,14 @@ green = colors(5, :) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Make smoothed images if they don't exist
 % First convert Runt to smoothed image at const luminosity
-chanl = 'Runt' ;
+label = 'Runt' ;
 for kk = 1:length(lut.folders)
-    exptDir = lut.folders{kk} ;
-    sfn = fullfile(exptDir, [channel '_smooth' exten '.tif']) ;
+    embryoDir = lut.folders{kk} ;
+    sfn = fullfile(embryoDir, [label '_smooth' exten '.tif']) ;
     
     if ~exist(sfn, 'file')
         % Build the dir of this experiment
-        todo = dir(fullfile(exptDir, [prepend '2' postpend])) ;
+        todo = dir(fullfile(embryoDir, [prepend '2' postpend])) ;
         if length(todo) > 1
             error('here')
         end
@@ -80,14 +80,14 @@ trange = 25:41 ;
 %% Load probabilities
 for kk = 1:length(lut.folders)
     
-    exptDir = lut.folders{kk} ;
+    embryoDir = lut.folders{kk} ;
     exptName = strsplit(lut.folders{kk}, '/') ;
     exptName = exptName{end} ;
     
-    stripefn = fullfile(exptDir, ['Runt_stripe7curve' wexten '.mat']) ;
+    stripefn = fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']) ;
     if ~exist(stripefn, 'file') || overwrite
 
-        pfn = fullfile(exptDir, [channel '_smooth' exten '_Probabilities.h5']) ;
+        pfn = fullfile(embryoDir, [label '_smooth' exten '_Probabilities.h5']) ;
         dat = h5read(pfn, '/exported_data') ;
         midx = round(0.5 * size(dat, 2)) ;
         midy = round(0.5 * size(dat, 3)) ;
@@ -96,7 +96,7 @@ for kk = 1:length(lut.folders)
         addy = midy - width ;
 
         % Extract the leading curve
-        maskfn = fullfile(exptDir, ['Runt_mask' wexten '.tif']);  
+        maskfn = fullfile(embryoDir, ['Runt_mask' wexten '.tif']);  
         if exist(maskfn, 'file') && ~overwrite_ROI
             % Apply manual ROI to thresholded image with default thres
             BWmask = imread(maskfn) ;
@@ -214,7 +214,7 @@ for kk = 1:length(lut.folders)
                         thres0 = max(0, thres0 - 0.05) ;
                     elseif button && strcmp(get(fig, 'CurrentKey'), 'backspace')
                         % Do manual ROI
-                        ofn = fullfile(exptDir, [channel '_smooth' exten '.tif']) ;
+                        ofn = fullfile(embryoDir, [label '_smooth' exten '.tif']) ;
                         oim = imread(ofn) ;
                         figure ;
                         imshow(oim) 
@@ -248,7 +248,7 @@ for kk = 1:length(lut.folders)
                         % Select the ROI
                         close all
                         imshow(bw)
-                        title(['Select ROI: ' exptName '\n' exptDir])
+                        title(['Select ROI: ' exptName '\n' embryoDir])
                         BWmask = roipoly ;
                         disp(['Saving mask to ' maskfn])
                         imwrite(BWmask, maskfn) ;
@@ -307,7 +307,7 @@ for kk = 1:length(lut.folders)
             cavailable = lut.channelnums{kk} ;
 
             % Load each channel
-            ch1 = dir(fullfile(exptDir, [prepend num2str(cavailable(1)) postpend])) ;
+            ch1 = dir(fullfile(embryoDir, [prepend num2str(cavailable(1)) postpend])) ;
             im1 = imread(fullfile(ch1(1).folder, ch1(1).name)) ;
 
             % Adjust intensity
@@ -317,7 +317,7 @@ for kk = 1:length(lut.folders)
             lim = [x(f1) x(f2)];
             im1 = mat2gray(double(im1),double(lim));
 
-            ch2 = dir(fullfile(exptDir, [prepend num2str(cavailable(2)) postpend])) ;
+            ch2 = dir(fullfile(embryoDir, [prepend num2str(cavailable(2)) postpend])) ;
             im2 = imread(fullfile(ch2(1).folder, ch2(1).name)) ;
 
             % Adjust intensity
@@ -332,7 +332,7 @@ for kk = 1:length(lut.folders)
             combined(:, :, 2) = im2 ;
 
             if length(cavailable) > 2
-                ch3 = dir(fullfile(exptDir, [prepend num2str(cavailable(2)) postpend])) ;
+                ch3 = dir(fullfile(embryoDir, [prepend num2str(cavailable(2)) postpend])) ;
                 im3 = imread(fullfile(ch3(1).folder, ch3(1).name)) ;
                 % Adjust intensity
                 [f,x] = ecdf(im3(:));
@@ -360,12 +360,12 @@ end
 
 %% Now match to time domain Eve data
 for kk = 1:length(lut.folders)
-    exptDir = lut.folders{kk} ;
+    embryoDir = lut.folders{kk} ;
     exptName = strsplit(lut.folders{kk}, '/') ;
     exptName = exptName{end} ;
 
     % Which adjusted curve
-    load(fullfile(exptDir, ['Runt_stripe7curve' wexten '.mat']), 'stripe7curve') ;
+    load(fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']), 'stripe7curve') ;
     curv_adj = stripe7curve ;
     
     % Match to dynamic data curv
@@ -464,7 +464,7 @@ for kk = 1:length(lut.folders)
     ylims = ylim;
     plot(trange * dt / 60, ssds, 'k.--')
     ylim(ylims)
-    fn = fullfile(exptDir, [exptName '_stripefit_unc_polyfit.png']) ;
+    fn = fullfile(embryoDir, [exptName '_stripefit_unc_polyfit.png']) ;
     disp(['Saving figure to ' fn])
     saveas(fig, fn)
     close all
