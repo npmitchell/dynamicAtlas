@@ -22,17 +22,14 @@ wexten = ['_width' num2str(width)] ;
 % Add paths
 addpath('./polyparci')
 addpath('./ploterr')
+gutDir = '/data/code/gut_matlab/' ;
+addpath(gutDir)
 
 %% Build the lookuptable
 a = lookupTable ;
 a = a.buildLookup('') ;
 lut = a.map('Runt') ;
 lut2 = a.map('Slp') ;
-for q = 1:length(lut2.channelnums)
-    if ~all(lut2.channelnums{q} == [1 3])
-        lut2.channelnums{q}
-    end
-end
 
 %% Plotting
 [colors, names] = define_colors ;
@@ -43,7 +40,7 @@ green = colors(5, :) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Make smoothed images if they don't exist
 % First convert Runt to smoothed image at const luminosity
-channel = 'Runt' ;
+chanl = 'Runt' ;
 for kk = 1:length(lut.folders)
     exptDir = lut.folders{kk} ;
     sfn = fullfile(exptDir, [channel '_smooth' exten '.tif']) ;
