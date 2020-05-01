@@ -75,8 +75,11 @@ for ii = 1:length(labelDirs)
     label = labelDirs(ii).name ;
     labelDir = fullfile(genoParentDir, labelDirs{ii}) ;
    
-    % Select selected Channels: debug
-    if any(contains(allChannels, label))
+    % Quick filter to ensure that this is a real fluorlabel name
+    is_real_label = ~contains(label, 'sorted') ;
+    is_real_label = is_real_label && isempty(strfind(exptDirs{qqq}, 'alignment')) ;
+    is_real_label = is_real_label && length(label) > 2 ;
+    if is_real_label
         disp(['Examining label ' num2str(ii) ': ' label])
 
         % Compile list of filenames
@@ -85,7 +88,7 @@ for ii = 1:length(labelDirs)
         embryoTimesUnc = [] ;
         
         % Cycle through all embryos in this labelDir
-        embryos = dir(fullfile(labelDir{ii}.folder, labelDir{ii}.name)) ;
+        embryos = dir(labelDir) ;
         embryoDirs = {labelDirs([labelDirs.isdir]).name} ;
         embryoDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
 
@@ -95,91 +98,64 @@ for ii = 1:length(labelDirs)
             disp(['Examining embryo ' embryo ' in labelDir: ', labelDirs{ee}])
 
             % Assign the filename to be seeking
-            filename_pattern = [prepend exten ] ;    
-                
-
-                %% Automatically detect all the exptDirs in this labelDir
-                exptDirs = dir(fullfile(labelDir, '*')) ;
-                exptDirNames = {exptDirs([exptDirs.isdir]).name} ;
-                exptParentDir = exptDirs.folder ;
-                exptDirs = exptDirNames(~ismember(exptDirNames, {'.', '..', 'figures'})) ;
-                % filter out dirs with sorted images
-                exptDirs_new = {} ; newkk = 1;
-                for qqq = 1:length(exptDirs)
-                    if isempty(strfind(exptDirs{qqq}, 'sorted'))
-                        exptDirs_new{newkk} = exptDirs{qqq} ;
-                        newkk = newkk + 1 ;
-                    end
-                end
-                exptDirs = exptDirs_new ;
-
-                %% Iterate through each experiment directory
-                for expii = 1:length(exptDirs) 
-                    exptDir = fullfile(exptParentDir, exptDirs{expii}) ;
-                    disp(['Examining exptDir: ' exptDir])
-
-                    % Runt determines the time
-                    try
-                        load(fullfile(exptDir, timematfn), 'matchtime', 'matchtime_unc')
-                    catch
-                        load(fullfile(exptDir, timematfn2), 'matchtime', 'matchtime_unc')
-                    end
-
-                    % Add this file and timepoint to the list for this
-                    % channel
-                    fileNames{length(fileNames) + 1} = filename_pattern ;
-                    channelDirs{length(channelDirs) + 1} = exptDir ;
-                    channelTimes(length(channelTimes) + 1) = matchtime ;
-                    channelTimesUnc(length(channelTimesUnc) + 1) = matchtime_unc ;  
-                    channelsForExperiment{length(channelsForExperiment) + 1} = channels_this_labelDir ;
-                    channelNumForExperiment(length(channelNumForExperiment) + 1) = match ;
-                    channelNumsForExperiment{length(channelNumsForExperiment) + 1} = channelnums ;
-                end
+            filename_pattern = [prepend exten ] ;  
+            fn = fullfile(labelDir, embryo, filename_pattern) ;
+            fnmatch = dir(fn) ;
+            if isempty(fnmatch) 
+                error(['Could not find data: ' fn])
+            else
+                filename = fnmatch(1).name;
             end
+            
+            % Runt determines the time
+            try
+                load(fullfile(exptDir, timematfn), 'matchtime', 'matchtime_unc')
+            catch
+                disp(['Could not load timestamp for experiment: ' embryo])
+                matchtime = NaN ;
+                matchtime_unc = NaN ;
+            end
+
+            % Add this file and timepoint to the list for this
+            % channel
+            fileNames{length(fileNames) + 1} = filename ;
+            embryoDirs{length(embryoDirs) + 1} = fullfile(labelDir, embryo) ;
+            embryoIDs{length(embryoIDs) + 1} = embryo ;
+            embryoTimes(length(embryoTimes) + 1) = matchtime ;
+            embryoTimesUnc(length(embryoTimesUnc) + 1) = matchtime_unc ;  
         end 
         disp('done building fileNames for this channel')
     end
 
     % We are done with collating all times and filenames for this channel
-    [~, inds] = sort(channelTimes) ;
-    channelDirs = channelDirs(inds) ;
-    channelTimes = channelTimes(inds) ;
-    channelTimesUnc = channelTimesUnc(inds) ;
-    channelsForExperiment = channelsForExperiment(inds) ;
-    channelNumForExperiment = channelNumForExperiment(inds) ;
-    channelNumsForExperiment = channelNumsForExperiment(inds) ;
+    [~, inds] = sort(embryoTimes) ;
+    embryoDirs = embryoDirs(inds) ;
+    embryoIDs = embryoIDs(inds) ;
+    embryoTimes = embryoTimes(inds) ;
+    embryoTimesUnc = embryoTimesUnc(inds) ;
 
-    for qq = 1:length(channelTimes) 
-        % Convert to minutes and round
-        time = channelTimes(qq) / 60 ;
+    for qq = 1:length(embryoTimes) 
+        % Convert to minutes 
+        time = embryoTimes(qq) / 60 ;
+        time_unc = embryoTimesUnc(qq) / 60 ;
         if qq == 1
             substruct.times = [time] ;
-            substruct.folders = {channelDirs{qq}} ;
-            substruct.uncs = [channelTimesUnc(qq) / 60] ;
+            substruct.folders = {embryoDirs{qq}} ;
+            substruct.uncs = [time_unc] ;
             substruct.names = {fileNames{qq}} ;
-            % Construct exptname from channelDirs{qq}
-            exptname = strsplit(channelDirs{qq}, '/') ;
-            substruct.exptnames = {exptname{end}}  ;
-            substruct.channels = {channelsForExperiment{qq}} ;
-            substruct.channelnums = {channelNumsForExperiment{qq}} ;
-            substruct.channelnum = [channelNumForExperiment(qq)] ;
+            substruct.embryoIDs = {embryoIDs{qq}}  ;
             substruct
         else
-            substruct.times(length(substruct.times) + 1) = channelTimes(qq) / 60 ;
-            substruct.folders{length(substruct.folders) + 1} = channelDirs{qq} ;
-            substruct.uncs(length(substruct.uncs) + 1) = channelTimesUnc(qq) / 60 ;
+            substruct.times(length(substruct.times) + 1) = time ;
+            substruct.folders{length(substruct.folders) + 1} = embryoDirs{qq} ;
+            substruct.uncs(length(substruct.uncs) + 1) = time_unc ;
             substruct.names{length(substruct.names) + 1} = fileNames{qq} ;
-            % Construct exptname from channelDirs{qq}
-            exptname = strsplit(channelDirs{qq}, '/') ;
-            substruct.exptnames{length(substruct.exptnames) + 1} = exptname{end} ;
-            substruct.channels{length(substruct.channels) + 1} = channelsForExperiment{qq} ;
-            substruct.channelnum(length(substruct.channelnum) + 1) = channelNumForExperiment(qq) ;
-            substruct.channelnums{length(substruct.channelnums) + 1} = channelNumsForExperiment{qq} ;
+            substruct.embryoIDs{length(substruct.embryoIDs) + 1} = embryoIDs{qq} ;
             substruct
         end
     end
     % Add this channel info to the map
-    map(channel) = substruct ;
+    map(label) = substruct ;
 end
 
 if save_map
