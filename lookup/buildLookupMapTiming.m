@@ -1,4 +1,4 @@
-function [map] = buildLookupMapTiming(genoDir, prepend, exten, timematfn, timematfn2, save_map) 
+function [map] = buildLookupMapTiming(genoDir, prepend, exten, timematfn, save_map) 
 %BUILDLOOKUPMAPTIMING Principal function for lookupTable Class object construction
 %
 % Parameters
@@ -24,18 +24,15 @@ function [map] = buildLookupMapTiming(genoDir, prepend, exten, timematfn, timema
 
 
 % If prepend and exten are not defined, give them a default value
-if nargin < 7 
+if nargin < 6
     save_map = false ;
-    if nargin < 6
-        timematfn2 = 'timematch_eve_tmin27_tmax45.mat' ;
-        if nargin < 5
-            timematfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
-            if nargin < 4
-                exten = '_rot_scaled_view1.tif' ;
-                % Similar for prepend
-                if nargin < 3
-                    prepend = 'Max_Cyl*_2_000001_c' ;
-                end
+    if nargin < 5
+        timematfn = 'timematch_RuntNanobody_stripe7.mat' ;
+        if nargin < 4
+            exten = '_rot_scaled_view1.tif' ;
+            % Similar for prepend
+            if nargin < 3
+                prepend = 'Max_Cyl*_2_000001_c' ;
             end
         end
     end
