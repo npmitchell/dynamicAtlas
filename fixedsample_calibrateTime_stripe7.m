@@ -6,25 +6,28 @@ clearvars
 clc
 save_fancy = true; 
 allow_rotation = false ;
-overwrite = false ;
+overwrite = true ;
 overwrite_ROI = false ;
 
 % Options: Which data to analyze
+label = 'Runt' ;  % Whether to use Runt-Nanobody or Eve data
 genoDir = './WT' ; 
 prepend = 'MAX_Cyl1_2_000000_c1_rot_scaled_view1' ;
 exten = '.tif' ;
-timerfn = 'timematch_RuntNanobody_stripe7.mat' ;
+if strcmp(label, 'Runt')
+    timerfn = 'timematch_RuntNanobody_stripe7.mat' ;
+elseif strcmp(label, 'Eve')
+    timerfn = 'timematch_EveYFP_stripe7.mat' ;
+else
+    error('Label is not Runt or Eve. What stripe7 is this?')
+end
 cdf_min = 0.01 ;
 cdf_max = 0.999 ;
 sigma = 5 ;
 kernel = 5*sigma;
 step = 1 ;
 sigmastep = sprintf('_sigma%03d_step%03d', sigma, step) ;
-thres = 0.77 ;
-width = 500 ;
-dt = 75 ;
-manualROI = false ;
-wexten = ['_width' num2str(width)] ;
+dt = 60 ;
 
 %% Add paths
 tlaDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos';
@@ -37,9 +40,9 @@ addpath(fullfile(tlaDir, 'lookup'))
 addpath(fullfile(tlaDir, 'fixed_stripe7'))
 
 %% Build the lookuptable
-a = lookupTable ;
+a = lookupTable() ;
 a = a.buildLookup(genoDir, timerfn, prepend, exten) ;
-lut = a.map('Runt') ;
+lut = a.map(label) ;
 
 %% Plotting
 [colors, names] = define_colors ;
@@ -50,17 +53,9 @@ green = colors(5, :) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Assumes we have already run EnsembleStripe to make smoothed images 
 
-%% Create overlay of all stripes for each embryo
-lut2 = a.map('Even_Skipped') ;
-for kk = 1:length(lut.folders)
-    lut2.loadSecondar()
-end
-
-
 %% Process probabilities in iLastik -- train on stripe7 versus not a stripe
 
 %% Identify stripes if not done so already
-label = 'Runt' ;
 for kk = 1:length(lut.folders)
     
     filename = lut.names{kk} ;
@@ -70,8 +65,7 @@ for kk = 1:length(lut.folders)
     stripefn = fullfile(embryoDir, ['Runt_stripe7curve.mat']) ;
     if ~exist(stripefn, 'file') || overwrite
 
-        pfn = fullfile(embryoDir, sigmastep(2:end), ...
-            [label '_smooth' sigmastep '_Probabilities.h5']) ;
+        pfn = fullfile(embryoDir, [prepend '_Probabilities.h5']) ;
         disp(['Opening ' pfn])
         dat = h5read(pfn, '/exported_data') ;
         midx = round(0.5 * size(dat, 2)) ;
@@ -82,65 +76,63 @@ for kk = 1:length(lut.folders)
 
         % Extract the leading curve
         maskfn = fullfile(embryoDir, ['Runt_mask.tif']);  
-        if exist(maskfn, 'file') && ~overwrite_ROI
-            curv = extractStripeEdges(dat, maskfn) ;
+        if ~exist(maskfn, 'file') || ~exist(stripefn, 'file') || overwrite
+            thres = 0.5 ;
+            minmaxsz = [5e3, 1e8] ;
+            curv = extractStripeEdges(dat, maskfn, thres, minmaxsz, embryoID) ;
+            % depth = max(curv) - min(curv) ;
+            stripe7curve = curv ; 
+            stripe7curve_frac = curv ;
+            stripe7curve_frac(:, 1) = double(stripe7curve_frac(:, 1)) / double(size(dat, 2)) ;
+            stripe7curve_frac(:, 2) = double(stripe7curve_frac(:, 2)) / double(size(dat, 3)) ;
+            save(stripefn, 'stripe7curve', 'stripe7curve_frac')
+        else
+            curv = load(stripefn, 'stripe7curve') ;
         end
 
-        % depth = max(curv) - min(curv) ;
-        stripe7curve = curv ; 
-        save(stripefn, 'stripe7curve')
     
         % Save fancy image
         if save_fancy
-            % Load image
-            im1 = imread(fullfile(embryoDir, filename)) ;
+            % Load image and all other images of this embryo
+            estruct = a.findEmbryo(embryoID) ;
             
-            % Adjust intensity
-            [f,x] = ecdf(im1(:));
-            f1 = find(f>cdf_min, 1, 'first');
-            f2 = find(f<cdf_max, 1, 'last');
-            lim = [x(f1) x(f2)];
-            im1 = mat2gray(double(im1),double(lim));
-
-            ch2 = dir(fullfile(embryoDir, [prepend num2str(cavailable(2)) postpend])) ;
-            im2 = imread(fullfile(ch2(1).folder, ch2(1).name)) ;
-
-            % Adjust intensity
-            [f,x] = ecdf(im2(:));
-            f1 = find(f>cdf_min, 1, 'first');
-            f2 = find(f<cdf_max, 1, 'last');
-            lim = [x(f1) x(f2)];
-            im2 = mat2gray(double(im2),double(lim));
-
-            combined = zeros(size(im2, 1), size(im2, 2), 3) ;
-            combined(:, :, 1) = im1 ;
-            combined(:, :, 2) = im2 ;
-
-            if length(cavailable) > 2
-                ch3 = dir(fullfile(embryoDir, [prepend num2str(cavailable(2)) postpend])) ;
-                im3 = imread(fullfile(ch3(1).folder, ch3(1).name)) ;
-                % Adjust intensity
-                [f,x] = ecdf(im3(:));
-                f1 = find(f>cdf_min, 1, 'first');
-                f2 = find(f<cdf_max, 1, 'last');
-                lim = [x(f1) x(f2)];
-                im3 = mat2gray(double(im3),double(lim));
-                combined(:, :, 3) = im3 ;
+            nlabels = length(estruct.names) ;
+            % if there are more than 3 labels, need to do something other
+            % than RGB
+            if nlabels < 4
+                % Make RGB image
+                for qq = 1:nlabels
+                    % load this channel/label
+                    imq = double(imread(fullfile(estruct.folders{qq}, estruct.names{qq}))) ;
+                    if qq == 1
+                        combined = zeros(size(imq, 1), size(imq, 2), 3) ;
+                    end
+                    
+                    % Adjust intensity
+                    [f,x] = ecdf(imq(:));
+                    f1 = find(f>cdf_min, 1, 'first');
+                    f2 = find(f<cdf_max, 1, 'last');
+                    lim = [x(f1) x(f2)];
+                    imq = mat2gray(imq, double(lim));
+                    combined(:, :, qq) = imq ;
+                end
+            else
+                error('Have not considered this case yet. Do so here')
             end
-
+                        
             % Now make the figure
             fig = figure('visible', 'off') ;
             imshow(combined)
             hold on;
-            plot(curv_adj(:, 1), curv_adj(:, 2), 'o-', 'color', yellow)
+            plot(curv(:, 1), curv(:, 2), 'o-', 'color', yellow)
             % plot(curv' + midx, (1:length(curv)) + midy - width, 'o-', 'color', yellow)
-            title('Identification of stripe 7')
-            saveas(fig, fullfile('../time_calibration_stripe7/', ['rgb_' embryoID '.png']))
+            title([embryoID ': Identification of stripe 7'])
+            saveas(fig, fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']))
         end        
     end
 end
 
-%% Now match to time domain Eve data
+%% Now match to time domain Runt Nanobody or EveYFP data
 for kk = 1:length(lut.folders)
     embryoDir = lut.folders{kk} ;
     embryoID = lut.embryoIDs{kk} ;

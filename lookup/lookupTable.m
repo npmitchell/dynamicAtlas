@@ -198,6 +198,56 @@ classdef lookupTable
             outstruct.folders = folders ;
             outstruct.uncs = uncs ;
         end
+        
+        function estruct = findEmbryo(obj, embryoID) 
+            %FINDEMBRYO(embryoID) Find all instances with given embryo
+            %   Give the names, folder, times, and time uncertainties for
+            %   stained samples matching the supplied embryoID
+            %
+            % Parameters
+            % ----------
+            % obj : the class instance of lookupTable
+            % embryoID : string, embryo identification name 
+            %           (ex '201904011200')
+            %
+            % Returns
+            % -------
+            % estruct : struct
+            %   The output structure with fields labels, folders, times, uncs
+            names = {} ;
+            elabels = {} ;
+            folders = {} ; 
+            timepts = [] ; 
+            uncs = [] ; 
+            dmyk = 1 ;
+            % get all the labels
+            labels = obj.map.keys ;
+            % For each label, add struct.label, folders, uncs
+            for ii = 1:length(labels)
+                label = labels(ii) ;
+                label = label{1} ;
+                substruct = obj.map(label) ;
+                eIDs = substruct.embryoIDs ;
+                for jj = 1:length(eIDs)
+                    if strcmp(eIDs{jj}, embryoID)
+                        elabels{dmyk} = label ;
+                        names{dmyk} = substruct.names{jj} ;
+                        folders{dmyk} = substruct.folders{jj} ;
+                        timepts(dmyk) = substruct.times(jj) ;
+                        uncs(dmyk) = substruct.uncs(jj) ;
+                        dmyk = dmyk + 1 ;
+                    end
+                end
+            end
+            
+            % Add to the output struct
+            estruct.labels = elabels ;
+            estruct.names = names ;
+            estruct.times = timepts ;
+            estruct.folders = folders ;
+            estruct.uncs = uncs ;
+            
+        end
     end
     
 end

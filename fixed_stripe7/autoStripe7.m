@@ -1,4 +1,4 @@
-function bw2 = autoStripe7(dcrop, thres, minsz, maxsz) 
+function [bw2, bw] = autoStripe7(dcrop, thres, minsz, maxsz) 
 % autoStripe7()
 % default stripe7 finding protocol
 % 
