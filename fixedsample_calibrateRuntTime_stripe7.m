@@ -2,35 +2,44 @@
 % example fn: /mnt/crunch/Atlas_Data/final_for_box/WT/Runt/201908021230
 %
 % Use Runt to time each image against Runt Nanobody reference data
+clearvars
+clc
 save_fancy = true; 
 allow_rotation = false ;
 overwrite = false ;
 overwrite_ROI = false ;
-prepend = 'Max_Cyl1_2_000001_c1_rot_scaled_view1.tif' ;
+
+% Options: Which data to analyze
+genoDir = './WT' ; 
+prepend = 'MAX_Cyl1_2_000000_c1_rot_scaled_view1' ;
+exten = '.tif' ;
+timerfn = 'timematch_RuntNanobody_stripe7.mat' ;
 cdf_min = 0.01 ;
 cdf_max = 0.999 ;
 sigma = 5 ;
 kernel = 5*sigma;
 step = 1 ;
-exten = sprintf('_sigma%03d_step%03d', sigma, step) ;
+sigmastep = sprintf('_sigma%03d_step%03d', sigma, step) ;
 thres = 0.77 ;
 width = 500 ;
 dt = 75 ;
 manualROI = false ;
 wexten = ['_width' num2str(width)] ;
 
-% Add paths
-addpath('./polyparci')
-addpath('./ploterr')
-gutDir = '/data/code/gut_matlab/' ;
+%% Add paths
+tlaDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos';
+addpath(fullfile(tlaDir, 'polyparci'))
+addpath(fullfile(tlaDir, 'ploterr'))
+gutDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/' ;
 addpath(gutDir)
-addpath('/data/code/time_align_embryos/lookup/')
+addpath(fullfile(gutDir, 'plotting')) ;
+addpath(fullfile(tlaDir, 'lookup'))
+addpath(fullfile(tlaDir, 'fixed_stripe7'))
 
 %% Build the lookuptable
 a = lookupTable ;
-a = a. ;
+a = a.buildLookup(genoDir, timerfn, prepend, exten) ;
 lut = a.map('Runt') ;
-lut2 = a.map('Slp') ;
 
 %% Plotting
 [colors, names] = define_colors ;
@@ -39,270 +48,53 @@ green = colors(5, :) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Make smoothed images if they don't exist
-% First convert Runt to smoothed image at const luminosity
-label = 'Runt' ;
-for kk = 1:length(lut.folders)
-    embryoDir = lut.folders{kk} ;
-    sfn = fullfile(embryoDir, [label '_smooth' exten '.tif']) ;
-    
-    if ~exist(sfn, 'file')
-        % Build the dir of this experiment
-        todo = dir(fullfile(embryoDir, [prepend '2' postpend])) ;
-        if length(todo) > 1
-            error('here')
-        end
-        im = imread(fullfile(todo(ii).folder, todo(ii).name)) ;
-        
-        % Adjust intensity
-        [f,x] = ecdf(im(:));
-        f1 = find(f>cdf_min, 1, 'first');
-        f2 = find(f<cdf_max, 1, 'last');
-        lim = [x(f1) x(f2)];
-        scale = mat2gray(double(im),double(lim));
-        smoothim = imfilter(scale, fspecial('gaussian', kernel, sigma));
+%% Assumes we have already run EnsembleStripe to make smoothed images 
 
-        % Save imsc
-        imwrite(imsc, sfn)
-    else
-        disp('smoothed image already on disk')
-    end
-   
+%% Create overlay of all stripes for each embryo
+lut2 = a.map('Even_Skipped') ;
+for kk = 1:length(lut.folders)
+    lut2.loadSecondar()
 end
-disp('done')
+
 
 %% Process probabilities in iLastik -- train on stripe7 versus not a stripe
 
-%% Load dynamic data Eve curves near where Runt should lie
-load('../time_calibration_stripe7/eve/stripe7curves_tmin25_tmax48.mat', 'stripe7curves') ;
-evecurvs = stripe7curves ;
-trange = 25:41 ;
-
-%% Load probabilities
+%% Identify stripes if not done so already
+label = 'Runt' ;
 for kk = 1:length(lut.folders)
     
+    filename = lut.names{kk} ;
     embryoDir = lut.folders{kk} ;
     embryoID = lut.embryoIDs{kk} ;
     
-    stripefn = fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']) ;
+    stripefn = fullfile(embryoDir, ['Runt_stripe7curve.mat']) ;
     if ~exist(stripefn, 'file') || overwrite
 
-        pfn = fullfile(embryoDir, [label '_smooth' exten '_Probabilities.h5']) ;
+        pfn = fullfile(embryoDir, sigmastep(2:end), ...
+            [label '_smooth' sigmastep '_Probabilities.h5']) ;
+        disp(['Opening ' pfn])
         dat = h5read(pfn, '/exported_data') ;
         midx = round(0.5 * size(dat, 2)) ;
         midy = round(0.5 * size(dat, 3)) ;
-        dcrop = squeeze(dat(2, midx:end, midy-width:midy+width)) ;
+        dcrop = squeeze(dat(2, midx:end, :)) ;
         addx = midx ;
         addy = midy - width ;
 
         % Extract the leading curve
-        maskfn = fullfile(embryoDir, ['Runt_mask' wexten '.tif']);  
+        maskfn = fullfile(embryoDir, ['Runt_mask.tif']);  
         if exist(maskfn, 'file') && ~overwrite_ROI
-            % Apply manual ROI to thresholded image with default thres
-            BWmask = imread(maskfn) ;
-
-            figure ;
-            % Start from scratch with default thres
-            thres0 = thres ;
-            move_on = false ;
-            while ~move_on
-                datbw = false(size(dcrop)) ;
-                datbw(dcrop > thres0) = true ;
-                bw = bwareafilt(datbw, 8) ;
-                bw = bwareafilt(bw, [1e3 1e8]) ;
-                imshow(bw .* BWmask)
-                title(['Loaded BWmask. Enter to continue, <-> for threshold change. thres = ', num2str(thres0)])
-                button = waitforbuttonpress() ;
-                if button && strcmp(get(gcf, 'CurrentKey'), 'return')
-                    move_on = true ;
-                elseif button && strcmp(get(gcf, 'CurrentKey'), 'rightarrow')
-                    thres0 = min(1, thres0 + 0.05) ;
-                elseif button && strcmp(get(gcf, 'CurrentKey'), 'leftarrow')
-                    thres0 = max(0, thres0 - 0.05) ;
-                end
-            end
-            
-            % Check out the result
-            bw = BWmask .* bw ;
-            % Detect and adjust the curve
-            curv = zeros(size(bw, 2), 1) ;
-            for jj = 1:size(bw, 2)
-                row = bw(:, jj) ;
-                try
-                    curv(jj) = find(row, 1, 'last') ;
-                catch
-                    disp('no true values in this row. Skipping...')
-                end
-            end
-            inds = find(curv) ;
-            if any(isnan(curv))
-                inds = inds(~isnan(curv)) ;
-            end
-            curv_adj = [curv(inds) + addx, inds + addy] ;
-
-            % Prepare the plot
-            close all
-            imshow(1-dcrop)
-            hold on
-            plot(curv, 'o-')
-            curv
-            title(['Identification of stripe 7: ' embryoID '. <Enter> to save'])
-            % Check if the result is good
-            button = waitforbuttonpress() ;
-            if button && ~strcmp(get(gcf, 'CurrentKey'), 'return')
-                error('Exiting since non-Return keypress in figure check')
-            else
-                disp('Saving figure and stripe...')
-            end
-        else
-            thres0 = thres ;
-            move_on = false ;
-            while ~move_on
-                datbw = false(size(dcrop)) ;
-                datbw(dcrop > thres0) = true ;
-                posterior = bwareafilt(datbw, 1) ;
-                datbw(posterior) = false ;
-                bw = bwareafilt(datbw, 8) ;
-                bw = bwareafilt(bw, [1e4 1e8]) ;
-                cc = bwconncomp(bw) ;
-                rp = regionprops(cc) ;
-                centry = zeros(length(rp), 1) ;
-                for qq = 1:length(rp)
-                    centry(qq) = rp(qq).Centroid(2) ;
-                end
-                [~, ind] = max(centry) ;
-                obw = false(size(dcrop)) ;
-                if isempty(cc.PixelIdxList)
-                    if thres0 ~= thres
-                        disp("No pixels detected, returning to original threshold")
-                        thres0 = thres ;
-                    else
-                        disp('No pixels with default thres. Changing thres to random value')
-                        thres0 = rand(1) ;
-                    end
-                else
-                    obw(cc.PixelIdxList{ind}) = true ;
-
-                    % Detect and adjust the curve
-                    curv = zeros(size(obw, 2), 1) ;
-                    for jj = 1:size(obw, 2)
-                        row = obw(:, jj) ;
-                        try
-                            curv(jj) = find(row, 1, 'last') ;
-                        catch
-                        end
-                    end
-                    inds = find(curv) ;
-                    if any(isnan(curv))
-                        inds = inds(~isnan(curv)) ;
-                    end
-                    curv_adj = [curv(inds) + addx, inds + addy] ;
-
-                    % Save an image of the identification
-                    close all
-                    fig = figure ;
-                    imshow(1-dcrop)
-                    hold on
-                    plot(curv, 'o-')
-                    title(['Enter to continue. <-> to adjust threshold. Backspace for ROI. thres=' num2str(thres0)])
-                    button = waitforbuttonpress() ;
-                    if button && strcmp(get(fig, 'CurrentKey'), 'return')
-                        move_on = true ;
-                    elseif button && strcmp(get(fig, 'CurrentKey'), 'rightarrow')
-                        thres0 = min(1, thres0 + 0.05) ;
-                    elseif button && strcmp(get(fig, 'CurrentKey'), 'leftarrow')
-                        thres0 = max(0, thres0 - 0.05) ;
-                    elseif button && strcmp(get(fig, 'CurrentKey'), 'backspace')
-                        % Do manual ROI
-                        ofn = fullfile(embryoDir, [label '_smooth' exten '.tif']) ;
-                        oim = imread(ofn) ;
-                        figure ;
-                        imshow(oim) 
-                        
-                        figure ;
-                        % Start from scratch with default thres
-                        thres0 = thres ;
-                        % There used to be an option to mask the posterior
-                        % midgut, but this is difficult to use in practice
-                        % mask_posterior = true ;
-                        while ~move_on
-                            datbw = false(size(dcrop)) ;
-                            datbw(dcrop > thres0) = true ;
-                            % posterior = bwareafilt(datbw, 1) ;
-                            % if mask_posterior
-                            %     datbw(posterior) = false ;
-                            % end
-                            bw = bwareafilt(datbw, 8) ;
-                            bw = bwareafilt(bw, [1e3 1e8]) ;
-                            imshow(bw)
-                            title(['Enter to continue, <-> for threshold change. thres = ', num2str(thres0)])
-                            button = waitforbuttonpress() ;
-                            if button && strcmp(get(gcf, 'CurrentKey'), 'return')
-                                move_on = true ;
-                            elseif button && strcmp(get(gcf, 'CurrentKey'), 'rightarrow')
-                                thres0 = min(1, thres0 + 0.05) ;
-                            elseif button && strcmp(get(gcf, 'CurrentKey'), 'leftarrow')
-                                thres0 = max(0, thres0 - 0.05) ;
-                            end
-                        end
-                        % Select the ROI
-                        close all
-                        imshow(bw)
-                        title(['Select ROI: ' embryoID '\n' embryoDir])
-                        BWmask = roipoly ;
-                        disp(['Saving mask to ' maskfn])
-                        imwrite(BWmask, maskfn) ;
-
-                        % Check out the result
-                        bw = BWmask .* bw ;
-                        imshow(bw)
-                        title('Close to continue')    
-
-                        % Detect and adjust the curve
-                        curv = zeros(size(bw, 2), 1) ;
-                        for jj = 1:size(bw, 2)
-                            row = bw(:, jj) ;
-                            try
-                                curv(jj) = find(row, 1, 'last') ;
-                            catch
-                                disp('no true values in this row. Skipping...')
-                            end
-                        end
-                        inds = find(curv > 0) ;
-                        if any(isnan(curv))
-                            inds = inds(~isnan(curv)) ;
-                        end
-                        curv_adj = [curv(inds) + addx, inds + addy] ;
-
-                        % Prepare the plot
-                        close all
-                        imshow(1-dcrop)
-                        hold on
-                        plot(curv, 'o-')
-                    end
-                end
-            end
-            % Save the image
-            title(['Identification of stripe 7: ' embryoID '. <Enter> to save'])
-            % Check if the result is good
-            if button && ~strcmp(get(gcf, 'CurrentKey'), 'return')
-                error('Exiting since non-Return keypress in figure check')
-            else
-                disp('Saving figure and stripe')
-            end
-            saveas(gcf, fullfile('../time_calibration_stripe7/', [embryoID '.png']))
-            close all
+            curv = extractStripeEdges(dat, maskfn) ;
         end
 
         % depth = max(curv) - min(curv) ;
-        stripe7curve = curv_adj; 
+        stripe7curve = curv ; 
         save(stripefn, 'stripe7curve')
     
         % Save fancy image
         if save_fancy
             % Load image
-            im1 = imread(fullfile(ch1(1).folder, ch1(1).name)) ;
-
+            im1 = imread(fullfile(embryoDir, filename)) ;
+            
             % Adjust intensity
             [f,x] = ecdf(im1(:));
             f1 = find(f>cdf_min, 1, 'first');
@@ -344,12 +136,9 @@ for kk = 1:length(lut.folders)
             % plot(curv' + midx, (1:length(curv)) + midy - width, 'o-', 'color', yellow)
             title('Identification of stripe 7')
             saveas(fig, fullfile('../time_calibration_stripe7/', ['rgb_' embryoID '.png']))
-
-        end
-        
+        end        
     end
 end
-
 
 %% Now match to time domain Eve data
 for kk = 1:length(lut.folders)

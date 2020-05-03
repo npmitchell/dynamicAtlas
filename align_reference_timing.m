@@ -26,11 +26,13 @@ end
 %% Train on stripe7 for each subsampled data in ilastik
 
 %% Extract leading edge of stripe from Loaded probabilities
+probfn = [ mipfnBase substr '_Probabilities.h5'] ;
 minsz = 5e3 ;
 maxsz = 1e6 ;
+
 for ii = 1:length(expts)
     disp(['Extracting stripe 7 for expt ' num2str(ii)])
-    fns = dir(fullfile(expts{ii}, [ mipfnBase substr '_Probabilities.h5'])) ;
+    fns = dir(fullfile(expts{ii}, probfn)) ;
     try
         assert(length(fns) == 1)
     catch

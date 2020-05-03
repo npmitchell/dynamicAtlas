@@ -16,7 +16,6 @@ clear
 view = true ;              % view intermediate results
 save_ims = true ;           % save images of the gradients
 overwrite_images = false ;   % overwrite the gradient and smoothed images
-% magfactor = 10 ;            % Factor to multiply gradients to uniformly increase brightness
 gather_timebins = false ;    % Average images within time bins
 overwrite_binims = false ;  % overwrite the gradient and smoothed images for gathered timebins
 rootDir = './' ;           
