@@ -24,10 +24,11 @@ addpath('./polyparci')
 addpath('./ploterr')
 gutDir = '/data/code/gut_matlab/' ;
 addpath(gutDir)
+addpath('/data/code/time_align_embryos/lookup/')
 
 %% Build the lookuptable
 a = lookupTable ;
-a = a.buildLookup('') ;
+a = a. ;
 lut = a.map('Runt') ;
 lut2 = a.map('Slp') ;
 
@@ -81,8 +82,7 @@ trange = 25:41 ;
 for kk = 1:length(lut.folders)
     
     embryoDir = lut.folders{kk} ;
-    exptName = strsplit(lut.folders{kk}, '/') ;
-    exptName = exptName{end} ;
+    embryoID = lut.embryoIDs{kk} ;
     
     stripefn = fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']) ;
     if ~exist(stripefn, 'file') || overwrite
@@ -146,7 +146,7 @@ for kk = 1:length(lut.folders)
             hold on
             plot(curv, 'o-')
             curv
-            title(['Identification of stripe 7: ' exptName '. <Enter> to save'])
+            title(['Identification of stripe 7: ' embryoID '. <Enter> to save'])
             % Check if the result is good
             button = waitforbuttonpress() ;
             if button && ~strcmp(get(gcf, 'CurrentKey'), 'return')
@@ -248,7 +248,7 @@ for kk = 1:length(lut.folders)
                         % Select the ROI
                         close all
                         imshow(bw)
-                        title(['Select ROI: ' exptName '\n' embryoDir])
+                        title(['Select ROI: ' embryoID '\n' embryoDir])
                         BWmask = roipoly ;
                         disp(['Saving mask to ' maskfn])
                         imwrite(BWmask, maskfn) ;
@@ -283,31 +283,24 @@ for kk = 1:length(lut.folders)
                 end
             end
             % Save the image
-            title(['Identification of stripe 7: ' exptName '. <Enter> to save'])
+            title(['Identification of stripe 7: ' embryoID '. <Enter> to save'])
             % Check if the result is good
             if button && ~strcmp(get(gcf, 'CurrentKey'), 'return')
                 error('Exiting since non-Return keypress in figure check')
             else
                 disp('Saving figure and stripe')
             end
-            saveas(gcf, fullfile('../time_calibration_stripe7/', [exptName '.png']))
+            saveas(gcf, fullfile('../time_calibration_stripe7/', [embryoID '.png']))
             close all
         end
 
         % depth = max(curv) - min(curv) ;
         stripe7curve = curv_adj; 
         save(stripefn, 'stripe7curve')
-
-        if strcmp(stripefn, '/Users/npmitchell/Box/Flies/WT/Ftz_Paired_Runt/201905091640/Runt_stripe7curve.mat') || kk == 8
-            error('here')
-        end
     
         % Save fancy image
         if save_fancy
-            cavailable = lut.channelnums{kk} ;
-
-            % Load each channel
-            ch1 = dir(fullfile(embryoDir, [prepend num2str(cavailable(1)) postpend])) ;
+            % Load image
             im1 = imread(fullfile(ch1(1).folder, ch1(1).name)) ;
 
             % Adjust intensity
@@ -350,7 +343,7 @@ for kk = 1:length(lut.folders)
             plot(curv_adj(:, 1), curv_adj(:, 2), 'o-', 'color', yellow)
             % plot(curv' + midx, (1:length(curv)) + midy - width, 'o-', 'color', yellow)
             title('Identification of stripe 7')
-            saveas(fig, fullfile('../time_calibration_stripe7/', ['rgb_' exptName '.png']))
+            saveas(fig, fullfile('../time_calibration_stripe7/', ['rgb_' embryoID '.png']))
 
         end
         
@@ -361,8 +354,7 @@ end
 %% Now match to time domain Eve data
 for kk = 1:length(lut.folders)
     embryoDir = lut.folders{kk} ;
-    exptName = strsplit(lut.folders{kk}, '/') ;
-    exptName = exptName{end} ;
+    embryoID = lut.embryoIDs{kk} ;
 
     % Which adjusted curve
     load(fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']), 'stripe7curve') ;
@@ -384,30 +376,21 @@ for kk = 1:length(lut.folders)
             xyd = xyd(~isnan(xyd(:, 1)), :) ;
             xyd = [xyd(:, 2), xyd(:, 1) ];
             cvfit = [curv_adj(:, 2), curv_adj(:, 1)];
-            if allow_rotation
-                guess = [0, 0, 0]; 
-                opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
-            else
-                guess = [0, 0]; 
-                opt = fminsearch(@(x0)curveDifferenceTrans(x0, cvfit, xyd), guess, options) ;
-            end
+
+            % Optimize the placement of the curve7
             
-            % rotate and translate based on optimal params
-            if allow_rotation
-                th = opt(1) ;
-                dxy = [opt(2) opt(3)] ; 
-                cvfit = ([ cos(th), -sin(th); sin(th), cos(th) ] * cvfit')' ;
-            else
-                dxy = [opt(1) opt(2)] ;
-            end
-            cvfit = cvfit + dxy ;
-            % Find sum of squared diffs via interpolation
-            [xd, index] = unique(xyd(:, 1)) ;
-            ydint = interp1(xd, xyd(index, 2), cvfit(:, 1), 'pchip') ;
-            ssds = [ssds sum((cvfit(:, 2) - ydint).^2)] ;
             
-            % store timestamp
-            tstamps  = [tstamps qq] ;
+            % Compute chisquared(t) for this curve
+            [chisq, chisqn, ssr] = ...
+                chisquareCurves(curv, refcurvsX, refcurvsY, refvars, smooth_var) ;
+            % if allow_rotation
+            %     guess = [0, 0, 0]; 
+            %     opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
+            % else
+            %     guess = [0, 0]; 
+            %     opt = fminsearch(@(x0)curveDifferenceTrans(x0, cvfit, xyd), guess, options) ;
+            % end
+            
         end
     end
     
@@ -422,52 +405,37 @@ for kk = 1:length(lut.folders)
     t0 = trange(minID) ;
     
     % Fit to parabola
-    % plot(tstamps, ssds)
-    % plot(ssds)
-    % plot(tstamps(optID), ssds(optID))    
-    % Fit to y = a x^2 + b x + c
-    [p, S] = polyfit(trange(optID) * dt - trange(minID), pentad, 2) ;
-    a = p(1) ;
-    b = p(2) ;
-    % [y_fit,delta] = polyval(p, trange(pentx) * dt, S);
-    ci = polyparci(p, S, 0.6827) ;
-    a_unc = a - ci(1, 1) ;
-    b_unc = b - ci(1, 2) ;
-    % Find minimum
-    if a > 0
-        matchtime = -b / (2 * a) + t0 ;
-        dmdb = -1 / (2 * a) ;
-        dmda = 0.5 * b / a^2 ; 
-        matchtime_unc = sqrt((dmda * a_unc)^2 + (dmdb * b_unc)^2) ;
-    else
-        % the quadratic fit is so bad that it is upside down
-        matchtime = trange(minID) ;
-        matchtime_unc = NaN ;
-    end
+    xx = stripe(:, 1) / wAP ;
+    yy = stripe(:, 2) / wDV ;
+    segs = cutCurveIntoLeadingTrailingSegments([xx, yy]) ;
+    lead = segs{1} ;
+    curv = lead(:, [2 1]) ;
+    [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, refcurvsY, refvars, smooth_var) ;
+    % error('here')
+    [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
+
+    % Plot the result
+    timedense = 1:0.1:length(chisqn) ;
+    % minimimum of the fit is cstar
+    cstar = fit_coefs.ystar ;
+    plot(chisqn, '.-')
+    hold on;
+    yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
+    plot(timedense, yy, '--')
+    errorbar(tmatch, cstar, unc, 'horizontal')
+    ylim([0, 30])
+    xlims = xlim() ;
+    xlim([0 xlims(2)])
+    ylabel('\chi^2 / N')
+    xlabel(['time [min], dataset' num2str(ii)])
+    title(['dataset ' num2str(ii) ': $t=$' sprintf('%04d', qq)], ...
+        'Interpreter', 'Latex')
+    figfn = fullfile(embryoDir, sprintf('chisq_snap_%04d.png', qq)) ;
+    saveas(fig, figfn)
+    clf
+        
     matchtime_minutes = matchtime / 60 ;
     matchtime_unc_minutes = matchtime_unc / 60 ;
-    
-    % save an image of the five-pt fit
-    close all
-    fig = figure('visible', 'off') ;
-    % errorbar(trange(optID) * dt / 60, pentad, pentad_unc)
-    hold on;
-    plot(trange(optID) * dt / 60, pentad, 's')
-    ttt = min(trange(optID) * dt):0.1:max(trange(optID) * dt) ;
-    tttm = ttt / 60 ; % convert to minutes
-    plot(tttm, polyval(p, ttt- t0, S), '-')
-    plot(matchtime_minutes, polyval(p, matchtime - t0, S), 'o', 'color', green)
-    ploterr(matchtime_minutes, polyval(p, matchtime - t0, S), matchtime_unc_minutes, [])
-    ylabel('Sum of squared distances')
-    xlabel('time [min]')
-    title(['a = ' num2str(matchtime_minutes) ' \pm ' num2str(matchtime_unc_minutes) '  min'])
-    ylims = ylim;
-    plot(trange * dt / 60, ssds, 'k.--')
-    ylim(ylims)
-    fn = fullfile(embryoDir, [exptName '_stripefit_unc_polyfit.png']) ;
-    disp(['Saving figure to ' fn])
-    saveas(fig, fn)
-    close all
     
     % Save timing as mat and txt
     fnmat = ['timematch_curve7' texten '.mat'] ;
