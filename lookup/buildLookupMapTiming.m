@@ -69,29 +69,31 @@ labelDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
 
 %% Examine each fluorescent label in turn 
 for ii = 1:length(labelDirs)
-    label = labelDirs(ii).name ;
+    label = labelDirs{ii} ;
     labelDir = fullfile(genoParentDir, labelDirs{ii}) ;
    
     % Quick filter to ensure that this is a real fluorlabel name
     is_real_label = ~contains(label, 'sorted') ;
-    is_real_label = is_real_label && isempty(strfind(exptDirs{qqq}, 'alignment')) ;
+    is_real_label = is_real_label && isempty(strfind(labelDirs{ii}, 'alignment')) ;
     is_real_label = is_real_label && length(label) > 2 ;
     if is_real_label
         disp(['Examining label ' num2str(ii) ': ' label])
 
         % Compile list of filenames
         fileNames = {} ;
+        embryoDirs = {} ;
+        embryoIDs = {}  ;
         embryoTimes = [] ;
         embryoTimesUnc = [] ;
         
         % Cycle through all embryos in this labelDir
         embryos = dir(labelDir) ;
-        embryoDirs = {labelDirs([labelDirs.isdir]).name} ;
-        embryoDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
+        embryos = {embryos([embryos.isdir]).name} ;
+        embryos = embryos(~ismember(embryos, {'.', '..', 'figures'})) ;
 
-        for ee = 1:length(embryoDirs)
+        for ee = 1:length(embryos)
             % Obtain embryo's datestamp
-            embryo = embryoDirs{ee} ;
+            embryo = embryos{ee} ;
             disp(['Examining embryo ' embryo ' in labelDir: ', labelDirs{ee}])
 
             % Assign the filename to be seeking

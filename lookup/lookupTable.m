@@ -35,13 +35,15 @@ classdef lookupTable
             %BUILDLOOKUP Construct the lookup table
             if nargin < 2
                 error('Must supply a directory to use (genoDir) for class method buildLookup')
-            elseif nargin < 3
-                prepend = 'Max_Cyl1_2_000001_c1' ;       % string before channel index
-            end
-            if nargin < 4
+            elseif nargin < 5
                 exten = '.tif' ;    % string after channel index
+                if nargin < 4
+                    prepend = 'Max_Cyl1_2_000001_c1' ;       % string before channel index
+                    if nargin < 3
+                        timerfn = 'timematch_Runt_chisquare.mat' ;            
+                    end
+                end
             end
-            timerfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
             out = buildLookupMapTiming(genoDir, prepend, exten, timerfn, false) ;
             obj.map = out ;
         end

@@ -16,21 +16,25 @@ clear
 view = true ;              % view intermediate results
 save_ims = true ;           % save images of the gradients
 overwrite_images = false ;   % overwrite the gradient and smoothed images
-magfactor = 10 ;            % Factor to multiply gradients to uniformly increase brightness
+% magfactor = 10 ;            % Factor to multiply gradients to uniformly increase brightness
 gather_timebins = false ;    % Average images within time bins
 overwrite_binims = false ;  % overwrite the gradient and smoothed images for gathered timebins
-rootDir = '../' ;           
+rootDir = './' ;           
 genoDirs = {'WT'} ;       % Which directories (genotypes) to analyze
-prepend = 'Max_Cyl*_2_000001_c' ;       % string before label index
+prepend = 'Max_Cyl1_2_00000*_c*' ;       % string before label index
 exten = '.tif' ;    % string after label index
-timematfn = 'timematch_EveRunt_tmin27_tmax45.mat' ;
-timematfn2 = 'timematch_eve_tmin27_tmax45.mat' ;
+timerfn = 'timematch_Runt_chisquare.mat' ;
 % Declare what scales to examine (in pixels)
 sigmas = [5, 10, 20, 30, 50] ;
 steps = [1] ;
-selectedLabels = {'Runt', 'Slp', 'Ftz', 'Paired', 'Eve'} ;
+selectedLabels = {'Runt', 'Even_Skipped', 'Slp', 'Ftz', 'Paired', 'Eve'} ;
 cdf_min = 0.01 ;
 cdf_max = 0.999 ;
+
+%% Add paths
+tlaDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos';
+addpath(tlaDir) ;
+addpath(fullfile(tlaDir, 'lookup')) ;
 
 %% Examine each mutation directory, starting with WT
 for kk = 1:length(genoDirs)
@@ -46,11 +50,11 @@ for kk = 1:length(genoDirs)
 
     %% Build the lookuptable
     a = lookupTable ;
-    a = a.buildLookup('') ;
+    a = a.buildLookup(genoDir, timerfn, prepend, exten) ;
     
     %% For each labelDir, look at each embryo
-    for chii = 1:length(allLabels)
-        label = allLabels{chii} ;
+    for key = a.map.keys
+        label = key{1} ;
         % Make an output directory for this label only in the genoDir
         outFigDir = fullfile(genoDir, ['figures' filesep label filesep]) ;
 
@@ -63,7 +67,8 @@ for kk = 1:length(genoDirs)
             lut = a.map(label) ;
             disp('done building fileNames for this label')
     
-            fileNames = lut.fileNames ;
+            fileNames = lut.names ;
+            fileDirs = lut.folders ;
             
             %% Now load all filenames and make hdf5 dataset 
             % Examine on all scales in kernel and gradient
@@ -91,13 +96,15 @@ for kk = 1:length(genoDirs)
                 for k = 1:nFiles
                     msg = ['Reading file ' num2str(k) '/' num2str(nFiles)];
                     % waitbar(k/nFiles, fbar, msg)
-                    im = imread(fileNames{k});
+                    im = imread(fullfile(fileDirs{k}, fileNames{k}));
+                    im = double(im) ;
+                    im = im / max(im(:)) ;
                     [f,x] = ecdf(im(:));
                     f1 = find(f>cdf_min, 1, 'first');
                     f2 = find(f<cdf_max, 1, 'last');
                     %imshow(tmp,[x(f1) x(f2)])
                     lim = [x(f1) x(f2)];
-                    scale = mat2gray(double(im),double(lim));
+                    scale = mat2gray(im, double(lim));
                     %figure,imshow(scale)
                     smoothim = imfilter(scale, fspecial('gaussian',kernel,sigma));
                     
@@ -139,8 +146,8 @@ for kk = 1:length(genoDirs)
                             [X,Y] = meshgrid(1:size(smoothim, 1), 1:size(smoothim, 2));
                             %surf(X,Y,double(imavg)'), shading interp
                             [dX,dY] = gradient(double(smoothim(1:end, 1:end))', step);
-                            dX = magfactor * dX ;
-                            dY = magfactor * dY ;
+                            dX = dX / max(dX(:)) ;
+                            dY = dY / max(dY(:));
 
                             gradmag = sqrt(dX.^2+dY.^2);
                             if view
@@ -149,14 +156,17 @@ for kk = 1:length(genoDirs)
                                 %quiver(X(1:step:end,1:step:end),Y(1:step:end,1:step:end),dX,dY)
                                 pcolor(Y,X,gradmag), shading interp, axis equal, %colormap gray
                                 title([label ' gradient, $|\nabla I|$ '], 'Interpreter', 'Latex')
+                                pause(1)
 
                                 figure, 
                                 pcolor(Y,X,abs(dX)), shading interp, axis equal
                                 title([label ' $x$ gradient, $|\partial_x I|$ '], 'Interpreter', 'Latex')
+                                pause(1)
 
                                 figure, 
                                 pcolor(Y,X,abs(dY)), shading interp, axis equal
                                 title([label ' $y$ gradient, $|\partial_y I|$ '], 'Interpreter', 'Latex')
+                                pause(1)
                             end
 
                             % Save images of the gradients
