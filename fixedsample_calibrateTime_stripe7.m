@@ -46,8 +46,11 @@ lut = a.map(label) ;
 
 %% Plotting
 [colors, names] = define_colors ;
+colors = colors ./ vecnorm(colors, 2, 2) ;
 yellow = colors(3, :) ;
 green = colors(5, :) ;
+sky = colors(6, :) ;
+stripecolor = green ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,7 +75,7 @@ for kk = 1:length(lut.folders)
         midy = round(0.5 * size(dat, 3)) ;
         dcrop = squeeze(dat(2, midx:end, :)) ;
         addx = midx ;
-        addy = midy - width ;
+        addy = 0 ;
 
         % Extract the leading curve
         maskfn = fullfile(embryoDir, ['Runt_mask.tif']);  
@@ -97,34 +100,37 @@ for kk = 1:length(lut.folders)
             estruct = a.findEmbryo(embryoID) ;
             
             nlabels = length(estruct.names) ;
-            % if there are more than 3 labels, need to do something other
-            % than RGB
-            if nlabels < 4
-                % Make RGB image
-                for qq = 1:nlabels
-                    % load this channel/label
-                    imq = double(imread(fullfile(estruct.folders{qq}, estruct.names{qq}))) ;
-                    if qq == 1
-                        combined = zeros(size(imq, 1), size(imq, 2), 3) ;
-                    end
-                    
-                    % Adjust intensity
-                    [f,x] = ecdf(imq(:));
-                    f1 = find(f>cdf_min, 1, 'first');
-                    f2 = find(f<cdf_max, 1, 'last');
-                    lim = [x(f1) x(f2)];
-                    imq = mat2gray(imq, double(lim));
-                    combined(:, :, qq) = imq ;
+            % Make RGB image
+            alllabels = '' ;
+            for qq = 1:nlabels
+                % load this channel/label
+                imq = double(imread(fullfile(estruct.folders{qq}, estruct.names{qq}))) ;
+                if qq == 1
+                    combined = zeros(size(imq, 1), size(imq, 2), 3) ;
                 end
-            else
-                error('Have not considered this case yet. Do so here')
+                
+                alllabels = [alllabels estruct.labels{qq} '_'] ;
+
+                % Adjust intensity
+                [f,x] = ecdf(imq(:));
+                f1 = find(f>cdf_min, 1, 'first');
+                f2 = find(f<cdf_max, 1, 'last');
+                lim = [x(f1) x(f2)];
+                imq = mat2gray(imq, double(lim));
+                combined(:, :, 1) = combined(:, :, 1) + imq * colors(qq, 1) ;
+                combined(:, :, 2) = combined(:, :, 2) + imq * colors(qq, 2) ;
+                combined(:, :, 3) = combined(:, :, 3) + imq * colors(qq, 3) ;
             end
+            % correct for oversaturation
+            combined(combined > 1) = 1.0 ;
+            combined = combined / max(combined(:)) ;
                         
             % Now make the figure
             fig = figure('visible', 'off') ;
             imshow(combined)
             hold on;
-            plot(curv(:, 1), curv(:, 2), 'o-', 'color', yellow)
+            imwrite(combined, fullfile(embryoDir, [alllabels 'rgb_' embryoID '.png']))
+            plot(curv(:, 1), curv(:, 2), 'o-', 'color', stripecolor)
             % plot(curv' + midx, (1:length(curv)) + midy - width, 'o-', 'color', yellow)
             title([embryoID ': Identification of stripe 7'])
             saveas(fig, fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']))
