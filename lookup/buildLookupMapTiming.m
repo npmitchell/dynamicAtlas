@@ -94,7 +94,7 @@ for ii = 1:length(labelDirs)
         for ee = 1:length(embryos)
             % Obtain embryo's datestamp
             embryo = embryos{ee} ;
-            disp(['Examining embryo ' embryo ' in labelDir: ', labelDirs{ee}])
+            disp(['Examining embryo ' embryo ' in embryoDir: ', embryos{ee}])
 
             % Assign the filename to be seeking
             filename_pattern = [prepend exten ] ;  
