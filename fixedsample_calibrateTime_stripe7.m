@@ -31,13 +31,19 @@ dt = 60 ;
 
 %% Add paths
 tlaDir = '/Users/npmitchell/Box/Flies/code/time_alignment_2020/time_align_embryos';
+if ~exist(tlaDir, 'dir')
+    tlaDir = '/data/code/time_align_embryos/' ;
+end
+gutDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/' ;
+if ~exist(gutDir, 'dir')
+    gutDir = '/data/code/gut_matlab/mfl2/gut_matlab/' ;
+end
 addpath(fullfile(tlaDir, 'polyparci'))
 addpath(fullfile(tlaDir, 'ploterr'))
-gutDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/' ;
-addpath(gutDir)
-addpath(fullfile(gutDir, 'plotting')) ;
 addpath(fullfile(tlaDir, 'lookup'))
 addpath(fullfile(tlaDir, 'fixed_stripe7'))
+addpath(gutDir)
+addpath(fullfile(gutDir, 'plotting')) ;
 
 %% Build the lookuptable
 a = lookupTable() ;
@@ -59,16 +65,19 @@ stripecolor = green ;
 %% Process probabilities in iLastik -- train on stripe7 versus not a stripe
 
 %% Identify stripes if not done so already
+stripefn = 'Runt_stripe7curve.mat' ;
+probfn = ['sigma020_step001/smooth/', label, '_smooth', sigmastep,...
+    '_bin_Probabilities.h5'] ;
 for kk = 1:length(lut.folders)
     
     filename = lut.names{kk} ;
     embryoDir = lut.folders{kk} ;
     embryoID = lut.embryoIDs{kk} ;
     
-    stripefn = fullfile(embryoDir, ['Runt_stripe7curve.mat']) ;
+    stripefn = fullfile(embryoDir, 'Runt_stripe7curve.mat') ;
     if ~exist(stripefn, 'file') || overwrite
 
-        pfn = fullfile(embryoDir, [prepend '_Probabilities.h5']) ;
+        pfn = fullfile(embryoDir, probfn) ;
         disp(['Opening ' pfn])
         dat = h5read(pfn, '/exported_data') ;
         midx = round(0.5 * size(dat, 2)) ;
@@ -109,6 +118,7 @@ for kk = 1:length(lut.folders)
                     combined = zeros(size(imq, 1), size(imq, 2), 3) ;
                 end
                 
+                % append to all labels for fancy image saving
                 alllabels = [alllabels estruct.labels{qq} '_'] ;
 
                 % Adjust intensity
@@ -144,8 +154,8 @@ for kk = 1:length(lut.folders)
     embryoID = lut.embryoIDs{kk} ;
 
     % Which adjusted curve
-    load(fullfile(embryoDir, ['Runt_stripe7curve' wexten '.mat']), 'stripe7curve') ;
-    curv_adj = stripe7curve ;
+    load(fullfile(embryoDir, stripefn), 'stripe7curve') ;
+    curv = stripe7curve ;
     
     % Match to dynamic data curv
     ssds = [] ; 
@@ -162,7 +172,7 @@ for kk = 1:length(lut.folders)
             xyd = evecurvs{qq} ;
             xyd = xyd(~isnan(xyd(:, 1)), :) ;
             xyd = [xyd(:, 2), xyd(:, 1) ];
-            cvfit = [curv_adj(:, 2), curv_adj(:, 1)];
+            cvfit = [curv(:, 2), curv(:, 1)];
 
             % Optimize the placement of the curve7
             
