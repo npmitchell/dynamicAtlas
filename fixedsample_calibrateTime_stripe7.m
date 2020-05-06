@@ -67,7 +67,7 @@ stripecolor = green ;
 
 %% Identify stripes if not done so already
 stripefn = 'Runt_stripe7curve.mat' ;
-probfn = [sigmastep, filesep, 'smooth', filesep, label, '_smooth', ...
+probfn = [sigmastep(2:end), filesep, 'smooth', filesep, label, '_smooth', ...
     sigmastep, '_bin_Probabilities.h5'] ;
 for kk = 1:length(lut.folders)
     
