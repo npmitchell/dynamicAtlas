@@ -1,4 +1,8 @@
 function curv = extractStripeEdges(dat, maskfn, thres, minmaxsz, embryoID)
+% extractStripeEdges(dat, maskfn, thres, minmaxsz, embryoID)
+% 
+% NPMitchell 2020
+
 
 % Here, we cut the image in half, assuming that the time we are
 % interested in finishes before stripe 7 extends halfway across
@@ -15,12 +19,16 @@ addy = 0 ;
 minsz = minmaxsz(1) ;
 maxsz = minmaxsz(2) ;
 
+% Define erosion/dilation operators
+se2 = strel('disk', 2) ;
+
 if exist(maskfn, 'file')
     bw2 = imread(maskfn);
 else
     disp(['mask does not exist: ' maskfn])
 
     [bw2, bw] = autoStripe7(dcrop, thres, minsz, maxsz)  ;
+    placement = 0 ;  % seek maximum initiallye
 
     % Check if this automatic way is good enough
     move_on = false ;
@@ -42,7 +50,7 @@ else
             good_enough = false ;
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'c')
             % Clear and reset to autogenerate
-            aux_auto_stripe7
+            [bw2, bw] = autoStripe7(dcrop, thres, minsz, maxsz)  ;
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'r')
             if exist('BWmask', 'var')
                 % reuse previous mask
@@ -100,7 +108,7 @@ else
     else
         if ~exist(maskfn, 'file')
             imshow(bw)
-            title(timestr)
+            title('Select ROI polygon (for BWmask)')
             disp('Select ROI polygon (BWmask)')
             BWmask = roipoly ;
             % Check out the result

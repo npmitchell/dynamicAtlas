@@ -23,7 +23,8 @@ else
 end
 cdf_min = 0.01 ;
 cdf_max = 0.999 ;
-sigma = 5 ;
+% sigma = smoothing used in the stripe ID in iLastik
+sigma = 20 ;
 kernel = 5*sigma;
 step = 1 ;
 sigmastep = sprintf('_sigma%03d_step%03d', sigma, step) ;
@@ -36,7 +37,7 @@ if ~exist(tlaDir, 'dir')
 end
 gutDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/gut_matlab/' ;
 if ~exist(gutDir, 'dir')
-    gutDir = '/data/code/gut_matlab/mfl2/gut_matlab/' ;
+    gutDir = '/data/code/gut_matlab_mfl2/gut_matlab/' ;
 end
 addpath(fullfile(tlaDir, 'polyparci'))
 addpath(fullfile(tlaDir, 'ploterr'))
@@ -66,8 +67,8 @@ stripecolor = green ;
 
 %% Identify stripes if not done so already
 stripefn = 'Runt_stripe7curve.mat' ;
-probfn = ['sigma020_step001/smooth/', label, '_smooth', sigmastep,...
-    '_bin_Probabilities.h5'] ;
+probfn = [sigmastep, filesep, 'smooth', filesep, label, '_smooth', ...
+    sigmastep, '_bin_Probabilities.h5'] ;
 for kk = 1:length(lut.folders)
     
     filename = lut.names{kk} ;
@@ -87,7 +88,7 @@ for kk = 1:length(lut.folders)
         addy = 0 ;
 
         % Extract the leading curve
-        maskfn = fullfile(embryoDir, ['Runt_mask.tif']);  
+        maskfn = fullfile(embryoDir, 'Runt_mask.tif');  
         if ~exist(maskfn, 'file') || ~exist(stripefn, 'file') || overwrite
             thres = 0.5 ;
             minmaxsz = [5e3, 1e8] ;
@@ -101,7 +102,6 @@ for kk = 1:length(lut.folders)
         else
             curv = load(stripefn, 'stripe7curve') ;
         end
-
     
         % Save fancy image
         if save_fancy
@@ -162,35 +162,29 @@ for kk = 1:length(lut.folders)
     tstamps = [] ;
     options = optimset('MaxIter', 25, 'TolX', 1e-2) ; 
     % Other options: ('FunctionTolerance', 1e-7, 'Display','iter','PlotFcns',@optimplotfval);
-    % Consider each timepoint
-    for qq = trange
-        % compare to this curve
-        if ~isempty(evecurvs{qq})
-            msg = [exptName ': Considering eve curve for timept ' num2str(qq)] ;
-            disp(msg)
-            
-            xyd = evecurvs{qq} ;
-            xyd = xyd(~isnan(xyd(:, 1)), :) ;
-            xyd = [xyd(:, 2), xyd(:, 1) ];
-            cvfit = [curv(:, 2), curv(:, 1)];
-
-            % Optimize the placement of the curve7
-            
-            
-            % Compute chisquared(t) for this curve
-            [chisq, chisqn, ssr] = ...
-                chisquareCurves(curv, refcurvsX, refcurvsY, refvars, smooth_var) ;
-            % if allow_rotation
-            %     guess = [0, 0, 0]; 
-            %     opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
-            % else
-            %     guess = [0, 0]; 
-            %     opt = fminsearch(@(x0)curveDifferenceTrans(x0, cvfit, xyd), guess, options) ;
-            % end
-            
-        end
-    end
     
+    % Consider each timepoint, compare to this curve to reference curves
+    msg = [exptName ': Considering eve curve for timept ' num2str(qq)] ;
+    disp(msg)
+
+    xyd = evecurvs{qq} ;
+    xyd = xyd(~isnan(xyd(:, 1)), :) ;
+    xyd = [xyd(:, 2), xyd(:, 1) ];
+    cvfit = [curv(:, 2), curv(:, 1)];
+
+    % Optimize the placement of the curve7
+    
+    % Compute chisquared(t) for this curve
+    [chisq, chisqn, ssr] = ...
+        chisquareCurves(curv, refcurvsX, refcurvsY, refvars, smooth_var) ;
+    % if allow_rotation
+    %     guess = [0, 0, 0]; 
+    %     opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
+    % else
+    %     guess = [0, 0]; 
+    %     opt = fminsearch(@(x0)curveDifferenceTrans(x0, cvfit, xyd), guess, options) ;
+    % end
+         
     % Filter to get minimum
     % windowWidth = 3;  % for quick smoothing
     % kernel = ones(windowWidth, 1) / windowWidth;
