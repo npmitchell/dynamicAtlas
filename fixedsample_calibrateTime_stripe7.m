@@ -6,7 +6,7 @@ clearvars
 clc
 save_fancy = true; 
 allow_rotation = false ;
-overwrite = true ;
+overwrite = false ;
 overwrite_fancyIm = true ;
 
 % Options: Which data to analyze
@@ -289,7 +289,7 @@ for kk = 1:length(lut.folders)
         matchtime_unc = sqrt((dmda * a_unc)^2 + (dmdb * b_unc)^2) ;
     else
         % the quadratic fit is so bad that it is upside down
-        matchtime = trange(minID) ;
+        matchtime = minID ;
         matchtime_unc = NaN ;
     end
     matchtime_minutes = matchtime * dt ;
