@@ -114,7 +114,8 @@ for kk = 1:length(lut.folders)
         % resize stripe7 curv
         curv = stripe7curve_frac ;
     else
-        curv = load(stripefnkk, 'stripe7curve_frac') ;
+        load(stripefnkk, 'stripe7curve_frac') ;
+        curv = stripe7curve_frac ;
     end
 
     % Save fancy image
