@@ -276,10 +276,8 @@ end
 % consider each experiment pair
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
-    % Load time sequence MIPs of dataset ii
-    disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
-    mipI = loadtiff(fullfile(expts{ii}, mipfn)) ;
-    ntpI = size(mipI, 3) ;
+    
+    loaded_ii = false ;
     for jj = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_%02d_%02d' extn ] ;
@@ -288,6 +286,16 @@ for ii = 1:length(expts)
         
         % Decide to compute the correlations or not 
         if ~exist(cfn, 'file') || overwrite
+            
+            % Load dataset ii now since it is needed
+            if ~loaded_ii 
+                % Load time sequence MIPs of dataset ii
+                disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
+                mipI = loadtiff(fullfile(expts{ii}, mipfn)) ;
+                ntpI = size(mipI, 3) ;
+                loaded_ii = true ;
+            end
+            
             if ~exist(cfn, 'file')
                 disp('Computing correlations')
             else
@@ -418,9 +426,9 @@ end
 
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
-    % Load time sequence MIPs of dataset ii
-    disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
-    mipI = loadtiff(fullfile(expts{ii}, mipfn)) ;
+    
+    loaded_ii = false ;
+    
     for jj = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_%02d_%02d' extn ] ;
@@ -431,12 +439,30 @@ for ii = 1:length(expts)
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
+            
+            % Load dataset ii if not already done
+            if ~loaded_ii
+                % Load time sequence MIPs of dataset ii
+                disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
+                mipI = loadtiff(fullfile(expts{ii}, mipfn)) ;
+                loaded_ii = true ;
+            end
+            
             % Self-correspondence
             this_ijstr = sprintf(ijstr, ii, jj) ;
             tpath = [(1:size(mipI, 3))', (1:size(mipI, 3))'] ;
             time_correspondences = tpath;
             save(cpathfn, 'time_correspondences') ;
         elseif ~exist(cpathfn, 'file') || overwrite
+            
+            % Load dataset ii if not already done
+            if ~loaded_ii
+                % Load time sequence MIPs of dataset ii
+                disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
+                mipI = loadtiff(fullfile(expts{ii}, mipfn)) ;
+                loaded_ii = true ;
+            end
+            
             % Load time sequence MIPs of dataset jj
             disp([' --> Loading MIPs tiff for jj=', num2str(jj), ...
                 ': ', fullfile(expts{jj}, mipfn)])
@@ -1064,7 +1090,7 @@ end
 % Build ttc: time-time correlation cell
 ttcfn = fullfile(timelineDir, 'ttc.mat') ;
 if exist(ttcfn, 'file') && ~overwrite
-    ttc = load(ttcfn, 'ttc') ;
+    load(ttcfn, 'ttc') ;
 else
     ttc = cell(length(expts), 1) ;
     for ii = 1:length(expts)
@@ -1328,7 +1354,7 @@ for use_BL = [true false]
             ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
             % disp('press any button on figure')
-            pause(1)
+            pause(0.1)
         else
             % Add bonds to plot using NL,KL 
             % cycle only through the linear point indices that belong to ii
@@ -1346,7 +1372,7 @@ for use_BL = [true false]
             ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
             % disp('press any button')
-            pause(1)
+            pause(0.1)
         end
     end
 end
@@ -1977,7 +2003,7 @@ end
 disp('done with final collapsed output')
 
 %% How accurate can we measure the timing?
-calibDir = './alignment_calibration/' ;
+calibDir = fullfile(alignDir, 'alignment_calibration') ;
 load(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
@@ -1988,7 +2014,7 @@ refvars = LVs' ;
 % Align Stripe 7 for each frame with chisquare analysis
 close all
 fig = figure('visible', 'off') ;
-for ii = 1:length(expts)
+for ii = 2:length(expts)
     clf
     disp(['dataset ii = ', num2str(ii)])
     
@@ -2008,7 +2034,7 @@ for ii = 1:length(expts)
     tuncs = zeros(length(stripe7curves), 1) ;
     tt = 1:length(stripe7curves) ;
     for qq = tt 
-        if mod(qq, 10) == 0
+        if mod(qq, 1) == 0
             disp(['qq = ' num2str(qq)])
         end
         stripe = stripe7curves{qq} ;
@@ -2017,7 +2043,8 @@ for ii = 1:length(expts)
         segs = cutCurveIntoLeadingTrailingSegments([xx, yy]) ;
         lead = segs{1} ;
         curv = lead(:, [2 1]) ;
-        [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, refcurvsY, refvars, smooth_var) ;
+        [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, ...
+            refcurvsY, refvars, smooth_var, true) ;
         % error('here')
         [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
         
@@ -2063,7 +2090,6 @@ for ii = 1:length(expts)
     figoutfn = fullfile(calibDir, ...
         sprintf('dset%02d_calibration_cij_tmatches.png', ii)) ;
     saveas(fig, figoutfn)
-    error('here')
     
 end
 

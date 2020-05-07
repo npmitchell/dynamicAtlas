@@ -43,10 +43,10 @@ if ~exist(gutDir, 'dir')
 end
 % Where are the reference curves for timing?
 if strcmp(label, 'Runt')
-    refDir = '/Users/npmitchell/Desktop/tmp/alignment/realspace_corr/' ;
+    refDir = '/Users/npmitchell/Desktop/tmp/alignment/realspace_corr_ss04/' ;
 end
 if ~exist(refDir, 'dir')
-    refDir = '/mnt/crunch/Atlas_Data/Atlas_Data/WT/' ;
+    refDir = '/mnt/crunch/Atlas_Data/Atlas_Data/WT/Runt-Nanobody_time_alignment/realspace_corr_ss04' ;
 end
 addpath(tlaDir)
 addpath(fullfile(tlaDir, 'polyparci'))
@@ -199,7 +199,7 @@ for kk = 1:length(lut.folders)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Compute chisquared(t) for this curve
     [chisq, chisqn, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
-        true, optimize_trans, optimization_options) ;
+        true, optimize_trans) ;
     % if allow_rotation
     %     guess = [0, 0, 0]; 
     %     opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
@@ -263,7 +263,7 @@ for kk = 1:length(lut.folders)
     % plot(ssds)
     % plot(tstamps(optID), ssds(optID))    
     % Fit to y = a x^2 + b x + c
-    [p, S] = polyfit(optID, pentad, 2) ;
+    [p, S] = polyfit(optID(:), pentad(:), 2) ;
     a = p(1) ;
     b = p(2) ;
     % [y_fit,delta] = polyval(p, trange(pentx) * dt, S);

@@ -53,10 +53,12 @@ for ii = 1:size(refcurvsY, 1)
     
     % Optimize the placement of the curve wrt reference
     if optimize_translation
+        % disp('chisquareCurves: Optimizing translation')
         % Optimize for DV motion, add to list of leading for this TP
         x0 = [0., 0.] ;
         fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, true, true) ;
-        shifts = fminsearch(fun, x0) ;
+        options = optimset('TolX', 1e-2, 'TolFun', 0.1);
+        shifts = fminsearch(fun, x0, options) ;
         curv = curv + [shifts(1), shifts(2)] ;
         % Modulo for wDV
         curv(:, 1) = mod(curv(:, 1), 1) ;
