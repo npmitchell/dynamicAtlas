@@ -7,6 +7,7 @@ clc
 save_fancy = true; 
 allow_rotation = false ;
 overwrite = true ;
+overwrite_fancyIm = true ;
 
 % Options: Which data to analyze
 label = 'Runt' ;  % Whether to use Runt-Nanobody or Eve data
@@ -118,7 +119,7 @@ for kk = 1:length(lut.folders)
 
     % Save fancy image
     fancyImFn = fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']) ;
-    if save_fancy && (~exist(fancyImFn, 'file') || overwrite) 
+    if save_fancy && (~exist(fancyImFn, 'file') || overwrite || overwrite_fancyIm) 
         disp(['Building ' fancyImFn])
         close all
         % Load image and all other images of this embryo
