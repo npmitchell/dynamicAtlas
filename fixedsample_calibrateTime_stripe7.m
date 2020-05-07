@@ -7,7 +7,6 @@ clc
 save_fancy = true; 
 allow_rotation = false ;
 overwrite = true ;
-overwrite_ROI = false ;
 
 % Options: Which data to analyze
 label = 'Runt' ;  % Whether to use Runt-Nanobody or Eve data
@@ -43,7 +42,7 @@ if ~exist(gutDir, 'dir')
 end
 % Where are the reference curves for timing?
 if strcmp(label, 'Runt')
-    refDir = '/Users/npmitchell/Desktop/tmp/alignment/realspace_corr_ss04/' ;
+    refDir = '/Users/npmitchell/Desktop/tmp/Runt-Nanobody_time_alignment/realspace_corr_ss04/' ;
 end
 if ~exist(refDir, 'dir')
     refDir = '/mnt/crunch/Atlas_Data/Atlas_Data/WT/Runt-Nanobody_time_alignment/realspace_corr_ss04' ;
@@ -87,6 +86,7 @@ for kk = 1:length(lut.folders)
     
     stripefnkk = fullfile(embryoDir, 'Runt_stripe7curve.mat') ;
     if ~exist(stripefnkk, 'file') || overwrite
+        disp(['Building ' stripefnkk])
 
         pfn = fullfile(embryoDir, probfn) ;
         disp(['Opening ' pfn])
@@ -109,12 +109,18 @@ for kk = 1:length(lut.folders)
         stripe7curve_frac(:, 1) = double(stripe7curve_frac(:, 1)) / double(size(dat, 2)) ;
         stripe7curve_frac(:, 2) = double(stripe7curve_frac(:, 2)) / double(size(dat, 3)) ;
         save(stripefnkk, 'stripe7curve', 'stripe7curve_frac')
+        
+        % resize stripe7 curv
+        curv = stripe7curve_frac ;
     else
-        curv = load(stripefnkk, 'stripe7curve') ;
+        curv = load(stripefnkk, 'stripe7curve_frac') ;
     end
 
     % Save fancy image
-    if save_fancy
+    fancyImFn = fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']) ;
+    if save_fancy && (~exist(fancyImFn, 'file') || overwrite) 
+        disp(['Building ' fancyImFn])
+        close all
         % Load image and all other images of this embryo
         estruct = a.findEmbryo(embryoID) ;
 
@@ -144,16 +150,19 @@ for kk = 1:length(lut.folders)
         % correct for oversaturation
         combined(combined > 1) = 1.0 ;
         combined = combined / max(combined(:)) ;
-
+        wDV = size(combined, 1) ;
+        wAP = size(combined, 2) ;
+        
         % Now make the figure
         fig = figure('visible', 'off') ;
         imshow(combined)
         hold on;
         imwrite(combined, fullfile(embryoDir, [alllabels 'rgb_' embryoID '.png']))
-        plot(curv(:, 1), curv(:, 2), 'o-', 'color', stripecolor)
+        plot(curv(:, 1)*wAP, curv(:, 2)*wDV, 'o-', 'color', stripecolor)
         % plot(curv' + midx, (1:length(curv)) + midy - width, 'o-', 'color', yellow)
         title([embryoID ': Identification of stripe 7'])
-        saveas(fig, fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']))
+        saveas(fig, fancyImFn)
+        close all
     end   
 end
 
