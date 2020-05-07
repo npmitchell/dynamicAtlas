@@ -7,7 +7,7 @@ function [xstar, err, fit_coefs] = chisqMinUncertainty(chisq, minN2fit, maxN2fit
 % Find the edge of the chisq above min
 pidx = idx ;
 thischi = chisq(pidx) ;
-while thischi < minchi + 1
+while thischi < minchi + 1 && pidx < length(chisq)
     pidx = pidx + 1 ;
     thischi = chisq(pidx) ;
 end
@@ -15,7 +15,7 @@ end
 % Find the edge of the chisq below min
 nidx = idx ;
 thischi = chisq(nidx) ;
-while thischi < minchi + 1
+while thischi < minchi + 1 && nidx > 1
     nidx = nidx - 1 ; 
     thischi = chisq(nidx) ;
 end
