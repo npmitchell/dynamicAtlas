@@ -1,10 +1,9 @@
 function [xstar, err, fit_coefs] = chisqMinUncertainty(chisq, minN2fit, maxN2fit)
 
-
+% Grab the minimum
 [minchi, idx] = min(chisq) ;
 
 % March away from min until we pass chimin+1
-
 % Find the edge of the chisq above min
 pidx = idx ;
 thischi = chisq(pidx) ;
@@ -85,9 +84,6 @@ xstar = minxtilde * stdx + meanx ;
 % --> Dxt = 1 / sqrt(a) ;
 % Then convert Dxt into Dx = Dxt * stdx ;
 err = stdx / sqrt(aa) ; 
-
-
-
 
 
 

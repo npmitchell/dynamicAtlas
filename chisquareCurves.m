@@ -1,5 +1,5 @@
 function [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvsX, ...
-    refcurvsY, refvars, smooth_var)
+    refcurvsY, refvars, smooth_var, optimize_translation)
 % chisquareCurves(curv, refcurvs, refvar, take_mean, symmetrize)
 % 
 % todo: enable refcurvs and refvar to be cell instead of 2D array
@@ -22,6 +22,9 @@ function [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvsX, ...
 % NPMitchell 2020
 
 % optional parameters
+if nargin < 6
+    optimize_translation = false ;
+end
 
 % create chisq array
 chisq = zeros(size(refcurvsY, 1), 1) ;
@@ -41,11 +44,23 @@ for ii = 1:size(refcurvsY, 1)
         refcurvX = refcurvsX ;
     end
     refcurvY = refcurvsY(ii, :) ;
+    
     refcurv = [ refcurvX(:), refcurvY(:) ] ;
     refvar = refvars(ii, :) ;
     
     % mask zeros in variance
     refvar(refvar == 0) = NaN ;
+    
+    % Optimize the placement of the curve wrt reference
+    if optimize_translation
+        % Optimize for DV motion, add to list of leading for this TP
+        x0 = [0., 0.] ;
+        fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, true, true) ;
+        shifts = fminsearch(fun, x0) ;
+        curv = curv + [shifts(1), shifts(2)] ;
+        % Modulo for wDV
+        curv(:, 1) = mod(curv(:, 1), 1) ;
+    end    
     
     d2 = pdist2(curv, refcurv, 'squaredeuclidean');
     [dists, idx] = nanmin(d2, [], 2);
