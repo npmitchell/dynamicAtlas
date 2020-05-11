@@ -8,6 +8,7 @@ save_fancy = true;
 allow_rotation = false ;
 overwrite = false ;
 overwrite_fancyIm = true ;
+hands_on = true ;
 
 % Options: Which data to analyze
 label = 'Runt' ;  % Whether to use Runt-Nanobody or Eve data
@@ -222,7 +223,13 @@ for kk = 1:length(lut.folders)
     % Fit chisq to parabola
     % Convert into match and uncertainty, using at least 4 and at most 10
     % timepoints to fit the parabolic minimum.
-    [matchtime, matchtime_unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
+    chisqn = fillmissing(chisqn, 'movmedian', 5) ;
+    if hands_on
+        [matchtime, matchtime_unc, fit_coefs, nidx, pidx] = ...
+            chisqMinUncInteractiveDomain(chisqn, 4, 10, ssr) ;
+    else         
+        [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
+    end
     matchtime_minutes = matchtime * dt ;
     matchtime_unc_minutes = matchtime_unc * dt ;
 
@@ -265,7 +272,7 @@ for kk = 1:length(lut.folders)
     % kernel = ones(windowWidth, 1) / windowWidth;
     % ssdsm = filter(kernel, 1, ssds);
     [~, minID] = min(ssr) ;
-    optID = max(1, minID-2):min(minID+2, length(ssr)) ;
+    optID = max(1, minID-6):min(minID+6, length(ssr)) ;
     % pentad = ssdsm(optID) ;    
     pentad = ssr(optID) ;    
     

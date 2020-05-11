@@ -51,7 +51,8 @@ for ii = 1:length(expts)
             end
         end
     else
-        continue_curves = true ;
+        continue_curves = false ;
+        error('here')
     end
         
     if continue_curves || overwrite        
@@ -509,7 +510,7 @@ for ii = 1:length(expts)
             plot(xtmp, ytmp, 'k--')
             axis equal
             axis tight
-            msg = 'Does path look ok? Enter=yes, Backspace=no, Delete=No correspondence' ;
+            msg = 'Does path look ok? Enter=yes, Backspace=no, n/Delete=No correspondence' ;
             xlabel(['time, dataset ', num2str(ii)])
             ylabel(['time, dataset ', num2str(jj)])
             title(msg)
@@ -527,7 +528,7 @@ for ii = 1:length(expts)
                     % Save this 
                     title(['Initial correspondence between ' num2str(ii) ' and ' num2str(jj)])
                     saveas(gcf, fullfile(corrImOutDir, ['correspondence' this_ijstr '_initial.png']))
-                elseif button && strcmp(get(gcf, 'CurrentKey'), 'delete')
+                elseif button && (strcmp(get(gcf, 'CurrentKey'), 'delete') || strcmp(get(gcf, 'CurrentKey'), 'n') )
                     abort = true ;
                     good_button = true ;
                     move_on = true
@@ -1891,7 +1892,7 @@ disp('done with curve collapse')
 
 %% Smooth collapsed mean curves in master time
 filtWidth = 10;
-filtSigma = 6;
+filtSigma = 6 ;
 imageFilter = fspecial('gaussian',filtWidth,filtSigma);
         
 c7MatFiltFn = fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat') ;
@@ -1902,12 +1903,12 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
 
     % Preallocate matrices of positions and variances in position of leading
     % and trailing stripes
-    LX = zeros(length(xx), length(times2do)) ;
-    LV = zeros(length(xx), length(times2do)) ;
-    LS = zeros(length(xx), length(times2do)) ;
-    TX = zeros(length(xx), length(times2do)) ;
-    TV = zeros(length(xx), length(times2do)) ;
-    TS = zeros(length(xx), length(times2do)) ;
+    LX = nan(length(xx), length(times2do)) ;
+    LV = nan(length(xx), length(times2do)) ;
+    LS = nan(length(xx), length(times2do)) ;
+    TX = nan(length(xx), length(times2do)) ;
+    TV = nan(length(xx), length(times2do)) ;
+    TS = nan(length(xx), length(times2do)) ;
     for qi = 1:length(times2do)
         disp(['Collating time ' num2str(qi)])
         close all
@@ -1921,9 +1922,21 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
         TV(:, qi) = trailfrac(:, 3) ; % variance
         TS(:, qi) = trailfrac(:, 4) ; % stdev
     end
+    LX(LX==0) = NaN ;
+    LV(LV==0) = NaN ;
+    LS(LS==0) = NaN ;
+    TX(TX==0) = NaN ;
+    TV(TV==0) = NaN ;
+    TS(TS==0) = NaN ;
+    LX = (fillmissing(LX', 'previous'))' ;
+    LV = (fillmissing(LV', 'previous'))' ;
+    LS = (fillmissing(LS', 'previous'))' ;
+    TX = (fillmissing(TX', 'previous'))' ;
+    TV = (fillmissing(TV', 'previous'))' ;
+    TS = (fillmissing(TS', 'previous'))' ;
 
     % Now smooth along time dim
-    hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
+    hh = [1 2 3 4 5 6 5 4 3 2 1] / sum([1 2 3 4 5 6 5 4 3 2 1]) ;
     LXs = LX ; 
     LVs = LV ; 
     LSs = LS ;
@@ -1962,9 +1975,11 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
         TSs(xi, :) = ssm ;
     end
     
-    % Smooth in 2D 
-    vsm = nanconv(vsm,imageFilter, 'nanout');
-    ssm = nanconv(ssm,imageFilter, 'nanout');
+    % Smooth in 2D twice
+    LVs = nanconv(LVs, imageFilter, 'nanout');
+    LSs = nanconv(LSs, imageFilter, 'nanout');
+    TVs = nanconv(TVs, imageFilter, 'nanout');
+    TSs = nanconv(TSs, imageFilter, 'nanout');
     
     % Save to disk
     save(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
@@ -2007,35 +2022,40 @@ calibDir = fullfile(alignDir, 'alignment_calibration') ;
 load(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
-smooth_var = true ;
+hands_on = true ;
+smooth_var = false ;
+save_snaps = false ;
 refcurvX = xx ;
 refcurvsY = LXs' ;
 refvars = LVs' ;
 % Align Stripe 7 for each frame with chisquare analysis
 close all
 fig = figure('visible', 'off') ;
-for ii = 2:length(expts)
+for exptii = 4:length(expts)
     clf
-    disp(['dataset ii = ', num2str(ii)])
+    disp(['dataset ii = ', num2str(exptii)])
+    disp(expts{exptii})
     
     % create dir to put snapshots
-    figdir = fullfile(calibDir, sprintf('dataset_%04d_snaps', ii)) ;
+    figdir = fullfile(calibDir, sprintf('dataset_%04d_snaps', exptii)) ;
     if ~exist(figdir, 'dir')
         mkdir(figdir)
     end
 
     % Load time sequence MIPs of dataset ii
-    curvIfn = fullfile(expts{ii}, 'stripe7curves.mat') ;
-    tmp = load(curvIfn, 'stripe7curves') ;
+    curvIfn = fullfile(expts{exptii}, 'stripe7curves.mat') ;
+    load(curvIfn, 'stripe7curves') ;
     chisq = zeros([length(stripe7curves), 1]) ;
     
     % preallocate
     tmatches = zeros(length(stripe7curves), 1) ;
     tuncs = zeros(length(stripe7curves), 1) ;
+    tmatches_ssr = zeros(length(stripe7curves), 1) ;
+    tuncs_ssr = zeros(length(stripe7curves), 1) ;
     tt = 1:length(stripe7curves) ;
-    for qq = tt 
-        if mod(qq, 1) == 0
-            disp(['qq = ' num2str(qq)])
+    for qq = 1:10:length(tt)
+        if mod(qq, 10) == 0
+            disp(['calibration: qq = ' num2str(qq)])
         end
         stripe = stripe7curves{qq} ;
         xx = stripe(:, 1) / wAP ;
@@ -2046,50 +2066,93 @@ for ii = 2:length(expts)
         [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, ...
             refcurvsY, refvars, smooth_var, true) ;
         % error('here')
-        [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
-        
+        chisqn = fillmissing(chisqn, 'movmedian', 5) ;
+        if hands_on
+            [tmatch, unc, fit_coefs, nidx, pidx] = ...
+                chisqMinUncInteractiveDomain(chisqn, 4, 10, ssr) ;
+        else        
+            [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
+            nidx = round(tmatch) - 10 ;
+            pidx = round(tmatch) + 10 ;    
+        end
         % Plot the result
-        timedense = 1:0.1:length(chisqn) ;
-        % minimimum of the fit is cstar
-        cstar = fit_coefs.ystar ;
-        plot(chisqn, '.-')
-        hold on;
-        yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
-        plot(timedense, yy, '--')
-        errorbar(tmatch, cstar, unc, 'horizontal')
-        ylim([0, 30])
-        xlims = xlim() ;
-        xlim([0 xlims(2)])
-        ylabel('\chi^2 / N')
-        xlabel(['time [min], dataset' num2str(ii)])
-        title(['dataset ' num2str(ii) ': $t=$' sprintf('%04d', qq)], ...
-            'Interpreter', 'Latex')
-        figfn = fullfile(figdir, sprintf('chisq_snap_%04d.png', qq)) ;
-        saveas(fig, figfn)
-        clf
+        if save_snaps
+            timedense = 1:0.1:length(chisqn) ;
+            % minimimum of the fit is cstar
+            cstar = fit_coefs.ystar ;
+            plot(chisqn, '.-')
+            hold on;
+            yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
+            plot(timedense, yy, '--')
+            errorbar(tmatch, cstar, unc, 'horizontal')
+            ylim([0, 30])
+            xlims = xlim() ;
+            xlim([0 xlims(2)])
+            ylabel('\chi^2 / N')
+            xlabel(['time [min], dataset' num2str(exptii)])
+            title(['dataset ' num2str(exptii) ': $t=$' sprintf('%04d', qq)], ...
+                'Interpreter', 'Latex')
+            figfn = fullfile(figdir, sprintf('chisq_snap_%04d.png', qq)) ;
+            disp(['Saving ' figfn])
+            saveas(fig, figfn)
+            clf
+        end
         
+        % replace NaNs with large dt
+        unc(isnan(unc)) = 50 ;
         tmatches(qq) = tmatch ;
         tuncs(qq) = unc ;
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % SSR 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Filter to get minimum of SSR
+        % windowWidth = 3;  % for quick smoothing
+        % kernel = ones(windowWidth, 1) / windowWidth;
+        % ssdsm = filter(kernel, 1, ssds);
+        nfit = pidx - nidx ;
+        [matchtime, matchtime_unc] = matchTimeSSR(ssr, nfit) ;
+        
+        % store ssr timematches
+        tmatches_ssr(qq) = matchtime ;
+        tuncs_ssr(qq) = matchtime_unc ;
+        
+        
+        close all
     end
     
     % Plot best fit with errors on cij plot with hard reference
     ijstr = [ '_%02d_%02d' extn ] ;
-    cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, hard)) ;
+    cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], exptii, hard)) ;
     load(cfn, 'cij')
     close all
     fig = figure('visible', 'off') ;
     imagesc(cij)
     hold on;
-    plot(tmatches, tt, 'o-', 'color', gray)
-    plot(tmatches - tuncs, tt, '--', 'color', gray)
-    plot(tmatches + tuncs, tt, '--', 'color', gray)
-    ylabel(['time, dataset ' num2str(ii) ])
+    plot(tmatches, tt, 'o-', 'color', 'k')
+    plot(tmatches - tuncs, tt, '--', 'color', 'k')
+    plot(tmatches + tuncs, tt, '--', 'color', 'k')
+    plot(tmatches_ssr, tt, 'o', 'color', 'r')
+    ylabel(['time, dataset ' num2str(exptii) ])
     xlabel(['time, dataset ' num2str(hard) ])
     cb = colorbar() ;
     ylabel(cb, 'cross correlation')
     figoutfn = fullfile(calibDir, ...
-        sprintf('dset%02d_calibration_cij_tmatches.png', ii)) ;
+        sprintf('dset%02d_calibration_cij_tmatches.png', exptii));
+    disp(['Saving ' figoutfn])
     saveas(fig, figoutfn)
+    % with SSR
+    plot(tmatches_ssr - tuncs_ssr, tt, '--', 'color', 'r')
+    plot(tmatches_ssr + tuncs_ssr, tt, '--', 'color', 'r')
+    figoutfn = fullfile(calibDir, ...
+        sprintf('dset%02d_calibration_cij_tmatches_withSSR.png', exptii));
+    disp(['Saving ' figoutfn])
+    saveas(fig, figoutfn)
+    
+    % View it
+    set(gcf, 'visible', 'on')
+    pause(1)
+    close all
     
 end
 

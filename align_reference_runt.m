@@ -35,6 +35,8 @@ addpath(tlaDir) ;
 addpath(fmDir) ;
 addpath(fmDir2) ;
 addpath(fmDir3) ;
+addpath(fullfile(tlaDir, 'chisquared')) ;
+addpath(fullfile(tlaDir, 'matchTime')) ;
 
 %% OPTIONS
 % Save each runt nanobody (curated) MIP as ./date/cylinder1_max.tif

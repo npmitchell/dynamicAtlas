@@ -1,4 +1,26 @@
 function [xstar, err, fit_coefs] = chisqMinUncertainty(chisq, minN2fit, maxN2fit)
+%chisqMinUncertainty(chisq, minN2fit, maxN2fit)
+%
+% Parameters
+% ----------
+% chisq : N x 1 float
+%   chi squared values over time
+% minN2fit : int
+%   minimum number of timepoints to consider for initial fit domain
+% maxN2fit : int
+%   maximum number of timepoints to consider for initial fit domain
+% 
+% Returns
+% -------
+% xstar : float
+%   minimum time of the parabolic fit to chisq
+% err : float
+%   uncertainty in the minimum of the fit
+% fit_coefs : 
+%   coefficients of the quadratic fit
+%
+%
+% NPMitchell 2020
 
 % Grab the minimum
 [minchi, idx] = min(chisq) ;
