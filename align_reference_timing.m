@@ -1603,7 +1603,7 @@ end
 disp('done with mean and variances of leading and trailing curves')
 
 %% Smooth mean curves in master time
-curv7MatFn = fullfile(corrOutDir, 'curve7states_filtered.mat') ;
+curv7MatFn = fullfile(corrOutDir, 'curve7stats_filtered.mat') ;
 if exist(curv7MatFn, 'file')
     disp('Loading leading and trailing stripe7 matrices from disk')
     load(curv7MatFn)
@@ -1895,7 +1895,7 @@ filtWidth = 10;
 filtSigma = 6 ;
 imageFilter = fspecial('gaussian',filtWidth,filtSigma);
         
-c7MatFiltFn = fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat') ;
+c7MatFiltFn = fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat') ;
 if ~exist(c7MatFiltFn, 'file') || overwrite 
     % Grab xx from first timepoint's lstat 
     load(sprintf(statCollapseFn, 1), 'leading') ;
@@ -1982,7 +1982,7 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
     TSs = nanconv(TSs, imageFilter, 'nanout');
     
     % Save to disk
-    save(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
+    save(fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat'), ...
         'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', ...
         'TX', 'TV', 'TS', 'TXs', 'TVs', 'TSs', 'xx')
 
@@ -2019,7 +2019,7 @@ disp('done with final collapsed output')
 
 %% How accurate can we measure the timing?
 calibDir = fullfile(alignDir, 'alignment_calibration') ;
-load(fullfile(corrOutDir, 'curve7states_collapsed_filtered.mat'), ...
+load(fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
 hands_on = true ;
