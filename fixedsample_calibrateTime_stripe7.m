@@ -210,7 +210,7 @@ for kk = 1:length(lut.folders)
     % Chisq
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Compute chisquared(t) for this curve
-    [chisq, chisqn, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
+    [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
         true, optimize_trans) ;
     % if allow_rotation
     %     guess = [0, 0, 0]; 

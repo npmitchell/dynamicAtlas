@@ -1,5 +1,5 @@
-function ssr = ssrcurvs(curv, refcurv, take_mean, symmetrize)
-% ssrcurvs(curv, refcurv)
+function ssr = ssrCurves(curv, refcurv, take_mean, symmetrize)
+% ssrCurves(curv, refcurv, take_mean, symmetrize)
 % Find sum of squared residual
 %
 % Parameters

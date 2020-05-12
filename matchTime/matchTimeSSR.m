@@ -1,6 +1,20 @@
 function [matchtime, matchtime_unc]  = matchTimeSSR(ssr, nfit)
 % matchTimeSSR(ssr, nfit)
 % 
+% Parameters
+% ----------
+% ssr : N x 1 float
+%   the sum of squared residuals, to fit a parabola to the minimum
+% nfit : int
+%   numer of timepoints to include in fit domain
+%
+% Returns
+% -------
+% matchtime : float
+%   independent variable at the minimum of parabolic fit
+% matchtime_unc : float
+%   uncertainty (~standard deviation) of the minimum of the parabola's
+%   independent variable value
 % 
 % NPMitchell 2020
 

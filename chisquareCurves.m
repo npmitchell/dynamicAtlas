@@ -1,4 +1,4 @@
-function [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvsX, ...
+function [chisq, chisqn, ssr, ssr_raw] = chisquareCurves(curv, refcurvsX, ...
     refcurvsY, refvars, smooth_var, optimize_translation)
 % chisquareCurves(curv, refcurvs, refvar, take_mean, symmetrize)
 % 
@@ -32,6 +32,9 @@ if nargout > 1
     chisqn = zeros(size(refcurvsY, 1), 1) ;
     if nargout > 2
         ssr = zeros(size(refcurvsY, 1), 1) ;
+        if nargout > 3
+            ssr_raw = zeros(size(refcurvsY, 1), 1) ;
+        end
     end
 end
 
@@ -56,23 +59,44 @@ for ii = 1:size(refcurvsY, 1)
         % disp('chisquareCurves: Optimizing translation')
         % Optimize for DV motion, add to list of leading for this TP
         x0 = [0., 0.] ;
-        fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, true, true) ;
+        take_mean = true ;
+        symmetrize = true ;
+        fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, ...
+            take_mean, symmetrize) ;
         options = optimset('TolX', 1e-2, 'TolFun', 0.1);
         shifts = fminsearch(fun, x0, options) ;
+        
+        % Get raw SSR if requested
+        if nargout > 3
+            ssr_raw_ii = ssrCurves(curv, refcurv, take_mean, symmetrize) ;
+        end
+        
+        % Now offset the curve for optimization
         curv = curv + [shifts(1), shifts(2)] ;
+        
         % Modulo for wDV
         curv(:, 1) = mod(curv(:, 1), 1) ;
+    else
+        % no need to optimize, so ssr will be the same as ssr_raw
+        if nargout > 3
+            ssr_raw_ii = ssrCurves(curv, refcurv, take_mean, symmetrize) ;
+        end
     end    
     
     d2 = pdist2(curv, refcurv, 'squaredeuclidean');
     [dists, idx] = nanmin(d2, [], 2);
+    
+    % Should we smooth the variance over the whole curve?
     if smooth_var
+        % yes, smooth the variance by taking mean variance
         chisq(ii) = nansum(dists' ./ nanmean(refvar(idx)), 2) ;
     else
+        % no, use position-dependent variance (may give some nans if
+        % variance goes to zero anywhere)
         chisq(ii) = nansum(dists' ./ refvar(idx), 2) ;
     end
     
-    % check it 
+    % check result
     % imagesc(d2) 
     % ylabel('curv index')
     % xlabel('refcurv index')
@@ -81,6 +105,15 @@ for ii = 1:size(refcurvsY, 1)
         chisqn(ii) = chisq(ii) / sum(~isnan(refvar(idx))) ;
         if nargout > 2
             ssr(ii) = nansum(dists, 1) ;
+            
+            if nargout > 3
+                ssr_raw(ii) = ssr_raw_ii ;
+                % we request a raw ssr output. Check that this is the same
+                % as ssr just computed if there was no optimization
+                if ~optimize_translation
+                    assert(all(ssr(ii) == ssr_raw_ii))
+                end
+            end
         end
     end
 end

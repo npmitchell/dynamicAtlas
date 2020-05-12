@@ -52,7 +52,11 @@ corr_method = 'realspace' ; % realspace or phase method for correlation
                             % dx,dy then computes realspace corr on shifted
                             % image.
 stripe7corr_method = 'dist' ; 
-hard = 4 ;                  % which experiment is the master timeline -- hard is its index
+hard = 4 ;                  % Which experiment is the master timeline -- 
+                            %   hard is its index
+apCijFrac = 0 ;             % Tune how much of the embryo to include -- 
+                            %   takes the posterior part, starting at this 
+                            %   AP fraction, so 0.3 gives x/L=(0.3, 1.0).
 corrOutDir = fullfile(outdir, sprintf([corr_method '_corr_ss%02d'], ssfactor)) ;
 
 dirs2make = {outdir, corrOutDir} ;

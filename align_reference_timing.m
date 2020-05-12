@@ -1,5 +1,5 @@
 
-%% Subsample the data
+%% I. Subsample the data
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
     % Load time sequence MIPs of dataset ii
@@ -23,9 +23,9 @@ for ii = 1:length(expts)
     end
 end
 
-%% Train on stripe7 for each subsampled data in ilastik
+%% II. Train on stripe7 for each subsampled data in ilastik
 
-%% Extract leading edge of stripe from Loaded probabilities
+%% III. Extract leading edge of stripe from Loaded probabilities
 probfn = [ mipfnBase substr '_Probabilities.h5'] ;
 minsz = 5e3 ;
 maxsz = 1e6 ;
@@ -95,7 +95,7 @@ for ii = 1:length(expts)
             % interested in finishes before stripe 7 extends halfway across
             % the dorsal side
             % Find the center pixel (rounded to nearest integer)
-            midx = round(0.5 * size(dat, 2)) ;
+            midx = 0 ; % round(0.5 * size(dat, 2)) ;
             % Crop the image to right and center
             dcrop = squeeze(dat(1, midx:end, :, tt)) ;
             dsz = [size(dat, 2), size(dat, 3)] ;
@@ -268,7 +268,7 @@ for ii = 1:length(expts)
 end
 
 
-%% Extract cross correlations between experiments
+%% IV. Extract cross correlations between experiments
 corrDatOutDir = fullfile(corrOutDir, 'crosscorrelation') ;
 if ~exist(corrDatOutDir, 'dir')
     mkdir(corrDatOutDir)
@@ -316,14 +316,16 @@ for ii = 1:length(expts)
             for ti = 1:ntpI
                 disp(['  > ti = ' num2str(ti)])
                 % grab the timepoint ti of MIPs dataset ii
-                imI = imadjustn(squeeze(mipI(:, :, ti))) ;   
+                apStart = round(apCijFrac * size(mipI, 2)) ;
+                imI = imadjustn(squeeze(mipI(:, apStart:end, ti))) ; 
+                error('here')
                 imI = imresize( imI, 1./double(ssfactor), 'bilinear' );
                 for tj = 1:ntpJ
                     % if mod(tj, 50) == 0
                     %     disp(['  >> tj = ' num2str(tj)])
                     % end
                     % grab the timepoint tj of MIPs dataset jj
-                    imJ = imadjustn(squeeze(mipJ(:, :, tj))) ;
+                    imJ = imadjustn(squeeze(mipJ(:, apStart:end, tj))) ;
                     imJ = imresize( imJ, 1./double(ssfactor), 'bilinear' );
                     
                     if strcmp(corr_method, 'phase')
@@ -413,7 +415,7 @@ for ii = 1:length(expts)
 end
 disp('Done with cross-correlation')
 
-%% ID peaks in correlation to draw curves using fast marching
+%% V. ID peaks in correlation to draw curves using fast marching
 clear imI imJ imA imB
 corrImOutDir = fullfile(corrOutDir, 'correspondence_images') ;
 corrPathOutDir = fullfile(corrOutDir, 'cpath') ;
@@ -963,7 +965,7 @@ end
 disp('Done with correspondence curves')
 
 
-%% Align Stripe 7 for each frame -- correlations in position
+%% VI. Align Stripe 7 for each frame -- correlations in position
 stripe7CorrDatDir = fullfile(outdir, sprintf('stripe7corr_ss%02d', ssfactor)) ;
 if ~exist(stripe7CorrDatDir, 'dir')
     mkdir(stripe7CorrDatDir)
@@ -1079,7 +1081,7 @@ end
 disp('done with correspondence curves')
 
 
-%% Minimize difference between timing points
+%% VII. Minimize difference between timing points
 % {tj} = {dtj} + frame
 % Fit line of best fit to each ridge extraction using time-time-corr cell
 
@@ -1199,7 +1201,7 @@ for use_offset = [true false]
     close all
 end
 
-%% Relax timepoints to reference curve (time of dataset #hard)
+%% VIII. Relax timepoints to reference curve (time of dataset #hard)
 % so-called 'hard reference' is the master timeline
 to_relax = 1:length(ttc) ;
 to_relax = setdiff(to_relax, hard) ;
@@ -1255,7 +1257,7 @@ else
     clearvars tauv tau0extra tpid ii
 end
 
-%% Next build NL, KL, BL of correspondences for master timeline
+%% IX. Next build NL, KL, BL of correspondences for master timeline
 % NL = neighbor list, KL = spring constant list, and BL = bond list
 NLKLBLfn = fullfile(timelineDir, 'NL_KL_BL.mat') ;
 
@@ -1318,7 +1320,7 @@ else
     disp('done building bond list BL, neighbor list NL, k list KL ')
 end
 
-%% Build network visualization (pairwise_corr_timeline_XXX.png)
+%% X. Build network visualization (pairwise_corr_timeline_XXX.png)
 
 for use_BL = [true false]
     if use_BL
@@ -1380,7 +1382,7 @@ end
 disp('done with network visualization')
 close all
 
-%% post-relaxation network visualization (i_tau0j_tau0jrelaxed.mat)
+%% XII. post-relaxation network visualization (i_tau0j_tau0jrelaxed.mat)
 
 % check for existing result
 fn = fullfile(timelineDir, 'i_tau0j_tau0jrelaxed.mat') ;
@@ -1439,7 +1441,7 @@ else
 end
 disp('done')
 
-%% Now look at stripe 7 with standard deviations
+%% XIII. Now look at stripe 7 with standard deviations
 % check for existing result
 allstripeFn = fullfile(timelineDir, 'allstripes.mat') ;
 
@@ -1480,7 +1482,7 @@ end
 wAP = xmax ;
 wDV = ymax ;
 
-%% Back out the mean and variances of leading and trailing curves
+%% XIV. Back out the mean and variances of leading and trailing curves
 statfn = fullfile(corrOutDir, 'curve7stats', 'curve7stats_%04d.mat') ;
 datDir = fullfile(corrOutDir, 'curve7stats') ;
 stripeTauDir0 = fullfile(corrOutDir, 'aligned_stripes') ;
@@ -1602,9 +1604,9 @@ for qi = 1:length(times2do)
 end
 disp('done with mean and variances of leading and trailing curves')
 
-%% Smooth mean curves in master time
+%% XV. Smooth mean curves in master time
 curv7MatFn = fullfile(corrOutDir, 'curve7stats_filtered.mat') ;
-if exist(curv7MatFn, 'file')
+if exist(curv7MatFn, 'file') && ~overwrite
     disp('Loading leading and trailing stripe7 matrices from disk')
     load(curv7MatFn)
 else
@@ -1633,6 +1635,13 @@ else
         TV(:, qi) = trailfrac(:, 3) ; % variance
         TS(:, qi) = trailfrac(:, 4) ; % stdev
     end
+    LX(LX==0) = NaN ;
+    LV(LV==0) = NaN ;
+    LS(LS==0) = NaN ;
+    TX(TX==0) = NaN ;
+    TV(TV==0) = NaN ;
+    TS(TS==0) = NaN ;
+    
 
     % Now smooth along time dim
     hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
@@ -1701,7 +1710,7 @@ else
 end
 disp('done with time filtering')
 
-%% Minimize for lateral motion now that we have averages in master time
+%% XVI. Minimize for lateral motion now that we have averages in master time
 % For each master time, rotate each curve to match average
 window = 0.5 + 1e-5 ;
 times2do = ttc{hard}{hard}(:, 1) ;
@@ -1730,7 +1739,7 @@ end
 
 % Consider all times
 if redo_optimization || overwrite 
-    for qi = 1:length(times2do)
+    for qi = 46:length(times2do)
         close all
         qq = times2do(qi) ;
         disp(['qq = ' num2str(qq)])
@@ -1793,6 +1802,58 @@ if redo_optimization || overwrite
                 trailing = cat(1, trailing, trailo) ;
             end
         end
+        
+        % Symmetrize by flipping the stripe also
+        
+        for sn = 1:length(stripes)  
+            stripe = stripes{sn} ;        
+            % Chop into two curves: leading, trailing
+            segs = cutCurveIntoLeadingTrailingSegments(stripe) ;
+            lead = segs{1} ;
+            trail = segs{2} ;
+            lead(:, 1) = lead(:, 1) / wAP ;
+            lead(:, 2) = 1 - lead(:, 2) / wDV ;
+            trail(:, 1) = trail(:, 1) / wAP ;
+            trail(:, 2) = 1 - trail(:, 2) / wDV ;
+            
+            % check that all curves are within wAP and wDV
+            assert(all(lead(:) < 1+1e-5))
+            % swap xy
+            lead(:, [1 2]) = lead(:, [2 1]) ;
+            trail(:, [1 2]) = trail(:, [2 1]) ;
+
+            % Optimize for DV motion, add to list of leading for this TP
+            x0 = [0., 0.] ;
+            refcurv = zeros(length(LXs(:, qi)), 2) ;
+            refcurv(:, 1) = double(1:length(LXs(:, qi))) / double(length(LXs(:, qi))) ;
+            refcurv(:, 2) = LXs(:, qi) ;
+            fun = @(x)ssrCurves(lead + [x(1) x(2)], refcurv, true, true) ;
+            shifts = fminsearch(fun, x0) ;
+            leado = lead + [shifts(1), shifts(2)] ;
+            % Modulo for wDV
+            leado(:, 1) = mod(leado(:, 1), 1) ;
+
+            % % check it
+            % plot(lead(:, 1), lead(:, 2), '.'); hold on;
+            % plot(leado(:, 1), leado(:, 2), '.'); hold on;
+            % plot(refcurv(:, 1), refcurv(:, 2), '.')
+
+            % trailing optimization
+            refcurv = zeros(length(TXs(:, qi)), 2) ;
+            refcurv(:, 1) = double(1:length(TXs(:, qi))) / double(length(TXs(:, qi))) ;
+            refcurv(:, 2) = TXs(:, qi) ;
+            fun = @(x)ssrCurves(trail + [x(1) x(2)], refcurv, true, true) ;
+            shifts = fminsearch(fun, x0) ;
+            trailo = trail + [shifts(1), shifts(2)] ;
+            % Modulo for wDV
+            trailo(:, 1) = mod(trailo(:, 1), 1) ;
+            
+            % Concatenate
+            leading = cat(1, leading, leado) ;
+            trailing = cat(1, trailing, trailo) ;
+        end
+        
+        
         % Do stats
         dx = 1.0 / size(xx, 1) ;
         edges = 0:dx:1.0 ;
@@ -1828,34 +1889,26 @@ if redo_optimization || overwrite
 
         % match indices
         % [~, inds] = min(abs(pdist2(xx, lstat(:, 1))), [], 2) ;
-        inds = false(size(xx)) ;
-        for dmyk = 1:length(inds)
-            if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.6)
-                inds(dmyk) = true ;
-            end
-        end
-        yy = -ones(size(xx)) ;
-        zz = -ones(size(xx)) ;
-        yy(inds) = lstat(:, 2) ;
-        zz(inds) = lstat(:, 3) ;
-        yy(yy<0) = NaN ;
-        zz(zz<0) = NaN ;
+        % We used to filter out domain, but now we just adjust dx so that
+        % this isn't necessary
+        % inds = false(size(xx)) ;
+        % for dmyk = 1:length(inds)
+        %     if any(abs(xx(dmyk) - lstat(:, 1)) < dx * 0.6)
+        %         inds(dmyk) = true ;
+        %     end
+        % end
+        % assert(all(inds))
+        yy = lstat(:, 2) ;
+        zz = lstat(:, 3) ;
         leadfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
 
         % trailing
-        % [~, inds] = min(abs(pdist2(xx, tstat(:, 1))), [], 2) ;
-        inds = false(size(xx)) ;
-        for dmyk = 1:length(inds)
-            if any(abs(xx(dmyk) - tstat(:, 1)) < dx * 0.5)
-                inds(dmyk) = true ;
-            end
-        end
-        yy = -ones(size(xx)) ;
-        zz = -ones(size(xx)) ;
-        yy(inds) = tstat(:, 2) ;
-        zz(inds) = tstat(:, 3) ;
-        yy(yy<0) = NaN ;
-        zz(zz<0) = NaN ;
+        yy = tstat(:, 2) ;
+        zz = tstat(:, 3) ;
+        % yy = nan(size(xx)) ;
+        % zz = nan(size(xx)) ;
+        % yy(~isnan(tstat(:, 2))) = tstat(~isnan(tstat(:, 2)), 2) ;
+        % zz(~isnan(tstat(:, 2))) = tstat(~isnan(tstat(:, 2)), 3) ;
         trailfrac = cat(2, xx, yy, zz, sqrt(zz)) ;
 
         % Save statistics
@@ -1890,7 +1943,7 @@ else
 end
 disp('done with curve collapse')
 
-%% Smooth collapsed mean curves in master time
+%% XVII. Smooth collapsed mean curves in master time
 filtWidth = 10;
 filtSigma = 6 ;
 imageFilter = fspecial('gaussian',filtWidth,filtSigma);
@@ -2017,7 +2070,7 @@ else
 end
 disp('done with final collapsed output')
 
-%% How accurate can we measure the timing?
+%% XVIII. How accurate can we measure the timing?
 calibDir = fullfile(alignDir, 'alignment_calibration') ;
 load(fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
@@ -2063,7 +2116,7 @@ for exptii = 4:length(expts)
         segs = cutCurveIntoLeadingTrailingSegments([xx, yy]) ;
         lead = segs{1} ;
         curv = lead(:, [2 1]) ;
-        [chisq, chisqn, ssr] = chisquareCurves(curv, refcurvX, ...
+        [chisq, chisqn, ~, ssr] = chisquareCurves(curv, refcurvX, ...
             refcurvsY, refvars, smooth_var, true) ;
         % error('here')
         chisqn = fillmissing(chisqn, 'movmedian', 5) ;

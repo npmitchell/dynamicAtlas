@@ -26,8 +26,8 @@ end
 bv = arr(:, 1) ;
 [a, EE] = discretize(bv, edges) ;
 binc = reshape(0.5 * (EE(1:end-1) + EE(2:end)), [length(EE) - 1, 1]) ;
-means = zeros(length(binc), 1) ;
-vars = zeros(length(binc), 1) ;
+means = nan(length(binc), 1) ;
+vars = nan(length(binc), 1) ;
 for qq = min(a):max(a)
     % If there are any points in this bin
     if any(a==qq)
