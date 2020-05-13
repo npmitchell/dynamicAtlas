@@ -52,7 +52,6 @@ for ii = 1:length(expts)
         end
     else
         continue_curves = false ;
-        error('here')
     end
         
     if continue_curves || overwrite        
@@ -95,7 +94,7 @@ for ii = 1:length(expts)
             % interested in finishes before stripe 7 extends halfway across
             % the dorsal side
             % Find the center pixel (rounded to nearest integer)
-            midx = 0 ; % round(0.5 * size(dat, 2)) ;
+            midx = 1 ; % round(0.5 * size(dat, 2)) ;
             % Crop the image to right and center
             dcrop = squeeze(dat(1, midx:end, :, tt)) ;
             dsz = [size(dat, 2), size(dat, 3)] ;
