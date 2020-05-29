@@ -1,2 +1,2 @@
-# time_align_embryos
-MATLAB code for aligning embryos in morphological time
+# dynamicAtlas
+MATLAB code for handling dynamic datasets & aligning data in time
