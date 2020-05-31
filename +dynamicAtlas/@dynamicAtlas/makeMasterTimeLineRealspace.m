@@ -124,8 +124,9 @@ end
 mipfn = [thismap.prepend thismap.exten] ;
 extn = [sprintf('_ss%02d', ssfactor) '_' corr_method] ;
 substr = sprintf('_ss%02d', ssfactor) ;
-ssmipfnBase = ['pullback_for_timing' substr ] ; 
-ssmipfn = ['pullback_for_timing' substr '.tif'];
+mipsearchstr = da.lookup(genotype).prepend ;
+ssmipfnBase = [ mipsearchstr substr ] ; 
+ssmipfn = [mipsearchstr substr '.tif'];
 
 % Aesthetics
 colorset = define_colors() ;
@@ -142,8 +143,12 @@ gray = [0.5, 0.5, 0.5] ;
 %% I. Subsample the data
 for ii = 1:length(expts)
     disp(['dataset ii = ', num2str(ii)])
+    
     % Load time sequence MIPs of dataset ii
-    outfn = fullfile(expts{ii}, ssmipfn) ;
+    % Search for existing filename matching pattern
+    cand = dir(fullfile(expts{ii}, ssmipfn)) ;
+    outfn = fullfile(cand(1).folder, cand(1).name) ;
+    
     if ~exist(outfn, 'file') || overwrite
         disp('--> DOWNSAMPLING')
         disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
@@ -180,13 +185,14 @@ end
 %% II. Train on stripe7 for each subsampled data in ilastik
 
 %% III. Extract leading edge of stripe from Loaded probabilities
-probfn = [ ssmipfnBase '_Probabilities.h5'] ;
+cand = dir(fullfile(expts{ii}, [ssmipfnBase '_Probabilities.h5'])) ;
+probfn = fullfile(cand(1).folder, cand(1).name) ;
 minsz = 5e3 ;
 maxsz = 1e6 ;
 
 for ii = 1:length(expts)
     disp(['Extracting stripe 7 for expt ' num2str(ii)])
-    fns = dir(fullfile(expts{ii}, probfn)) ;
+    fns = dir(probfn) ;
     try
         assert(~isempty(fns))
     catch
@@ -1090,7 +1096,7 @@ for ii = 1:length(expts)
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, [label '_stripe7curve.mat']) ;
     disp(['  Loading curves: ' curvIfn])
-    curvI = load(curvIfn, [label '_stripe7curve.mat']);
+    curvI = load(curvIfn);
     curvI = curvI.stripe7curves ;
     ntpI = length(curvI) ;
     
