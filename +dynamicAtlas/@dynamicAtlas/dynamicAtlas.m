@@ -82,6 +82,9 @@ classdef dynamicAtlas < handle
             else
                 da.timeStampMethod = 'stripe7' ;
             end
+            
+            % Populate the lookup property
+            da.buildLookup() 
         end
         
         function addPaths(da)
@@ -96,10 +99,6 @@ classdef dynamicAtlas < handle
             addpath(fullfile(tlaDir, 'data_handling'))
             addpath(fullfile(tlaDir, 'tiff_handling'))
             addpath(fullfile(tlaDir, 'nanconv')) ;
-            fmDir = fullfile(tlaDir, 'toolbox_fast_marching/toolbox_fast_marching/') ;
-            addpath(fmDir)
-            addpath(fullfile(fmDir, 'mex')) ;
-            addpath(fullfile(fmDir, 'toolbox')) ;
             addpath(fullfile(tlaDir, 'statistics', 'chisquared')) ;
             addpath(fullfile(tlaDir, 'matchTime')) ;
             addpath(fullfile(tlaDir, 'polyparci'))
@@ -107,11 +106,24 @@ classdef dynamicAtlas < handle
             addpath(fullfile(tlaDir, 'plotting'))
             addpath(fullfile(tlaDir, 'plotting', 'ploterr'))
             addpath(fullfile(tlaDir, 'stripeExtraction'))
+            
+            % Add external packages
+            fmDir = fullfile(tlaDir, 'external', 'toolbox_fast_marching', 'toolbox_fast_marching') ;
+            addpath(fmDir)
+            addpath(fullfile(fmDir, 'mex')) ;
+            addpath(fullfile(fmDir, 'toolbox')) ;
+            addpath(fullfile(tlaDir, 'external', 'export_fig')) ;
+            addpath(fullfile(tlaDir, 'external', 'freezeColors')) ;
         end
         
         function buildLookup(da, genotypes_subset)
             % BUILDLOOKUP(da)
             %   Create lookup map object for each genotype in dynamicAtlas
+            % 
+            % Parameters
+            % ----------
+            % 
+            %
             da.lookup = containers.Map() ;
             if nargin < 2
                 genotypes_todo = da.genotypes ;
@@ -127,7 +139,7 @@ classdef dynamicAtlas < handle
             end
         end
                 
-        makeGradientImages(da, sigmas, steps)
+        makeGradientImages(da, sigmas, steps, cdf_minmax, overwrite)
         
         function makeMasterTimeline(da, genotype, label)
             % MAKEMASTERTIMELINE(genotype, label, Options)
@@ -167,7 +179,7 @@ classdef dynamicAtlas < handle
         end
         
         makeMasterTimeLineStripe7(da, genotype, label)
-        
+                
         function timeStamp(da, genotype, label, Options)
             % TIMESTAMP(da, genotype, label, Options)
             %   Find appropriate timestamp for data stained by 'label' for all fixed
@@ -202,6 +214,63 @@ classdef dynamicAtlas < handle
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.mat
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.txt
             timeStampStripe7(da, genotype, label, Options)
+        end
+        
+        function outstruct = findTime(da, tfind, eps)
+            %FINDTIME(tfind, eps) Find all instances with time near tfind
+            %   Give the labels, folders, and time uncertainties of all
+            %   stained samples matching the supplied time tfind, within
+            %   a value eps of that time. Returns an output struct.
+            %
+            % Parameters
+            % ----------
+            % obj : the class instance of lookup
+            % tfind : float or int timestamp
+            % eps : optional, the allowed difference from tstamp
+            
+            if nargin < 3
+                eps = 0.5 ;
+                if nargin < 2
+                    error("Must supply tfind (a time to search for) for class method findTime()")
+                end
+            end
+            
+            % Grab correctly timed embryos for each genotype
+            genoKeys = keys(da.lookup) ;
+            genotypes = {} ;
+            labels = {} ;
+            folders = {} ;
+            names = {} ;
+            embryoIDs = {} ;
+            times = [] ;
+            uncs = [] ;
+            tiffpages = [] ;
+            for ii = 1:length(genoKeys)
+                genoKey = genoKeys{ii} ;
+                lum = da.lookup(genoKey) ;
+                tstruct = lum.findTime(tfind, eps) ;
+                if ~isempty(tstruct.embryoIDs)
+                    for qq = 1:length(tstruct.embryoIDs)
+                        genotypes{length(genotypes) + qq} = genoKey ; 
+                        labels{length(labels) + qq} = tstruct.labels{qq} ; 
+                        folders{length(folders) + qq} = tstruct.folders{qq} ; 
+                        names{length(names) + qq} = tstruct.names{qq} ; 
+                        embryoIDs{length(embryoIDs) + qq} = tstruct.embryoIDs{qq} ; 
+                    end
+                    times = [times, tstruct.times] ;
+                    uncs = [times, tstruct.uncs] ;
+                    tiffpages = [times, tstruct.tiffpages] ;
+                end 
+            end
+            outstruct = struct() ;
+            outstruct.genotypes = genotypes ;
+            outstruct.labels = labels ;
+            outstruct.folders = folders ;
+            outstruct.names = names ;
+            outstruct.embryoIDs = embryoIDs ;
+            outstruct.times = times ;
+            outstruct.uncs = uncs ;
+            outstruct.tiffpages = tiffpages ;
         end
         
         function lum = findStaticGenotypeLabel(da, genotype, label)
@@ -277,7 +346,8 @@ classdef dynamicAtlas < handle
         function estruct = findEmbryo(da, embryoID) 
             %FINDEMBRYO(embryoID) Find all instances with given embryo
             %   Give the names, folder, times, and time uncertainties for
-            %   stained samples matching the supplied embryoID
+            %   stained samples matching the supplied embryoID.
+            %   Assumes that a given embryo has only one genotype.
             %
             % Parameters
             % ----------
@@ -289,6 +359,12 @@ classdef dynamicAtlas < handle
             % -------
             % estruct : struct
             %   The output structure with fields labels, folders, times, uncs
+            
+            % Check that embryoID is a string
+            if ~isa(embryoID, 'char')
+                embryoID = num2str(embryoID) ;
+            end
+            
             genoKeys = keys(da.lookup) ;
             found = false ;
             for ii = 1:length(genoKeys)

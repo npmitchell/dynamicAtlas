@@ -4,15 +4,19 @@
 % Demos of functionality are shown along the way.
 %
 % NPMitchell 2020
+clc
+clear
+close all
 
 %% Add paths
 % Add time_align_embryos directory to path so that dynamicAtlas package is
 % available to use.
-tlaDir = './';
-addpath(tlaDir) ;
+tlaDir = '/Volumes/minimalData/code/dynamicAtlasCode/';
+%tlaDir = '/Users/mattlefebvre/Documents/MATLAB/dynamicAtlas'
+cd(tlaDir) ;
 % Atlas path is where the dynamicAtlas resides
-atlasPath = '/Users/npmitchell/Desktop/tmp/' ;
-
+atlasPath = '/Volumes/minimalData/Atlas_Data' ;
+%atlasPath = '/Users/mattlefebvre/Desktop/untitled-folder/'
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
 da = dynamicAtlas.dynamicAtlas(atlasPath) ;
@@ -20,17 +24,31 @@ da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 genotypes = {'WT'} ;         
 da = dynamicAtlas.dynamicAtlas(atlasPath, genotypes) ;
 
-%% Build the lookupMaps for all genotypes
-da.buildLookup() ;
+%% The properties of da are:
+properties(da)
 
-%% Each map is now stored with a container
+%% Look at the methods of da
+methods(da)
+
+%% We have build the lookupMaps for all genotypes
+% but we could also just look at a subset via
+% da.buildLookup({'WT', 'Eve'}) 
+
+%% We can grab all the data from a label within a genotype 
+da.findGenotypeLabel('WT', 'Runt')
+
+%% We can grab all the data associated with a given embryo
+embryoID = '201906111245' ;
+da.findEmbryo(embryoID) 
+
+%% Each genotype's map is now stored with a container called da.lookup
 % example is
 mapWT = da.lookup('WT') ;
 % whose methods are
 methods(mapWT) 
 % for ex, to find embryos with a Runt stain
 runts = mapWT.findLabel('Runt') 
-% or equivalently
+% or equivalently this information is stored in one of mapWT's properties 
 runts = mapWT.map('Runt') 
 % To find embryos with a t=10 +/- 2 min
 snaps = mapWT.findTime(10, 2) 
@@ -52,9 +70,14 @@ runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
 %   nTimePoints : 1xN int array
 %       number of timepoints in the pullback
 
-%% Create the gradients of pair rule genes for tensor analysis
-% da.makeGradientImages()
+%% The lookup maps can be queried also.
+% For ex, da.lookup('WT') is itself a map
+da.lookup('WT')
+da.lookup('WT').findTime(10, 2)
 
+%% Create the gradients of pair rule genes for tensor analysis
+da.makeGradientImages()
+da.makeGradientImages({'Toll_8'})
 % Note: Optionally, declare what scales to examine (in pixels)
 % sigmas = [5, 10, 20, 30, 50] ;
 % steps = [1] ;

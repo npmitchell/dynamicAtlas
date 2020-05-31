@@ -1,6 +1,10 @@
 function makeGradientImages(da, selectedLabels, sigmas, steps,...
                             cdf_minmax, overwrite)
-    % 
+    % MAKEGRADIENTIMAGES(da, selectedLabels, sigmas, steps,...
+    %                    cdf_minmax, overwrite)
+    %   Compute gradients of image intensities averaged over different 
+    % scales and store them on disk
+    %
     % Parameters
     % ----------
     % da : dynamicAtlas class instance 
@@ -11,12 +15,17 @@ function makeGradientImages(da, selectedLabels, sigmas, steps,...
     %   the widths for smoothing to be applied on gradients and intensity
     %   data
     % steps : int array (optional, default=[1])
-    %
-    %   
-    % cdf_minmax : 
-    % overwrite : 
+    % cdf_minmax : length 2 float array (optional, default=[0.01, 0.999])
+    %   intensity cumulative distribution function limits for intensity
+    %   clipping each image
+    % overwrite : bool (otpional, default=false)
+    %   overwrite currently existing TIFF images
     %
     % Returns
+    % -------
+    % <nothing returned>
+    %
+    % Outputs
     % -------
     % 
     %

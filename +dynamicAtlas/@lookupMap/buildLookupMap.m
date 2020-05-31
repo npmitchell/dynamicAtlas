@@ -37,6 +37,7 @@ end
 map = containers.Map() ;
 
 %% Automatically detect all the labeltype folders in this genoDir
+disp(['Seeking labels in genotype directory: ' genoDir])
 labelDirs = dir(genoDir) ;
 genoParentDir = labelDirs.folder ;
 labelDirs = {labelDirs([labelDirs.isdir]).name} ;
@@ -89,7 +90,7 @@ for ii = 1:length(labelDirs)
         for ee = 1:length(embryos)
             % Obtain embryo's datestamp
             embryo = embryos{ee} ;
-            disp(['Examining embryo ' embryo ' in embryoDir: ', embryos{ee}])
+            disp(['Examining embryo ', embryos{ee}])
             
             % Assign the filename to be seeking
             filename_pattern = [prepend exten ] ;  

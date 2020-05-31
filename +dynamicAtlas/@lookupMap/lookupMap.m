@@ -56,7 +56,7 @@ classdef lookupMap < handle
                 exten = '.tif' ;    % string after channel index
                 if nargin < 4
                     % filename for pullback without filetype extension
-                    prepend = 'MAX_Cyl1_2_000000_c1_rot_scaled_view1' ;      
+                    prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;      
                     if nargin < 3
                         timerfn = 'timematch_Runt_chisq.mat' ;            
                     end

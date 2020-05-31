@@ -215,6 +215,7 @@ end
 for kk = 1:length(lum.folders)
     embryoDir = lum.folders{kk} ;
     embryoID = lum.embryoIDs{kk} ;
+    eDirs4ID = da.findEmbryo(embryoID) ;
 
     % assert that the current expt is dynamic
     assert(lum.nTimePoints(kk) == 1)
@@ -284,17 +285,29 @@ for kk = 1:length(lum.folders)
     title([embryoID, ...
         ': a = ' num2str(matchtime_minutes), ...
         ' \pm ', num2str(matchtime_unc_minutes), '  min'])
-    figfn = fullfile(embryoDir, 'stripe7_chisq_fit.png') ;
-    saveas(fig, figfn)
+    
+    % Save into all embryoID matching dirs
+    for qq=1:length(eDirs4ID.folders)
+        edir = eDirs4ID.folders{qq} ;
+        disp(['Saving stripe7_chisq_fit.png into ' edir])
+        figfn = fullfile(edir, 'stripe7_chisq_fit.png') ;
+        saveas(fig, figfn)
+    end
     clf
     
-    % Save Chisq timing as mat and txt
-    fnmat = fullfile(embryoDir, 'timematch_curve7_chisq.mat') ;
-    fntxt = fullfile(embryoDir, 'timematch_curve7_chisq.txt') ;
-    save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')    
-         
-    disp(['Saving matchtime to ', fntxt])
-    dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
+    % Save Chisq timing as mat and txt for all matching embryoID dirs
+    for qq=1:length(eDirs4ID.folders)
+        edir = eDirs4ID.folders{qq} ;
+        disp(['Saving timematch_curve7_chisq.mat into ' edir])
+        
+        fnmat = fullfile(edir, 'timematch_curve7_chisq.mat') ;
+        fntxt = fullfile(edir, 'timematch_curve7_chisq.txt') ;
+        save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')    
+
+        disp(['Saving matchtime to ', fntxt])
+        dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
+    end
+    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % SSR 
@@ -359,11 +372,15 @@ for kk = 1:length(lum.folders)
     close all
     
     % Save timing as mat and txt
-    fnmat = fullfile(embryoDir, 'timematch_curve7_ssr.mat') ;
-    fntxt = fullfile(embryoDir, 'timematch_curve7_ssr.txt') ;
-    save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')
-    
-    disp(['Saving matchtime to ', fntxt])
-    dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
+    for qq=1:length(eDirs4ID.folders)
+        edir = eDirs4ID.folders{qq} ;
+        disp(['Saving timematch_curve7_chisq.mat into ' edir])
+        fnmat = fullfile(edir, 'timematch_curve7_ssr.mat') ;
+        fntxt = fullfile(edir, 'timematch_curve7_ssr.txt') ;
+        save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')
+
+        disp(['Saving matchtime to ', fntxt])
+        dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
+    end
     
 end
