@@ -30,7 +30,7 @@ properties(da)
 %% Look at the methods of da
 methods(da)
 
-%% We have build the lookupMaps for all genotypes
+%% We have built the atlas for all genotypes
 % but we could also just look at a subset via
 % da.buildLookup({'WT', 'Eve'}) 
 
@@ -39,17 +39,18 @@ da.findGenotypeLabel('WT', 'Runt')
 
 %% We can grab all the data associated with a given embryo
 embryoID = '201906111245' ;
-da.findEmbryo(embryoID) 
+qs = da.findEmbryo(embryoID) ;
+% Now qs is a queriedSample object with methods
+qs.getData() ;
+qs
 
 %% Each genotype's map is now stored with a container called da.lookup
 % example is
 mapWT = da.lookup('WT') ;
 % whose methods are
 methods(mapWT) 
-% for ex, to find embryos with a Runt stain
+% To find embryos with a Runt stain, for ex,
 runts = mapWT.findLabel('Runt') 
-% or equivalently this information is stored in one of mapWT's properties 
-runts = mapWT.map('Runt') 
 % To find embryos with a t=10 +/- 2 min
 snaps = mapWT.findTime(10, 2) 
 % To find Runt stains with a t=10 +/- 2 min
@@ -77,7 +78,7 @@ da.lookup('WT').findTime(10, 2)
 
 %% Create the gradients of pair rule genes for tensor analysis
 da.makeGradientImages()
-da.makeGradientImages({'Toll_8'})
+da.makeGradientImages({'Runt'})
 % Note: Optionally, declare what scales to examine (in pixels)
 % sigmas = [5, 10, 20, 30, 50] ;
 % steps = [1] ;

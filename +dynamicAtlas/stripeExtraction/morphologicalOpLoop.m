@@ -1,10 +1,44 @@
 function [bw, bw2, good_enough, move_on, placement] =...
-    morphologicalOpLoop(bw, placement)
+    morphologicalOpLoop(bw, dcrop_orig, placement, thres, minmaxsz)
+%MORPHOLOGICALOPLOOP(bw, dcrop_orig, placement, thres, minmaxsz)
+%   Loop to extract mask segmentation by iterative dilation & erosion
+% 
+% Parameters
+% ----------
+% bw : NxM binary array
+%   pre-size-filtered binary mask
+% dcrop_orig : original intensity data
+%   original intensity data before thresholding to create mask
+% placement : int
+%   the rank AP position of the segmented region (stripe7, for ex) that is
+%   true in the mask     
+% thres : numeric threshold
+%   threshold for binarizing the dcrop_orig data 
+% minmaxsz : [minsz maxsz]
+%   the min and max allowed size of a true region in the mask, in pixels
+% 
+% Returns
+% -------
+% bw : NxM binary array
+%   pre-size-filtered binary mask
+% bw2 : NxM binary array
+%   size-filtered binary mask
+% good_enough : bool
+%   segmentation is good enough to save, should be true when returned
+% move_on : bool
+%   whether we are ready to continue with the pipeline
+% placement : int
+%   the rank AP position of the segmented region (stripe7, for ex) that is
+%   true in the mask 
+%
+% NPMitchell 2020
 
 % Enter loop where we continually morphologically
 % refine by eroding + dilating
 se2 = strel('disk', 2) ;
 move_on = false ;
+% Initially remember current state as input state
+bw2 = bw ;
 while (strcmp(get(gcf, 'CurrentKey'), 'e') || ...
         strcmp(get(gcf, 'CurrentKey'), 'd'))
     % Morphological operation
@@ -36,7 +70,7 @@ while (strcmp(get(gcf, 'CurrentKey'), 'e') || ...
     end
     if isempty(sortind)
         disp('No regions found, resetting bw2=bw')
-        datbw = false(size(dcrop)) ;
+        datbw = false(size(dcrop_orig)) ;
         datbw(dcrop > thres) = true ;
         % dilate and erode the binary image acting on the posterior reg
         se2 = strel('disk', 2) ;
@@ -44,7 +78,7 @@ while (strcmp(get(gcf, 'CurrentKey'), 'e') || ...
         bw = imdilate(datbw, se2) ;
         bw = imerode(bw, se2) ;
         % Filter out small regions
-        bw2 = bwareafilt(bw, [minsz maxsz]) ;
+        bw2 = bwareafilt(bw, minmaxsz) ;
     else
         bw2 = false(size(dcrop)) ;
         bw2(cc.PixelIdxList{sortind(end-placement)}) = true ;

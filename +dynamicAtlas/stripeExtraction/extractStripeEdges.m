@@ -32,7 +32,7 @@ function curv = extractStripeEdges(dat, maskfn, thres, minmaxsz, embryoID)
 % dcrop = squeeze(dat(1, :, :)) ;
 
 % Grab the first channel of the data
-dcrop = squeeze(dat(1, midx:end, :)) ;
+dcrop = squeeze(dat(1, :, :)) ;
 dsz = [size(dat, 2), size(dat, 3)] ;
 addx = 0 ;
 addy = 0 ;
@@ -50,6 +50,7 @@ else
     [bw2, bw] = autoStripe7(dcrop, thres, minsz, maxsz)  ;
      % begin by seeking most posterior stripe: placement indexes regions
     placement = 0 ;  
+    bwprev2 = bw2 ;
     
     % Check if this automatic way is good enough
     move_on = false ;
@@ -102,8 +103,9 @@ else
                 strcmp(get(gcf, 'CurrentKey'), 'd'))
             % Enter loop where we continually morphologically
             % refine by eroding + dilating
+            minmaxsz = [minsz, maxsz ] ; 
             [bw, bw2, good_enough, move_on, placement] = ...
-                morphologicalOpLoop(bw, placement) ;
+                morphologicalOpLoop(bw, dcrop, placement, thres, minmaxsz) ;
             disp('end of routine e/d')
         elseif button && (strcmp(get(gcf, 'CurrentKey'), 'a') || ...
                 strcmp(get(gcf, 'CurrentKey'), 'p'))

@@ -79,7 +79,7 @@ classdef lookupMap < handle
             save_map(fullfile(obj.genoDir, 'lookuptable_containersMap.mat'), 'map') ;
         end
             
-        function outstruct = findTime(obj, tfind, eps)
+        function qs = findTime(obj, tfind, eps)
             %FINDTIME(tfind, eps) Find all instances with time near tfind
             %   Give the labels, folders, and time uncertainties of all
             %   stained samples matching the supplied time tfind, within
@@ -142,10 +142,13 @@ classdef lookupMap < handle
                 outstruct.times(length(outstruct.times) + 1) = etimes ;
                 outstruct.uncs(length(outstruct.uncs) + 1) = uncs ;
                 outstruct.tiffpages(length(outstruct.tiffpages) + 1) = tiffpages ;
+                qs = dynamicAtlas.queriedSample(outstruct) ;
+            else
+                qs = dynamicAtlas.queriedSample(struct()) ;
             end
         end
         
-        function labelstruct = findLabel(obj, label2find)
+        function qs = findLabel(obj, label2find)
             %FINDLABEL(label2find) Find all embryos with given stain
             %   Give the times, folders, and time uncertainties of all
             %   stained samples matching the supplied channel 'label'
@@ -158,10 +161,10 @@ classdef lookupMap < handle
             if nargin < 2
                 error("Must supply label (a channel to search for) for class method findLabel()")
             end
-            labelstruct = obj.map(label2find) ;
+            qs = dynamicAtlas.queriedSample(obj.map(label2find)) ;
         end
         
-        function outstruct = findStaticLabel(obj, label2find)
+        function qs = findStaticLabel(obj, label2find)
             %FINDDYNAMICLABEL(label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
@@ -170,10 +173,11 @@ classdef lookupMap < handle
             % ----------
             % obj : the class instance of lookup
             % label2find : string, label name (ex 'Eve' or 'Runt')
-            outstruct = buildStructWrtTime(obj, 'static', label2find) ;
+            qs = dynamicAtlas.queriedSample(...
+                buildStructWrtTime(obj, 'static', label2find)) ;
         end
         
-        function outstruct = findDynamicLabel(obj, label2find)
+        function qs = findDynamicLabel(obj, label2find)
             %FINDDYNAMICLABEL(label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
@@ -182,7 +186,7 @@ classdef lookupMap < handle
             % ----------
             % obj : the class instance of lookup
             % label2find : string, label name (ex 'Eve' or 'Runt')
-            outstruct = buildStructWrtTime(obj, 'dynamic', label2find) ;
+            qs = dynamicAtlas.queriedSample(buildStructWrtTime(obj, 'dynamic', label2find)) ;
         end
         
         function outstruct = findLabelTime(obj, label2find, tfind, eps)
@@ -256,6 +260,8 @@ classdef lookupMap < handle
             outstruct.uncs = uncs ;
             outstruct.tiffpages = tiffpages ;
             outstruct.nTimePoints = nTimePoints ;
+            
+            qs = dynamicAtlas.queriedSample(outstruct) ;
         end
         
         function estruct = findEmbryo(obj, embryoID) 
@@ -312,6 +318,7 @@ classdef lookupMap < handle
             estruct.times = timepts ;
             estruct.uncs = uncs ;
             estruct.nTimePoints = nTimePoints ; 
+            qs = dynamicAtlas.queriedSample(estruct) ;
         end
         
         % Util methods

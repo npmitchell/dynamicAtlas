@@ -76,7 +76,7 @@ end
 % Now pull all dynamic embryos from this stain
 thismap = da.lookup(genotype) ;
 methods(thismap)
-dynamic_embryos = thismap.findDynamicLabel(label) ;
+dynamic_embryos = thismap.findDynamicLabel(label).meta ;
 
 % Collate dynamic experiments into expts varible. 
 stainDir = fullfile(da.path, genotype, label) ;
@@ -199,7 +199,7 @@ for ii = 1:length(expts)
         if isempty(fns)
             disp(['Train on stripe7 for each subsampled data in iLastik to create: ', ... 
                     probfn])
-            mykey = input("Is training done? or Exit? ['Yes'=Training done, 'Exit'=Exit]: ") ;
+            mykey = input("Is training done? or Exit? ['Yes'=Training done, 'Exit'=Exit]: "input('Press Enter when finished.', 's') ;
             if contains(mykey, 'y') || contains(mykey, 'Y')
                 disp('User declared that training is finished')
             else
@@ -1517,7 +1517,7 @@ else
     fixed_xx = i_tau0j(fixed_ind, 2) ;
     x0(fixed_ind) = [] ;
     fun = @(x)springEnergy1D(x, BL, fixed_ind, fixed_xx);
-    xf = fminsearch(fun, x0, options) ;
+    xf = fminsearch(fun, x0, options) ;input
     % reinsert indices of fixed times
     xnew1 = xf(1:fixed_ind(1)-1) ;
     xnew2 = xf(fixed_ind(1):end) ;
@@ -2211,7 +2211,7 @@ else
 end
 disp('done with final collapsed output')
 
-%% XVIII. How accurate can we measure the timing?
+%% XVIII. How accurate can we measure the timing? Calibration
 calibDir = fullfile(outdir, 'time_alignment_calibration') ;
 load(fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
@@ -2257,13 +2257,18 @@ for exptii = 4:length(expts)
         segs = cutCurveIntoLeadingTrailingSegments([xx, yy]) ;
         lead = segs{1} ;
         curv = lead(:, [2 1]) ;
+        % By using 4th output argument of chisquareCurves, we grab the raw
+        % SSR that is not optimized by translation of the curve.
         [chisq, chisqn, ~, ssr] = chisquareCurves(curv, refcurvX, ...
             refcurvsY, refvars, smooth_var, true) ;
         % error('here')
         chisqn = fillmissing(chisqn, 'movmedian', 5) ;
+        preamble = ['frame ', num2str(qq), ' of  ', ...
+            dynamic_embryos.embryoIDs{exptii}, '->', ...
+            dynamic_embryos.embryoIDs{hard} ' '] ;
         if hands_on
             [tmatch, unc, fit_coefs, nidx, pidx] = ...
-                chisqMinUncInteractiveDomain(chisqn, 4, 10, ssr) ;
+                chisqMinUncInteractiveDomain(chisqn, 4, 10, ssr, preamble) ;
         else        
             [tmatch, unc, fit_coefs] = chisqMinUncertainty(chisqn, 4, 10) ;
             nidx = round(tmatch) - 10 ;

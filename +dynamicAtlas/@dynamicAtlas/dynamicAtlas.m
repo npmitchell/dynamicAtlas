@@ -49,8 +49,8 @@ classdef dynamicAtlas < handle
     %---------------------------------------------------------------------
 
     methods
-        function da = dynamicAtlas(atlasPath, genotypes, timeLineMethod,...
-                timeStampMethod)
+        function da = dynamicAtlas(atlasPath, genotypes, ...
+                timeLineMethod, timeStampMethod)
             %DYNAMICATLAS Construct an instance of this class
             %   Create a dynamicAtlas instance
             %
@@ -58,18 +58,31 @@ classdef dynamicAtlas < handle
             % ----------
             % atlasPath : str
             %   the path containing each genotype directory
+            % genotypes : optional cell array of strings (default = all)
+            %   the genotypes to include in the atlas object
+            % timeLineMethod : optional str (default = 'realspace')
+            %   Method string specifier for building master timeLine(s)
+            % timeStampMethod : optional str (default = 'stripe7')
+            %   Method string specifier for time stamping
+            %
+            % Returns
+            % -------
+            % da : dynamicAtlas class instance
             disp('Constructing dynamicAtlas')
             da.path = atlasPath ;
             
             % Add paths for methods
             da.addPaths()
             
-            if nargin > 1
+            % Declare which genotypes to include
+            if nargin > 1 && ~isempty(genotypes)
                 da.genotypes = genotypes ;
             else
-                % build genotype from contained directories
+                % build genotype from contained directories, ignoring code
+                % and extra and timing subdirs
                 [~, da.genotypes] = subdirs(da.path, {'timing', 'code', 'extra'});
             end
+            
             % Declare property timeLineMethod
             if nargin > 2
                 da.timeLineMethod = timeLineMethod ;
@@ -216,7 +229,10 @@ classdef dynamicAtlas < handle
             timeStampStripe7(da, genotype, label, Options)
         end
         
-        function outstruct = findTime(da, tfind, eps)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % QUERY METHODS
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function qs = findTime(da, tfind, eps)
             %FINDTIME(tfind, eps) Find all instances with time near tfind
             %   Give the labels, folders, and time uncertainties of all
             %   stained samples matching the supplied time tfind, within
@@ -271,9 +287,10 @@ classdef dynamicAtlas < handle
             outstruct.times = times ;
             outstruct.uncs = uncs ;
             outstruct.tiffpages = tiffpages ;
+            qs = queriedSample(outstruct) ;
         end
         
-        function lum = findStaticGenotypeLabel(da, genotype, label)
+        function qs = findStaticGenotypeLabel(da, genotype, label)
             %FINDDYNAMICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
@@ -292,7 +309,7 @@ classdef dynamicAtlas < handle
             %   times : Nx1 cell array of timestamps (each could be array)
             %   unc : Nx1 cell array of timestamp uncertainties
             %   nTimePoints : Nx1 int array of #timepoints in each dataset
-            lum = da.lookup(genotype).findStaticLabel(label) ;
+            qs = da.lookup(genotype).findStaticLabel(label) ;
         end
         
         function lum = findDynamicGenotypeLabel(da, genotype, label)
@@ -314,10 +331,10 @@ classdef dynamicAtlas < handle
             %   times : Nx1 cell array of timestamps (each could be array)
             %   unc : Nx1 cell array of timestamp uncertainties
             %   nTimePoints : Nx1 int array of #timepoints in each dataset
-            lum = da.lookup(genotype).findDynamicLabel(label) ;
+            qs = da.lookup(genotype).findDynamicLabel(label) ;
         end
             
-        function lum = findGenotypeLabel(da, genotype, label)
+        function qs = findGenotypeLabel(da, genotype, label)
             % FINDGENOTYPELABEL(genotype, label)
             %
             % Parameters
@@ -336,14 +353,14 @@ classdef dynamicAtlas < handle
             %   nTimePoints : Nx1 int array of #timepoints in each dataset
             %
             if strcmp(da.timeStampMethod, 'stripe7')
-                lum = da.lookup(genotype).map(label) ;
+                qs = da.lookup(genotype).findLabel(label) ;
             else
                 error(['dynamicAtlas.timeStampMethod not recognized: ',...
                     da.timeStampMethod])
             end
         end
         
-        function estruct = findEmbryo(da, embryoID) 
+        function qs = findEmbryo(da, embryoID) 
             %FINDEMBRYO(embryoID) Find all instances with given embryo
             %   Give the names, folder, times, and time uncertainties for
             %   stained samples matching the supplied embryoID.
@@ -379,6 +396,7 @@ classdef dynamicAtlas < handle
                     end
                 end
             end
+            qs = dynamicAtlas.queriedSample(estruct) ;
             
         end
     end

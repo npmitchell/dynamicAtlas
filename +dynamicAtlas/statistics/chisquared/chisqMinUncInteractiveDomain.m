@@ -1,5 +1,6 @@
 function [xstar, err, fit_coefs, nidx, pidx] = ...
-    chisqMinUncInteractiveDomain(chisq, minN2fit, maxN2fit, ssr)
+    chisqMinUncInteractiveDomain(chisq, minN2fit, maxN2fit, ssr, ...
+                                header_preamble, dataStruct)
 % chisqMinUncertaintyIntractiveDomain(chisq, minN2fit, maxN2fit)
 %
 % Parameters
@@ -10,8 +11,16 @@ function [xstar, err, fit_coefs, nidx, pidx] = ...
 %   minimum number of timepoints to consider for initial fit domain
 % maxN2fit : int
 %   maximum number of timepoints to consider for initial fit domain
-% ssr : N x 1 float
+% ssr : optional N x 1 float
 %   sum of squared residuals
+% header_preamble : optional str
+%   string to display in the title
+% dataStruct : struct with fields
+%   dataframe : QxP numeric array
+%       the current frame being timestamped using chisquared
+%   refcurves : NxQxP numeric array
+%       the reference dynamic data against which the current frame is being
+%       timestamped
 % 
 % Returns
 % -------
@@ -25,6 +34,21 @@ function [xstar, err, fit_coefs, nidx, pidx] = ...
 %
 % NPMitchell 2020
 
+if nargin < 6 
+    dataframe = [] ;
+    refcurves = [] ;
+else
+    dataframe = dataStruct.dataframe ;
+    refcurves = dataStruct.refcurves ;
+end
+if isempty(dataframe) 
+    do_overlay = false ;
+else
+    do_overlay = true ;
+end
+if nargin < 5
+    header_preamble = '' ;
+end
 if nargin < 4
     ssr = 0 ;
 end
@@ -122,13 +146,18 @@ while ~fit_is_fine
     timedense = 1:0.1:length(chisq) ;
     % minimimum of the fit is cstar
     cstar = fit_coefs.ystar ;
+    
+    % If we have data to overlay, make two subpanels
+    if do_overlay
+        subplot(1, 2, 1)    
+    end
     plot(chisq, '.-')
     hold on;
     yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
     plot(timedense, yy, '--')
     plot(nidx:pidx, chisq(nidx:pidx), 'o')
     if length(ssr) == length(chisq) 
-        plot(1:length(chisq), ssr / ssr(idx), '--')
+        plot(1:length(chisq), ssr / ssr(idx), 'x')
     end
     errorbar(xstar, cstar, err, 'horizontal')
     ylim([min(cstar * 1.1, 0), max(30, cstar * 2)])
@@ -136,7 +165,22 @@ while ~fit_is_fine
     xlim([0 length(chisq)])
     ylabel('\chi^2 / N')
     xlabel('time')
-    title('Enter=OK, up=wider, down=narrower, right/left=shift')
+    legend({'$\chi^2/N$', 'fit', 'data for fit',...
+        '$\Sigma(x-\bar{x})^2$ (normalized)'}, ...
+        'Location', 'best', 'Interpreter', 'Latex')
+    suptitle([header_preamble 'Enter=OK, up=wider, down=narrower, right/left=shift'])
+    
+    % Add overlay data to other subplot if supplied
+    if do_overlay
+        subplot(1, 2, 2)
+        %imshow(mat2gray(dataframe))
+        imshow(double(dataframe),[0,1000])
+        hold on;
+        indx = min(max(1, round(xstar)), size(refcurves, 2)) ;
+        xcurv = squeeze(refcurves(:, indx, 1)) ;
+        ycurv = squeeze(refcurves(:, indx, 2)) ;
+        plot(xcurv * size(dataframe, 2), ycurv * size(dataframe, 1), '.')
+    end
     
     % Update domain
     move_on = false ;
@@ -150,25 +194,27 @@ while ~fit_is_fine
             nidx0 = nidx ;
             nidx = min(pidx - 2, nidx + 1) ;
             pidx = max(nidx0 + 2, pidx - 1) ;
+            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'uparrow')
             move_on = true;
             nidx = max(1, nidx - 1) ;
             pidx = min(length(chisq), pidx + 1) ;
+            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'rightarrow')
             move_on = true;
             nidx = min(pidx - 2, nidx + 1) ;
             pidx = min(length(chisq), pidx + 1) ;
+            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'leftarrow')
             move_on = true;
             nidx = max(1, nidx - 1) ;
             pidx = max(nidx + 2, pidx - 1) ;
+            clf
         end
         if ~move_on
             disp('Bad button press, try again: Enter, up, or down arrow')
         end
-    end
-    clf
-    
+    end  
 end
 
 

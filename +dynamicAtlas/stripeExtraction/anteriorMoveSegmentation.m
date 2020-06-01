@@ -1,18 +1,31 @@
-function [bw, bw2, placement] = ...
+function [bw, bw2, placement, button] = ...
     anteriorMoveSegmentation(bw, placement, minsz, maxsz)
-% Select a region of the BW segmented image that is anterior or posterior
+%ANTERIORMOVESEGMENTATION(bw, placement, minsz, maxsz)
+%   Select a region of the BW segmented image that is anterior or posterior
 % to current selection (indexed by 'placement') to find stripe 7
 % segmentation.
 %
 % Parameters
 % ----------
-% bw : 
+% bw : NxM binary array
+%   pre-size-filtered binary mask
 % placement : int
+%   the rank AP position of the segmented region (stripe7, for ex) that is
+%   true in the mask  
 % minsz : float or int
+%   the min allowed size of a true region in the mask, in pixels
 % maxsz : float or int
+%   the max allowed size of a true region in the mask, in pixels
 %
 % Returns
 % -------
+% bw : NxM binary array
+%   pre-size-filtered binary mask
+% bw2 : NxM binary array
+%   size-filtered binary mask
+% placement : int
+%   the rank AP position of the segmented region (stripe7, for ex) that is
+%   true in the mask 
 % button : waitforbuttonpress() output
 %   what the current 
 %
