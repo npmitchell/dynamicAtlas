@@ -25,9 +25,9 @@ classdef queriedSample < handle
             %GETDATA(obj) Load the TIFFs for all data in this queriedSample
             %
             if isempty(obj.data)
-                dataCell = cell(1, length(obj.folders)) ;
-                for qq = 1:length(obj.folders)
-                    dataCell{qq} = loadtiff(obj.folders{qq}, obj.names{qq}) ;
+                dataCell = cell(1, length(obj.meta.folders)) ;
+                for qq = 1:length(obj.meta.folders)
+                    dataCell{qq} = loadtiff(obj.meta.folders{qq}, obj.meta.names{qq}) ;
                 end
                 obj.data = dataCell ;
             else

@@ -74,7 +74,7 @@ runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
 %% The lookup maps can be queried also.
 % For ex, da.lookup('WT') is itself a map
 da.lookup('WT')
-da.lookup('WT').findTime(10, 2)
+da.lookup('WT').findTime(10, 20)
 
 %% Create the gradients of pair rule genes for tensor analysis
 da.makeGradientImages()

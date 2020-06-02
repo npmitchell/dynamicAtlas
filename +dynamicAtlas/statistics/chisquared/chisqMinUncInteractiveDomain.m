@@ -174,7 +174,8 @@ while ~fit_is_fine
     if do_overlay
         subplot(1, 2, 2)
         %imshow(mat2gray(dataframe))
-        imshow(double(dataframe),[0,1000])
+        dataforfig = double(dataframe);
+        imshow(dataforfig,[0,prctile(dataforfig,99,'all')])
         hold on;
         indx = min(max(1, round(xstar)), size(refcurves, 2)) ;
         xcurv = squeeze(refcurves(:, indx, 1)) ;
