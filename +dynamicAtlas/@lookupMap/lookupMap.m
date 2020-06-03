@@ -48,20 +48,30 @@ classdef lookupMap < handle
     
     
     methods
-        function obj = lookupMap(genoDir, timerfn, prepend, exten)
+        function obj = lookupMap(genoDir, Options)
+            % name of timer filename for loading times
+            timerfn = 'timematch_curve7_chisq.mat' ;
+            % filename for pullback without filetype extension
+            prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;
+            % string after prepend for the pullback data
+            exten = '.tif' ;
             obj.genoDir = genoDir ;
             if nargin < 1
                 error('Must supply a directory to use (genoDir) for class instantiation')
-            elseif nargin < 5
-                exten = '.tif' ;    % string after channel index
-                if nargin < 4
-                    % filename for pullback without filetype extension
-                    prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;      
-                    if nargin < 3
-                        timerfn = 'timematch_Runt_chisq.mat' ;            
-                    end
+            end
+            if nargin > 1
+                if isfield(Options, 'timerfn')
+                    timerfn = Options.timerfn ;
+                end
+                if isfield(Options, 'prepend')
+                    prepend = Options.prepend ;
+                end
+                if isfield(Options, 'exten')
+                    exten = Options.exten ;
                 end
             end
+            disp(['Options for lookupMap > ' timerfn])
+            
             obj.timerfn = timerfn ;
             obj.prepend = prepend ;
             obj.exten = exten ;
@@ -107,6 +117,7 @@ classdef lookupMap < handle
             labels = obj.map.keys ;
             % For each label, add struct.label, folders, uncs
             outstruct.labels = {} ;
+            outstruct.names = {} ;
             outstruct.folders = {} ;
             outstruct.embryoIDs = {} ;
             outstruct.times = [] ;
@@ -114,19 +125,28 @@ classdef lookupMap < handle
             outstruct.tiffpages = [] ;
             for ii = 1:length(labels)
                 label = labels{ii} ;
-                substruct = obj.map(label) ; 
+                disp(['Searching ' label ' label for timestamp'])
+                substruct = obj.map(label) ;
                 timestamps = substruct.times ;
                 for jj = 1:length(timestamps)
+                    % Grab all timing + uncertainties for this embryoID
                     tstamps = timestamps{jj} ;
-                    for kk = 1:length(tstamps) 
+                    uncstamps = substruct.uncs{jj} ; % possibly multivalued
+                    for kk = 1:length(tstamps)
+                        % Grab the timing + uncertainty for this TIFF page
                         tstamp = tstamps(kk) ;
+                        uncstamp = uncstamps(kk) ;
                         if abs(tstamp - tfind) < eps 
-                            labels{dmyk} = label ; 
+                            % populate the metadata for this entry
+                            labels4struct{dmyk} = label ; 
+                            names{dmyk} = substruct.names{jj} ; 
                             folders{dmyk} = substruct.folders{jj} ;
                             embryoIDs{dmyk} = substruct.embryoIDs{jj} ;
-                            etimes(dmyk) = tstamp 
-                            uncs(dmyk) = substruct.uncs(jj) ;
+                            etimes(dmyk) = tstamp ;
+                            uncs(dmyk) = uncstamp ;
                             tiffpages(dmyk) = kk ;
+                            % update the index of the cells we are
+                            % building
                             dmyk = dmyk + 1 ;
                         end
                     end
@@ -135,13 +155,15 @@ classdef lookupMap < handle
             
             % Add to the output struct
             if ~isempty(embryoIDs)
-                outstruct.labels{length(outstruct.labels) + 1} = labels ;
-                outstruct.folders{length(outstruct.folders) + 1} = folders ;
-                outstruct.embryoIDs{length(outstruct.embryoIDs) + 1} = embryoIDs ;
+                outstruct.labels = labels4struct ;
+                outstruct.folders = folders ;
+                outstruct.names = names ;
+                outstruct.embryoIDs = embryoIDs ;
                 length(outstruct.times)
-                outstruct.times(length(outstruct.times) + 1) = etimes ;
-                outstruct.uncs(length(outstruct.uncs) + 1) = uncs ;
-                outstruct.tiffpages(length(outstruct.tiffpages) + 1) = tiffpages ;
+                outstruct.times = etimes ;
+                outstruct.uncs = uncs ;
+                outstruct.tiffpages = tiffpages ;
+                outstruct
                 qs = dynamicAtlas.queriedSample(outstruct) ;
             else
                 qs = dynamicAtlas.queriedSample(struct()) ;
@@ -189,7 +211,7 @@ classdef lookupMap < handle
             qs = dynamicAtlas.queriedSample(buildStructWrtTime(obj, 'dynamic', label2find)) ;
         end
         
-        function outstruct = findLabelTime(obj, label2find, tfind, eps)
+        function qs = findLabelTime(obj, label2find, tfind, eps)
             %FINDTIME(tfind, eps) Find all instances with given channel
             %   Give the times, folders, and time uncertainties of all
             %   stained samples matching the supplied channel 'label'
@@ -205,8 +227,6 @@ classdef lookupMap < handle
             % -------
             % outstruct : struct
             %   The output structure with fields folders, times, uncs
-            
-            
             if nargin < 4
                 eps = 0.5 ;
                 if nargin < 3
@@ -232,12 +252,13 @@ classdef lookupMap < handle
                     timestamps = substruct.times ;
                     % Consider each embryo and look for time matches
                     for jj = 1:length(timestamps)
-                        tstamps = timestamps{jj} ;
+                        tstamps = timestamps{jj} 
                         % go through each page of the tiff and look for
                         % time matches
                         for kk = 1:length(tstamps) 
                             tstamp = tstamps(kk) ;
                             if abs(tstamp - tfind) < eps
+                                labels4struct{dmyk} = label2find ;
                                 folders{dmyk} = substruct.folders{jj} ;
                                 names{dmyk} = substruct.names{jj} ;
                                 embryoIDs{dmyk} = substruct.embryoIDs{jj} ;
@@ -253,6 +274,7 @@ classdef lookupMap < handle
             end
             
             % Add to the output struct
+            outstruct.labels = labels4struct ;
             outstruct.folders = folders ;
             outstruct.names = names ;
             outstruct.embryoIDs = embryoIDs ;

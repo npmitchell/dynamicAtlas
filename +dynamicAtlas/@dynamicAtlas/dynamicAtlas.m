@@ -49,8 +49,7 @@ classdef dynamicAtlas < handle
     %---------------------------------------------------------------------
 
     methods
-        function da = dynamicAtlas(atlasPath, genotypes, ...
-                timeLineMethod, timeStampMethod)
+        function da = dynamicAtlas(atlasPath, genotypes, Options)
             %DYNAMICATLAS Construct an instance of this class
             %   Create a dynamicAtlas instance
             %
@@ -60,10 +59,11 @@ classdef dynamicAtlas < handle
             %   the path containing each genotype directory
             % genotypes : optional cell array of strings (default = all)
             %   the genotypes to include in the atlas object
-            % timeLineMethod : optional str (default = 'realspace')
-            %   Method string specifier for building master timeLine(s)
-            % timeStampMethod : optional str (default = 'stripe7')
-            %   Method string specifier for time stamping
+            % Options : struct with fields
+            %   timeLineMethod : optional str (default = 'realspace')
+            %       Method string specifier for building master timeLine(s)
+            %   timeStampMethod : optional str (default = 'stripe7')
+            %       Method string specifier for time stamping
             %
             % Returns
             % -------
@@ -71,8 +71,8 @@ classdef dynamicAtlas < handle
             disp('Constructing dynamicAtlas')
             da.path = atlasPath ;
             
-            % Add paths for methods
-            da.addPaths()
+            % Add paths for methods (necessary for some MATLAB versions?)
+            % da.addPaths()
             
             % Declare which genotypes to include
             if nargin > 1 && ~isempty(genotypes)
@@ -84,14 +84,14 @@ classdef dynamicAtlas < handle
             end
             
             % Declare property timeLineMethod
-            if nargin > 2
-                da.timeLineMethod = timeLineMethod ;
+            if nargin > 2 && isfield(Options, 'timeLineMethod')
+                da.timeLineMethod = Options.timeLineMethod ;
             else
                 da.timeLineMethod = 'realspace' ;
             end
             % Declare property timeStampMethod
-            if nargin > 3
-                da.timeStampMethod = timeStampMethod ;
+            if nargin > 2 && isfield(Options, 'timeStampMethod')
+                da.timeStampMethod = Options.timeStampMethod ;
             else
                 da.timeStampMethod = 'stripe7' ;
             end
@@ -103,12 +103,18 @@ classdef dynamicAtlas < handle
         function addPaths(da)
             % ADDPATHS(da) Add paths needed for all routines
             %   Add paths needed for subsequent methods in dynamicAtlas
-            tlaDir = what('dynamicAtlas').path ;
+            
+            % Now, instead use:
+            % addpath(genpath('dynamicAtlasCode')) ;
+            
+            tmp = what('dynamicAtlas') ;
+            tlaDir = tmp.path ;
             % splitpath = regexp(activefn, filesep, 'split') ;
             % tlaDir = '' ;
             % for qq=1:length(splitpath)
             %     tlaDir = [tlaDir splitpath{qq} filesep] ;
             % end
+            
             addpath(fullfile(tlaDir, 'data_handling'))
             addpath(fullfile(tlaDir, 'tiff_handling'))
             addpath(fullfile(tlaDir, 'nanconv')) ;
@@ -129,7 +135,7 @@ classdef dynamicAtlas < handle
             addpath(fullfile(tlaDir, 'external', 'freezeColors')) ;
         end
         
-        function buildLookup(da, genotypes_subset)
+        function buildLookup(da, genotypes_subset, Options)
             % BUILDLOOKUP(da)
             %   Create lookup map object for each genotype in dynamicAtlas
             % 
@@ -140,6 +146,7 @@ classdef dynamicAtlas < handle
             da.lookup = containers.Map() ;
             if nargin < 2
                 genotypes_todo = da.genotypes ;
+                Options = struct() ;
             else
                 genotypes_todo = genotypes_subset ;
             end
@@ -147,14 +154,14 @@ classdef dynamicAtlas < handle
             for kk=1:length(genotypes_todo)
                 genoDir = fullfile(da.path, genotypes_todo{kk}) ;   
                 % build Containers.map of lookupMaps, one for each genoDir
-                lum = dynamicAtlas.lookupMap(genoDir) ;
+                lum = dynamicAtlas.lookupMap(genoDir, Options) ;
                 da.lookup(da.genotypes{kk}) = lum ;
             end
         end
-                
+        
         makeGradientImages(da, sigmas, steps, cdf_minmax, overwrite)
         
-        function makeMasterTimeline(da, genotype, label)
+        function makeMasterTimeline(da, genotype, label, Options)
             % MAKEMASTERTIMELINE(genotype, label, Options)
             %   Build a master timeline for this genotype based on the 
             %   dynamic pullbacks contained in genotype/label/
@@ -165,10 +172,11 @@ classdef dynamicAtlas < handle
             % genotype : str
             % stain : str
             % Options : struct with optional fields
-            %   preview
-            %   overwrite
-            %   thres : float
-            %   ssfactor : int 
+            %   preview : optional bool, view intermediate results
+            %   overwrite : optional bool, overwrite previous master timeline         
+            %   thres : optional float, threshold intensity for binarization 
+            %   ssfactor : optional int, subsampling factor
+            %   apCijFrac : optional float between 0-1, amount of anterior end to ignore
             %
             % Returns
             % -------
@@ -182,9 +190,9 @@ classdef dynamicAtlas < handle
             % dynamicAtlas.path/genotype/label/embryoID/timematch_<method>_dynamic.txt
 
             if strcmp(da.timeLineMethod, 'realspace')
-                da.makeMasterTimeLineRealspace(genotype, label)
+                da.makeMasterTimeLineRealspace(genotype, label, Options)
             elseif strcmp(da.timeLineMethod, 'piv')
-                makeMasterTimeLinePIV(da, genotype, label)
+                makeMasterTimeLinePIV(da, genotype, label, Options)
             else
                 error(['dynamicAtlas.timeLineMethod not recognized: ',...
                     da.timeLineMethod])

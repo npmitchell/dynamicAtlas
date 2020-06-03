@@ -461,11 +461,36 @@ for kk = 1:length(lum.folders)
                     load(fnmat0, 'matchtime', 'matchtime_unc', ...
                         'matchtime_minutes', 'matchtime_unc_minutes')  
                 end
+                disp([' > > Saving timematch_curve7_chisq.mat into ' edir])
+                save(fnmat, 'matchtime', 'matchtime_unc', ...
+                    'matchtime_minutes', 'matchtime_unc_minutes')
                 
                 % Now save it in the other embryoID directory (other label)
                 save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')    
-                disp([' > Copying matchtime into ', fntxt])
+                disp([' >  > Copying matchtime into ', fntxt])
                 dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
+            end
+        end
+        
+        disp('Checking that ssr timestamp exists in all embryoID directories')
+        timestamp_ssr_loaded = false ;
+        for qq=1:length(eDirs4ID.folders)
+            edir = eDirs4ID.folders{qq} ;
+            fnmat0_ssr = fullfile(embryoDir, 'timematch_curve7_ssr.mat') ;
+            fnmat_ssr = fullfile(edir, 'timematch_curve7_ssr.mat') ;
+            fntxt_ssr = fullfile(edir, 'timematch_curve7_ssr.txt') ;
+            if ~exist(fnmat_ssr, 'file')                
+                disp([' > Copying timematch_curve7_ssr into ' edir])
+                % Load the timestamp if we haven't done so
+                if ~timestamp_ssr_loaded
+                    load(fnmat0_ssr, 'matchtime', 'matchtime_unc', ...
+                        'matchtime_minutes', 'matchtime_unc_minutes')  
+                end
+                disp([' > > Saving timematch_curve7_ssr.mat into ' edir])
+                save(fnmat_ssr, 'matchtime', 'matchtime_unc', ...
+                    'matchtime_minutes', 'matchtime_unc_minutes')
+                disp([' > > Copying matchtime to ', fntxt_ssr])
+                dlmwrite(fntxt_ssr, [matchtime_minutes, matchtime_unc_minutes])
             end
         end
     end    

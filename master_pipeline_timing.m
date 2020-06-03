@@ -4,25 +4,34 @@
 % Demos of functionality are shown along the way.
 %
 % NPMitchell 2020
+
+%% First mount the server onto your machine 
+% for example, on a Mac: Apple+K afp://flydrive.synology.me
+% mount minimalData/ 
+
+%% Let's clear our environment
 clc
 clear
 close all
 
-%% Add paths
+%% Add paths (this part can be slow)
 % Add time_align_embryos directory to path so that dynamicAtlas package is
 % available to use.
-tlaDir = '/Volumes/minimalData/code/dynamicAtlasCode/';
-%tlaDir = '/Users/mattlefebvre/Documents/MATLAB/dynamicAtlas'
-cd(tlaDir) ;
+tlaDir = '/Volumes/minimalData/code/';
+cd(fullfile(tlaDir)) ;
+addpath(genpath('dynamicAtlasCode')) ;
+cd('dynamicAtlasCode')
+addpath(genpath('+dynamicAtlas'))
+
 % Atlas path is where the dynamicAtlas resides
 atlasPath = '/Volumes/minimalData/Atlas_Data' ;
 %atlasPath = '/Users/mattlefebvre/Desktop/untitled-folder/'
+
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
-da = dynamicAtlas.dynamicAtlas(atlasPath) ;
+% da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
-genotypes = {'WT'} ;         
-da = dynamicAtlas.dynamicAtlas(atlasPath, genotypes) ;
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
 
 %% The properties of da are:
 properties(da)
@@ -30,15 +39,20 @@ properties(da)
 %% Look at the methods of da
 methods(da)
 
-%% We have built the atlas for all genotypes
-% but we could also just look at a subset via
+%% We can change which genotypes are included at any time via
 % da.buildLookup({'WT', 'Eve'}) 
 
 %% We can grab all the data from a label within a genotype 
-da.findGenotypeLabel('WT', 'Runt')
+qs = da.findGenotypeLabel('WT', 'Runt')
+% Now we can see what data lies in this slice via
+qs.meta
+% and we can extract that data via 
+qs.getData()
+% The data is stored in a property
+qsdata = qs.data ;
 
 %% We can grab all the data associated with a given embryo
-embryoID = '201906111245' ;
+embryoID = '201905091604' ;
 qs = da.findEmbryo(embryoID) ;
 % Now qs is a queriedSample object with methods
 qs.getData() ;
@@ -50,9 +64,9 @@ mapWT = da.lookup('WT') ;
 % whose methods are
 methods(mapWT) 
 % To find embryos with a Runt stain, for ex,
-runts = mapWT.findLabel('Runt') 
+runts = mapWT.findLabel('Runt')  
 % To find embryos with a t=10 +/- 2 min
-snaps = mapWT.findTime(10, 2) 
+snaps = mapWT.findTime(40, 20) 
 % To find Runt stains with a t=10 +/- 2 min
 runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
 
@@ -74,7 +88,7 @@ runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
 %% The lookup maps can be queried also.
 % For ex, da.lookup('WT') is itself a map
 da.lookup('WT')
-da.lookup('WT').findTime(10, 20)
+da.lookup('WT').findTime(10, 2)
 
 %% Create the gradients of pair rule genes for tensor analysis
 da.makeGradientImages()
@@ -87,7 +101,10 @@ da.makeGradientImages({'Runt'})
 %% Use dynamic datasets within the lookupMap to build master timeline
 % To control how this is performed, toggle da.timeLineMethod
 % Align dynamic runt nanobody data against each other 
-da.makeMasterTimeline('WT', 'Runt')
+Options.apCijFrac = 0.0 ;
+
+da.makeMasterTimeline('WT', 'Runt', Options)
+%da.makeMasterTimeline('Tlrm9','Eve',Options)
 
 %% Timestamp other data against the master timeline
 % To control how this is performed, toggle da.timeStampMethod

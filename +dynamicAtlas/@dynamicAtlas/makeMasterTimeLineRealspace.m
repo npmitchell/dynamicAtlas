@@ -9,10 +9,11 @@ function makeMasterTimeLineRealspace(da, genotype, label, Options)
 % genotype : str
 % stain : str
 % Options : struct with optional fields
-%   preview
-%   overwrite
-%   thres
-%   ssfactor
+%   preview : bool, view intermediate results
+%   overwrite : bool, overwrite previous master timeline            
+%   thres : threshold intensity for stripe extraction cutoff
+%   ssfactor : int, subsampling factor
+%   apCijFrac : float between 0-1, amount of anterior end to ignore
 %
 % Returns
 % -------
@@ -37,6 +38,7 @@ overwrite = false ;         % overwrite previous results
 thres = 0.5 ;
 ssfactor = 4 ;
 stripe7corr_method = 'dist' ; 
+apCijFrac = 0 ;
 
 % Unpack Options
 if nargin > 3
@@ -54,6 +56,9 @@ if nargin > 3
     end
     if isfield(Options, 'stripe7corr_method')
         stripe7corr_method = Options.stripe7corr_method ;
+    end
+    if isfield(Options, 'apCijFrac')
+        apCijFrac = Options.apCijFrac ;
     end
 end
 
@@ -397,7 +402,7 @@ for ii = 1:length(expts)
             for ti = 1:ntpI
                 disp(['  > ti = ' num2str(ti)])
                 % grab the timepoint ti of MIPs dataset ii
-                apStart = 1;  % max(1, round(apCijFrac * size(mipI, 2))) ;
+                apStart = max(1, round(apCijFrac * size(mipI, 2))) ;
                 imI = imadjustn(squeeze(mipI(:, apStart:end, ti))) ; 
                 imI = imresize( imI, 1./double(ssfactor), 'bilinear' );
                 for tj = 1:ntpJ
@@ -405,6 +410,7 @@ for ii = 1:length(expts)
                     %     disp(['  >> tj = ' num2str(tj)])
                     % end
                     % grab the timepoint tj of MIPs dataset jj
+                    apStart = max(1, round(apCijFrac * size(mipJ, 2))) ;
                     imJ = imadjustn(squeeze(mipJ(:, apStart:end, tj))) ;
                     imJ = imresize( imJ, 1./double(ssfactor), 'bilinear' );
                     

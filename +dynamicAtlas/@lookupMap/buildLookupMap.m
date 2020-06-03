@@ -108,11 +108,11 @@ for ii = 1:length(labelDirs)
             
             % Determine the timestamp(s)
             try
-                load(fullfile(exptDir, timematfn), 'matchtime', 'matchtime_unc')
+                load(fullfile(fnmatch(1).folder, timematfn), 'matchtime_minutes', 'matchtime_unc_minutes')
             catch
                 disp(['Could not load timestamp for experiment: ' embryo])
-                matchtime = NaN * ones(1, ntps) ;
-                matchtime_unc = NaN * ones(1, ntps) ;
+                matchtime_minutes = NaN * ones(1, ntps) ;
+                matchtime_unc_minutes = NaN * ones(1, ntps) ;
             end
 
             % Add this file and timepoint to the list for this
@@ -120,8 +120,8 @@ for ii = 1:length(labelDirs)
             fileNames{length(fileNames) + 1} = filename ;
             embryoDirs{length(embryoDirs) + 1} = fullfile(labelDir, embryo) ;
             embryoIDs{length(embryoIDs) + 1} = embryo ;
-            embryoTimes{length(embryoTimes) + 1} = matchtime ;
-            embryoTimesUnc{length(embryoTimesUnc) + 1} = matchtime_unc ; 
+            embryoTimes{length(embryoTimes) + 1} = matchtime_minutes ;
+            embryoTimesUnc{length(embryoTimesUnc) + 1} = matchtime_unc_minutes ; 
             nTimePoints(length(nTimePoints) + 1) = ntps ; 
         end 
         disp('done building fileNames for this channel')
@@ -143,8 +143,8 @@ for ii = 1:length(labelDirs)
 
     for qq = 1:length(embryoTimes) 
         % Convert to minutes 
-        time = embryoTimes{qq} / 60 ;
-        time_unc = embryoTimesUnc{qq} / 60 ;
+        time = embryoTimes{qq} ;
+        time_unc = embryoTimesUnc{qq} ;
         if qq == 1
             substruct.times = {time} ;
             substruct.folders = {embryoDirs{qq}} ;

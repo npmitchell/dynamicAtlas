@@ -27,7 +27,16 @@ classdef queriedSample < handle
             if isempty(obj.data)
                 dataCell = cell(1, length(obj.meta.folders)) ;
                 for qq = 1:length(obj.meta.folders)
-                    dataCell{qq} = loadtiff(obj.meta.folders{qq}, obj.meta.names{qq}) ;
+                    tiff_fn = fullfile(obj.meta.folders{qq}, obj.meta.names{qq}) ;
+                    if isfield(obj.meta, 'tiffpages')
+                        disp(['Loading TIFF page ', ...
+                            num2str(obj.meta.tiffpages(qq)), ...
+                            ' from: ', tiff_fn])
+                        dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                    else
+                        disp(['Loading TIFF stack: ' tiff_fn])
+                        dataCell{qq} = loadtiff(tiff_fn) ;
+                    end
                 end
                 obj.data = dataCell ;
             else
