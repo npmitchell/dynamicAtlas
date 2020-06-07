@@ -49,6 +49,23 @@ classdef lookupMap < handle
     
     methods
         function obj = lookupMap(genoDir, Options)
+            % LOOKUPMAP(genoDir, Options)
+            %   Instantiate a lookupMap object for genotype of genoDir
+            %
+            % Parameters
+            % ----------
+            % genoDir : str
+            %   path to the genotype data directory
+            % Options : optional struct with fields
+            %   timerfn : str, default='timematch_curve7_chisq.mat'
+            %       name of file to use to obtain timestamp for each
+            %       embryo
+            %   prepend : str, default='MAX_Cyl1_2_000000_c*_rot_scaled_view1' 
+            %       filename search string without extension for pullback
+            %   exten : str, default='.tif'
+            %       filename extension for pullback
+            %
+            
             % name of timer filename for loading times
             timerfn = 'timematch_curve7_chisq.mat' ;
             % filename for pullback without filetype extension
@@ -212,7 +229,7 @@ classdef lookupMap < handle
         end
         
         function qs = findLabelTime(obj, label2find, tfind, eps)
-            %FINDTIME(tfind, eps) Find all instances with given channel
+            %FINDLABELTIME(label2find, tfind, eps)
             %   Give the times, folders, and time uncertainties of all
             %   stained samples matching the supplied channel 'label'
             %
@@ -252,18 +269,20 @@ classdef lookupMap < handle
                     timestamps = substruct.times ;
                     % Consider each embryo and look for time matches
                     for jj = 1:length(timestamps)
-                        tstamps = timestamps{jj} 
+                        tstamps = timestamps{jj} ;
+                        uncstamps = substruct.uncs{jj} ;
                         % go through each page of the tiff and look for
                         % time matches
                         for kk = 1:length(tstamps) 
                             tstamp = tstamps(kk) ;
+                            uncstamp = uncstamps(kk) ;
                             if abs(tstamp - tfind) < eps
                                 labels4struct{dmyk} = label2find ;
                                 folders{dmyk} = substruct.folders{jj} ;
                                 names{dmyk} = substruct.names{jj} ;
                                 embryoIDs{dmyk} = substruct.embryoIDs{jj} ;
                                 timepts(dmyk) = tstamp ;
-                                uncs{dmyk} = substruct.uncs{jj} ;
+                                uncs(dmyk) = uncstamp ;
                                 tiffpages(dmyk) = kk ;
                                 nTimePoints(dmyk) = substruct.nTimePoints(jj) ;
                                 dmyk = dmyk + 1 ;

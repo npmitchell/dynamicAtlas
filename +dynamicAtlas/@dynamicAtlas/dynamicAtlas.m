@@ -64,6 +64,13 @@ classdef dynamicAtlas < handle
             %       Method string specifier for building master timeLine(s)
             %   timeStampMethod : optional str (default = 'stripe7')
             %       Method string specifier for time stamping
+            %   timerfn : str, default='timematch_curve7_chisq.mat'
+            %       name of file to use to obtain timestamp for each
+            %       embryo
+            %   prepend : str, default='MAX_Cyl1_2_000000_c*_rot_scaled_view1' 
+            %       filename search string without extension for pullback
+            %   exten : str, default='.tif'
+            %       filename extension for pullback
             %
             % Returns
             % -------
@@ -86,18 +93,20 @@ classdef dynamicAtlas < handle
             % Declare property timeLineMethod
             if nargin > 2 && isfield(Options, 'timeLineMethod')
                 da.timeLineMethod = Options.timeLineMethod ;
+                Options = rmfield(Options, 'timeLineMethod') ;
             else
                 da.timeLineMethod = 'realspace' ;
             end
             % Declare property timeStampMethod
             if nargin > 2 && isfield(Options, 'timeStampMethod')
                 da.timeStampMethod = Options.timeStampMethod ;
+                Options = rmfield(Options, 'timeStampMethod') ;
             else
                 da.timeStampMethod = 'stripe7' ;
             end
             
             % Populate the lookup property
-            da.buildLookup() 
+            da.buildLookup(Options) 
         end
         
         function addPaths(da)
