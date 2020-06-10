@@ -9,11 +9,10 @@ function makeMasterTimeLineRealspace(da, genotype, label, Options)
 % genotype : str
 % stain : str
 % Options : struct with optional fields
-%   preview : bool, view intermediate results
-%   overwrite : bool, overwrite previous master timeline            
-%   thres : threshold intensity for stripe extraction cutoff
-%   ssfactor : int, subsampling factor
-%   apCijFrac : float between 0-1, amount of anterior end to ignore
+%   preview
+%   overwrite
+%   thres
+%   ssfactor
 %
 % Returns
 % -------
@@ -38,7 +37,6 @@ overwrite = false ;         % overwrite previous results
 thres = 0.5 ;
 ssfactor = 4 ;
 stripe7corr_method = 'dist' ; 
-apCijFrac = 0 ;
 
 % Unpack Options
 if nargin > 3
@@ -56,9 +54,6 @@ if nargin > 3
     end
     if isfield(Options, 'stripe7corr_method')
         stripe7corr_method = Options.stripe7corr_method ;
-    end
-    if isfield(Options, 'apCijFrac')
-        apCijFrac = Options.apCijFrac ;
     end
 end
 
@@ -87,14 +82,13 @@ dynamic_embryos = thismap.findDynamicLabel(label).meta ;
 stainDir = fullfile(da.path, genotype, label) ;
 for ii = 1:length(dynamic_embryos.embryoIDs)
     expts{ii} = fullfile(dynamic_embryos.folders{ii}) ;
-    exptIDs{ii} = dynamic_embryos.embryoIDs{ii} ;
+    exptIDs{ii} = fullfile(dynamic_embryos.embryoIDs{ii}) ;
 end
 
 % Determine the master timeline experiment and name its index 'hard'
 % First search for the master timeline experiment via indicator txt file
 hard = 0 ;
 for ii = 1:length(expts)
-    disp(['Seeking timeline designation in ' expts{ii}])
     if ~isempty(dir(fullfile(expts{ii}, 'master_timeline_designee.txt'))) && hard == 0
         hard = ii ;
         disp(['Found master timeline designation in embryo: ' dynamic_embryos.embryoIDs{ii}])
@@ -103,9 +97,10 @@ end
 % Handle case where no experiment was named master timeline
 if hard == 0
     disp('No dynamic experiment has yet been designated as master timeline')
+    disp("This designation signifies that which experiment's dt between frames remains fixed in the master timeline")
     disp('Choose which experiment receives this designation:')
     for ii = 1:length(expts)
-        disp([num2str(ii) ': ' dynamic_embryos.embryoIDs{ii}])
+        disp([exptIDs{ii} ': ' dynamic_embryos.embryoIDs{ii}])
     end
     
     % Request user to fix one master timeline from list of available
@@ -119,18 +114,12 @@ if hard == 0
         end
     end
     
-    % Now save designation in txt file in the embryoID directory AND in the
-    % timing/genotype/label/ directory
-    fntmps = {fullfile(expts{hard}, 'master_timeline_designee.txt') , ...
-        fullfile(expts{hard}, 'master_timeline_designee.txt') } ;
-    for qq = 1:2
-        fntmp = fntmps{qq} ;
-        fid = fopen(fntmp, 'wt');
-        % make header
-        fprintf(fid, 'this embryo is designated as the master timeline: '); 
-        fprintf(fid, dynamic_embryos.embryoIDs{hard}) ;
-        fclose(fid);
-    end
+    % Now save designation in txt file
+    fntmp = fullfile(expts{hard}, 'master_timeline_designee.txt') ;
+    fid = fopen(fntmp, 'wt');
+    % make header
+    fprintf(fid, 'this embryo is designated as the master timeline'); 
+    fclose(fid);
 end
 
 % build some strings for I/O
@@ -155,11 +144,11 @@ gray = [0.5, 0.5, 0.5] ;
 
 %% I. Subsample the data
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
+    disp(['dataset ii = ', exptIDs{ii}])
     
     % Load time sequence MIPs of dataset ii
     % Search for existing filename matching pattern
-    cand = dir(fullfile(expts{ii}, ssmipfn)) ;  % candidate tiffs downsampled
+    cand = dir(fullfile(expts{ii}, ssmipfn)) ;
     outfn = fullfile(cand(1).folder, cand(1).name) ;
     
     if ~exist(outfn, 'file') || overwrite
@@ -204,7 +193,7 @@ minsz = 5e3 ;
 maxsz = 1e6 ;
 
 for ii = 1:length(expts)
-    disp(['Extracting stripe 7 for expt ' num2str(ii)])
+    disp(['Extracting stripe 7 for expt ' exptIDs{ii}])
     fns = dir(probfn) ;
     try
         assert(~isempty(fns))
@@ -213,7 +202,6 @@ for ii = 1:length(expts)
             disp(['Train on stripe7 for each subsampled data in iLastik to create: ', ... 
                     probfn])
             mykey = input("Is training done? or Exit? ['Yes'=Training done, 'Exit'=Exit]: ") ;
-            % input('Press Enter when finished.', 's') ;
             if contains(mykey, 'y') || contains(mykey, 'Y')
                 disp('User declared that training is finished')
             else
@@ -326,7 +314,7 @@ for ii = 1:length(expts)
         end
 
         % Save the curves as a mat file
-        stripe7curves = curves ;
+        stripe7curves = curves 
         save(curvfn, 'stripe7curve_frac')
     end
 end
@@ -340,7 +328,7 @@ end
 
 % consider each experiment pair
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
+    disp(['dataset ii = ', exptIDs{ii}])
     
     loaded_ii = false ;
     for jj = 1:length(expts)
@@ -382,7 +370,7 @@ for ii = 1:length(expts)
             else
                 disp('Overwriting correlations')
             end
-            disp(['  dataset jj = ', num2str(jj)])
+            disp(['  dataset jj = ', exptIDs{jj}])
             % Load time sequence MIPs of dataset jj
             disp(['  Loading MIPs tiff: ' fullfile(expts{jj}, mipfn)])
 
@@ -411,7 +399,7 @@ for ii = 1:length(expts)
             for ti = 1:ntpI
                 disp(['  > ti = ' num2str(ti)])
                 % grab the timepoint ti of MIPs dataset ii
-                apStart = max(1, round(apCijFrac * size(mipI, 2))) ;
+                apStart = 1;  % max(1, round(apCijFrac * size(mipI, 2))) ;
                 imI = imadjustn(squeeze(mipI(:, apStart:end, ti))) ; 
                 imI = imresize( imI, 1./double(ssfactor), 'bilinear' );
                 for tj = 1:ntpJ
@@ -419,7 +407,6 @@ for ii = 1:length(expts)
                     %     disp(['  >> tj = ' num2str(tj)])
                     % end
                     % grab the timepoint tj of MIPs dataset jj
-                    apStart = max(1, round(apCijFrac * size(mipJ, 2))) ;
                     imJ = imadjustn(squeeze(mipJ(:, apStart:end, tj))) ;
                     imJ = imresize( imJ, 1./double(ssfactor), 'bilinear' );
                     
@@ -460,10 +447,10 @@ for ii = 1:length(expts)
             % Plot heatmap of phase correlations, dxs, and dys
             close all
             imagesc(cij)
-            xlabel(['timepoint for dataset ' num2str(jj)])
-            ylabel(['timepoint for dataset ' num2str(ii)])
+            xlabel(['timepoint for dataset ' exptIDs{jj}])
+            ylabel(['timepoint for dataset ' exptIDs{ii}])
             axis equal
-            cfn = fullfile(corrDatOutDir, sprintf(['cij' ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(corrDatOutDir, ['cij' ijstr '.png']) ;
             cb = colorbar() ;
             ylabel(cb, 'correlation')
             set(gca,'YDir','normal')
@@ -479,10 +466,10 @@ for ii = 1:length(expts)
                 % delta x
                 clf
                 imagesc(dxij)
-                xlabel(['timepoint for dataset ' num2str(jj)])
-                ylabel(['timepoint for dataset ' num2str(ii)])
+                xlabel(['timepoint for dataset ' exptIDs{jj}])
+                ylabel(['timepoint for dataset ' exptIDs{ii}])
                 axis equal
-                cfn = fullfile(corrDatOutDir, sprintf(['dxij_' corr_method ijstr '.png'], ii, jj)) ;
+                cfn = fullfile(corrDatOutDir, ['dxij_' corr_method ijstr '.png']) ;
                 cb = colorbar() ;
                 ylabel(cb, '\deltax')
                 set(gca,'YDir','normal')
@@ -492,10 +479,10 @@ for ii = 1:length(expts)
                 % delta y 
                 clf
                 imagesc(dyij)
-                xlabel(['timepoint for dataset ' num2str(jj)])
-                ylabel(['timepoint for dataset ' num2str(ii)])
+                xlabel(['timepoint for dataset ' exptIDs{jj}])
+                ylabel(['timepoint for dataset ' exptIDs{ii}])
                 axis equal
-                cfn = fullfile(corrDatOutDir, sprintf(['dyij_' corr_method ijstr '.png'], ii, jj)) ;
+                cfn = fullfile(corrDatOutDir, ['dyij_' corr_method ijstr '.png']) ;
                 cb = colorbar() ;
                 ylabel(cb, '\deltay')
                 set(gca,'YDir','normal')
@@ -513,7 +500,7 @@ disp('Done with cross-correlation')
 %% V. ID peaks in correlation to draw curves using fast marching
 clear imI imJ imA imB
 corrImOutDir = fullfile(corrOutDir, 'correspondence_images') ;
-corrPathOutDir = fullfile(corrOutDir, 'correspondence_paths') ;
+corrPathOutDir = fullfile(corrOutDir, 'cpath') ;
 dirs2make = {corrImOutDir, corrPathOutDir} ;
 for di = 1:length(dirs2make) 
     dir2make = dirs2make{di} ;
@@ -523,7 +510,7 @@ for di = 1:length(dirs2make)
 end
 
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
+    disp(['dataset ii = ', exptIDs{ii}])
     
     loaded_ii = false ;
     
@@ -532,17 +519,11 @@ for ii = 1:length(expts)
         ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
-        cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
+        cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
         
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
-            
-            if exist(cpathfn, 'file')
-                disp(['Overwriting correlations: ' cpathfn])
-            else
-                disp(['Computing correlations for first time: ' cpathfn])
-            end
             
             % Load dataset ii if not already done
             if ~loaded_ii
@@ -593,7 +574,7 @@ for ii = 1:length(expts)
             end
             
             % Load time sequence MIPs of dataset jj
-            disp([' --> Loading MIPs tiff for jj=', num2str(jj), ...
+            disp([' --> Loading MIPs tiff for jj=', exptIDs{jj}, ...
                 ': ', fullfile(expts{jj}, mipfn)])
             
             mfopts = dir(fullfile(expts{jj}, mipfn)) ;
@@ -610,7 +591,6 @@ for ii = 1:length(expts)
                 mipfnjj = mfopts(1).name ;
             end
             mipJ = loadtiff(fullfile(expts{jj}, mipfnjj)) ;
-            ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
 
             % Create directory for overlays
             overlayDir = fullfile(corrOutDir, ['overlay' ijstr]) ;
@@ -653,8 +633,8 @@ for ii = 1:length(expts)
             axis equal
             axis tight
             msg = 'Does path look ok? Enter=yes, Backspace=no, n/Delete=No correspondence' ;
-            xlabel(['time, dataset ', num2str(ii)])
-            ylabel(['time, dataset ', num2str(jj)])
+            xlabel(['time, dataset ', exptIDs{ii}])
+            ylabel(['time, dataset ', exptIDs{jj}])
             title(msg)
             disp(msg)
             good_button = false ;
@@ -668,15 +648,12 @@ for ii = 1:length(expts)
                     move_on = false;
                     good_button = true ;
                     % Save this 
-                    title(['Initial correspondence between ' num2str(ii) ' and ' num2str(jj)])
-                    saveas(gcf, fullfile(corrImOutDir,...
-                        ['correspondence' ijstr '_initial.png']))
-                elseif button && ...
-                        (strcmp(get(gcf, 'CurrentKey'), 'delete') || ...
-                        strcmp(get(gcf, 'CurrentKey'), 'n') )
+                    title(['Initial correspondence between ' exptIDs{ii} ' and ' exptIDs{jj}])
+                    saveas(gcf, fullfile(corrImOutDir, ['correspondence' ijstr '_initial.png']))
+                elseif button && (strcmp(get(gcf, 'CurrentKey'), 'delete') || strcmp(get(gcf, 'CurrentKey'), 'n') )
                     abort = true ;
                     good_button = true ;
-                    move_on = true ;
+                    move_on = true
                 end
             end
             
@@ -699,8 +676,8 @@ for ii = 1:length(expts)
                 msg = 'Do endpoints look ok? Enter=yes, Backspace=no/select' ;
                 title(msg)
                 disp(msg)
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
                 startpt = tpath(1, :) ;
                 % Guess start/endpt to be first/last tpath points
                 endpt = tpath(end, :) ;
@@ -868,7 +845,7 @@ for ii = 1:length(expts)
                 title('cij with gradient')
                 plot(startpt(2), startpt(1), 'ko')
                 plot(endpt(2), endpt(1), 'ko')
-                title(['Cross-correlation for datasets ' num2str(ii) ' and ' num2str(jj)])
+                title(['Cross-correlation for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 streamline(cxyz)
                 axis equal 
                 axis tight
@@ -900,9 +877,9 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
-                title(['DT for datasets ' num2str(ii) ' and ' num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
+                title(['DT for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
                 pause(0.001)
@@ -920,9 +897,9 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
-                title(['\partial_xW for datasets ' num2str(ii) ' and ' num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
+                title(['\partial_xW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
                 pause(0.001)
@@ -940,9 +917,9 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
-                title(['\partial_yW for datasets ' num2str(ii) ' and ' num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
+                title(['\partial_yW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
                 pause(0.001)
@@ -959,9 +936,9 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
-                title(['Correlation between dataset ' num2str(ii) ' and ' num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
+                title(['Correlation between dataset ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
                 pause(0.001)
@@ -978,9 +955,9 @@ for ii = 1:length(expts)
                 imagesc(cij); hold on;
                 quiver(Dx', Dy', 0)
                 streamline(cxyz)
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
-                title(['Correlation between dataset ' num2str(ii) ' and ' num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
+                title(['Correlation between dataset ' exptIDs{ii} ' and ' exptIDs{jj}])
                 pause(1)
                 saveas(gcf, [outfnBase '_streamlines.png'])
                                 
@@ -1017,8 +994,8 @@ for ii = 1:length(expts)
                 % Continue visualization
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 plot(tpath(:, 2), tpath(:, 1), 'o') ;
-                xlabel(['time, dataset ', num2str(ii)])
-                ylabel(['time, dataset ', num2str(jj)])
+                xlabel(['time, dataset ', exptIDs{ii}])
+                ylabel(['time, dataset ', exptIDs{jj}])
                 cb = colorbar() ;
                 ylabel(cb, 'correlation')            
                 title('Path ok? Enter=yes, backspace=no/redo')
@@ -1080,11 +1057,7 @@ for ii = 1:length(expts)
                         imb = double(imadjustn(squeeze(mipJ(:, :, max(1, min(size(tpath, 1), round(tpath(qq, 2)))))))) ;
                         ima = uint8(255*mat2gray(ima, [0 max(ima(:))])) ;
                         imb = uint8(255*mat2gray(imb, [0 max(imb(:))])) ;
-                        
-                        % Optional: could shift the images for max overlap
-                        % [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
-                        
-                        % Make RGB image
+                        [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
                         rgb = zeros(size(ima, 1), size(ima, 2), 3, 'uint8') ;
                         rgb(:, :, 1) = ima ;
                         rgb(:, :, 2) = imb ;
@@ -1119,7 +1092,7 @@ if ~exist(stripe7CorrDatDir, 'dir')
 end
 
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
+    disp(['dataset ii = ', exptIDs{ii}])
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, [label '_stripe7curve.mat']) ;
     disp(['  Loading curves: ' curvIfn])
@@ -1129,7 +1102,7 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} '_' stripe7corr_method ] ;
+        ijstr = [ '_%02d_%02d_' stripe7corr_method ] ;
         cfn = fullfile(stripe7CorrDatDir, ['corr_stripe7' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         
@@ -1140,7 +1113,7 @@ for ii = 1:length(expts)
             else
                 disp('Overwriting stripe7 correlations')
             end
-            disp(['  dataset jj = ', num2str(jj)])
+            disp(['  dataset jj = ', exptIDs{jj}])
             % Load time sequence MIPs of dataset jj
             curvJfn = fullfile(expts{jj}, [label '_stripe7curve.mat']) ;
             disp(['  Loading curves: ' curvJfn])
@@ -1199,11 +1172,10 @@ for ii = 1:length(expts)
             % Plot heatmap of phase correlations, dxs, and dys
             close all
             imagesc(cij)
-            xlabel(['timepoint for dataset ' num2str(jj)])
-            ylabel(['timepoint for dataset ' num2str(ii)])
+            xlabel(['timepoint for dataset ' exptIDs{jj}])
+            ylabel(['timepoint for dataset ' exptIDs{ii}])
             axis equal
-            cfn = fullfile(stripe7CorrDatDir, ...
-                sprintf(['stripe7cij' ijstr '.png'], ii, jj)) ;
+            cfn = fullfile(stripe7CorrDatDir, ['stripe7cij' ijstr '.png']) ;
             cb = colorbar() ;
             cmap = colormap ;
             colormap(flipud(cmap))
@@ -1228,6 +1200,11 @@ end
 disp('done with correspondence curves')
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% HERE expts is rebuilt from disk if network of timeline correspondences 
+% was previously saved
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% VII. Minimize difference between timing points
 % {tj} = {dtj} + frame
 % Fit line of best fit to each ridge extraction using time-time-corr cell
@@ -1240,7 +1217,14 @@ end
 % Build ttc: time-time correlation cell
 ttcfn = fullfile(timelineDir, 'ttc.mat') ;
 if exist(ttcfn, 'file') && ~overwrite
-    load(ttcfn, 'ttc') ;
+    tmp = load(ttcfn, 'ttc', 'exptIDs') ;
+    ttc = tmp.ttc ;
+        
+    % Rebuild expts in RAM in case it is different from the saved one
+    [filepath,~] = fileparts(dynamic_embryos.folders{ii}) ;
+    for ii = 1:length(exptIDs)
+        expts{ii} = fullfile(filepath, exptIDs{ii}) ;
+    end
 else
     ttc = cell(length(expts), 1) ;
     for ii = 1:length(expts)
@@ -1249,10 +1233,10 @@ else
     end
     % Populate the correspondences into cell from mat files
     for ii = 1:length(expts)
-        disp(['dataset ii = ', num2str(ii)])
+        disp(['dataset ii = ', exptIDs{ii}])
         for jj = ii:length(expts)
             % Define the correlation matrix filename
-            ijstr = [ '_' !!!_%02d' extn ] ;
+            ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
             cfn = fullfile(corrOutDir, ['corr' ijstr '.mat']) ;
             disp(['Seeking cfn = ' cfn])
             cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
@@ -1264,7 +1248,7 @@ else
     end
     
     % Save the time-time corr cell
-    save(ttcfn, 'ttc')
+    save(ttcfn, 'ttc', 'exptIDs')
 end
 
 % Plot the dynamics
@@ -1313,7 +1297,7 @@ for use_offset = [true false]
         end
 
         % labels
-        ylabel(['$\tau(t_' num2str(ii) ')$' ], 'Interpreter', 'Latex')
+        ylabel(['$\tau(t_' exptIDs{ii} ')$' ], 'Interpreter', 'Latex')
         if ii == 5 || ii == 6
             xlabel('time, $t_i$', 'Interpreter', 'latex')
         end
@@ -1369,12 +1353,32 @@ for ii = 1:length(ttc)
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Build i_tau0j master timeline lookup table
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Note that a map from indices to exptIDs must exist on disk too
 % Check for existing result
 itau0jfn = fullfile(timelineDir, 'i_tau0j.mat') ;
 if exist(itau0jfn, 'file') && ~overwrite
-    load(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps')
+    % NOTE exptIDs in RAM is overwritten here to ensure that the indices of
+    % the saved network correspond to the correct datasets
+    tmp = load(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs') ;
+    i_tau0j = tmp.i_tau0j ;
+    ntp_tot = tmp.ntp_tot ;
+    addt = tmp.addt ;
+    ntps = tmp.ntps ;
+    if length(exptIDs) == length(tmp.exptIDs)
+        for qq = 1:length(exptIDs) 
+            if ~strcmp(exptIDs{qq}, tmp.exptIDs{qq})
+                error(['exptIDs in ', itau0jfn, ' does not match variable in RAM. ', ...
+                    'You must erase ' itau0jfn ' on disk and try again'])
+            end
+        end
+    else
+        error(['exptIDs in ', itau0jfn, ' does not match variable in RAM. ', ...
+            'You must erase ' itau0jfn ' on disk and try again'])
+    end
 else
     % First get #tps in each dataset, which is stored in diagonals of ttc
     ntps = zeros(length(ttc), 1) ;
@@ -1398,7 +1402,7 @@ else
     ntp_tot = sum(ntps) ;
     
     % save data
-    save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps') ;
+    save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs') ;
     
     % de-clutter
     clearvars tauv tau0extra tpid ii
@@ -1409,7 +1413,21 @@ end
 NLKLBLfn = fullfile(timelineDir, 'NL_KL_BL.mat') ;
 
 if exist(NLKLBLfn, 'file') && ~overwrite
-    load(NLKLBLfn, 'NL', 'KL', 'BL') ;
+    tmp = load(NLKLBLfn, 'NL', 'KL', 'BL', 'exptIDs') ;
+    NL = tmp.NL ;
+    KL = tmp.KL ;
+    BL = tmp.BL ;
+    if length(exptIDs) == length(tmp.exptIDs)
+        for qq = 1:length(exptIDs) 
+            if ~strcmp(exptIDs{qq}, tmp.exptIDs{qq})
+                error(['exptIDs in ', NLKLBLfn, ' does not match variable in RAM. ', ...
+                    'You must erase ' NLKLBLfn ' on disk and try again'])
+            end
+        end
+    else
+        error(['exptIDs in ', NLKLBLfn, ' does not match variable in RAM. ', ...
+            'You must erase ' NLKLBLfn ' on disk and try again'])
+    end
     disp('loaded bond list BL, neighbor list NL, k list KL from disk')
 else
     % preallocate Nxlarge array for NL, KL, do not preallocate BL
@@ -1500,7 +1518,7 @@ for use_BL = [true false]
                 end
             end
 
-            title(['Time relaxation network: dataset ' num2str(ii)])
+            title(['Time relaxation network: dataset ' exptIDs{ii}])
             ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
             % disp('press any button on figure')
@@ -1518,7 +1536,7 @@ for use_BL = [true false]
                     end
                 end
             end
-            title(['Time relaxation network: dataset ' num2str(ii)])
+            title(['Time relaxation network: dataset ' exptIDs{ii}])
             ylim([0, max(i_tau0j(:, 1)) + 1])
             saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
             % disp('press any button')
@@ -1544,7 +1562,7 @@ else
     fixed_xx = i_tau0j(fixed_ind, 2) ;
     x0(fixed_ind) = [] ;
     fun = @(x)springEnergy1D(x, BL, fixed_ind, fixed_xx);
-    xf = fminsearch(fun, x0, options) ;input
+    xf = fminsearch(fun, x0, options) ;
     % reinsert indices of fixed times
     xnew1 = xf(1:fixed_ind(1)-1) ;
     xnew2 = xf(fixed_ind(1):end) ;
@@ -1618,7 +1636,7 @@ if exist(allstripeFn, 'file') && ~overwrite
 else
     % Gather all stripes
     for ii = 1:length(expts)
-        disp(['dataset ii = ', num2str(ii)])
+        disp(['dataset ii = ', exptIDs{ii}])
         % Load time sequence MIPs of dataset ii
         curvIfn = fullfile(expts{ii}, [label '_stripe7curve.mat']) ;
         disp(['  Loading curves: ' curvIfn])
@@ -2348,8 +2366,8 @@ for exptii = 1:length(expts)
     end
     
     % Plot best fit with errors on cij plot with hard reference
-    ijstr = [ '_%02d_%02d' extn ] ;
-    cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], exptii, hard)) ;
+    ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+    cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
     load(cfn, 'cij')
     close all
     fig = figure('visible', 'off') ;
