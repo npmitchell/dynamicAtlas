@@ -107,9 +107,11 @@ for ii = 1:length(labelDirs)
                 fnmatch(1).name))) ;
             
             % Determine the timestamp(s)
-            try
-                load(fullfile(fnmatch(1).folder, timematfn), 'matchtime_minutes', 'matchtime_unc_minutes')
-            catch
+            tmatMatches = dir(fullfile(fnmatch(1).folder, timematfn)) ;
+            if ~isempty(tmatMatches)
+                matmatch = tmatMatches(1).name ;
+                load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')
+            else
                 disp(['Could not load timestamp for experiment: ' embryo])
                 matchtime_minutes = NaN * ones(1, ntps) ;
                 matchtime_unc_minutes = NaN * ones(1, ntps) ;

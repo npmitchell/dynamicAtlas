@@ -26,14 +26,23 @@ function timeStampStripe7(da, genotype, label, Options)
 %   optimize_trans : optional bool, default=true
 %       allow translation of the stripe7 curve in fitting to reference
 %       curves
+%   timelineLabel : optional str, default=<same as label>
+%       allows the <label> fixed data to  be compared to 
+%       For ex, label=Runt (fixed data is Runt), but
+%       masterTimeLineLabel=Eve (live data is Eve).
+%   timelineLeadingTrailing : optional str, default='leading'
+%       whether to use leading edge of timeLine stripe7 data or trailing
+%       edge
 %
 % Returns
 % -------
 %
 % Outputs
 % -------
-% dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.mat
-% dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.txt
+% dynamicAtlas.path/genotype/label/embryoID/timematch_<label>_<timelineLabel>stripe7_chisq.mat
+% dynamicAtlas.path/genotype/label/embryoID/timematch_<label>_<timelineLabel>stripe7_chisq.txt
+% dynamicAtlas.path/genotype/label/embryoID/timematch_<label>_<timelineLabel>stripe7_ssr.mat
+% dynamicAtlas.path/genotype/label/embryoID/timematch_<label>_<timelineLabel>stripe7_ssr.txt
 %
 % NPMitchell 2020
 
@@ -46,6 +55,10 @@ cdf_max = 0.999 ;
 % sigma = smoothing used in the stripe ID in iLastik
 sigma = 20 ;
 optimize_trans = true ;
+% default label to use against timeline 
+timelineLabel = label ;
+% default label to use against timeline 
+timelineLeadingTrailing = 'leading' ;
 
 if hands_on
     disp(['TimeStamping fixed ' genotype ' ' label ' data with inspection'])
@@ -76,6 +89,12 @@ if nargin > 3
     if isfield(Options, 'optimize_trans')
         optimize_trans = Options.optimize_trans ;
     end
+    if isfield(Options, 'timeLineLabel')
+        timelineLabel = Options.timelineLabel ;
+    end
+    if isfield(Options, 'optimize_trans')
+        timelineLeadingTrailing = Options.timelineLeadingTrailing ;
+    end
 end
 
 % Unpack more options
@@ -99,7 +118,15 @@ refDir = fullfile(refDir(1).folder, refDir(1).name) ;
 
 
 %% Build the lookuptable for just non-dynamic data (assumes dynamic data) 
-lum = da.findStaticGenotypeLabel(genotype, label).meta ;
+% If we are comparing Runt to Runt, then compare only fixed label=Runt to 
+% live timelineLabel=Runt, so here just grab the fixed data. 
+% If, however, we are comparing label=Runt to timelineLabel=Eve (for ex), 
+% then grab ALL data of label (Runt).
+if strcmp(label, timelineLabel)
+    lum = da.findStaticGenotypeLabel(genotype, label).meta ;
+else
+    lum = da.findGenotypeLabel(genotype, label).meta ;
+end
 % note: similar to lum = da.lookup(genotype).map(label) ;
 
 %% Plotting
@@ -250,11 +277,22 @@ close all
 
 % Load reference curves
 tmp = load(fullfile(refDir, 'curve7stats_collapsed_filtered.mat')) ;
-LEX = tmp.LXs ;
-LES = tmp.LSs ;
-LEY = zeros(size(LEX)) ;
-for qq=1:size(LEX, 2)
-    LEY(:, qq) = (1:size(LEX, 1)) / size(LEX, 1) ;
+if strcmp(timelineLeadingTrailing, 'leading')
+    LEX = tmp.LXs ;
+    LES = tmp.LSs ;
+    LEY = zeros(size(LEX)) ;
+    for qq=1:size(LEX, 2)
+        LEY(:, qq) = (1:size(LEX, 1)) / size(LEX, 1) ;
+    end
+elseif strcmp(timelineleadingTrailing, 'trailing')
+    TEX = tmp.TXs ;
+    TES = tmp.TSs ;
+    TEY = zeros(size(TEX)) ;
+    for qq=1:size(TEX, 2)
+        TEY(:, qq) = (1:size(TEX, 1)) / size(TEX, 1) ;
+    end
+else
+    error("Options.timelineLeadingTrailing must be 'leading' or 'trailing'")
 end
 
 % Go through each embryo and find time
@@ -267,7 +305,11 @@ for kk = 1:length(lum.folders)
     assert(lum.nTimePoints(kk) == 1)
 
     % Only compute if not done already or overwrite
-    not_on_disk = ~exist(fullfile(embryoDir, 'timematch_curve7_chisq.mat'), 'file')  ;
+    matfn = ['timematch_' label '_' timelineLabel 'stripe7_chisq.mat'] ;
+    txtfn = ['timematch_' label '_' timelineLabel 'stripe7_chisq.txt'] ;
+    matfn_ssr = ['timematch_' label '_' timelineLabel 'stripe7_ssr.mat'] ;
+    txtfn_ssr = ['timematch_' label '_' timelineLabel 'stripe7_ssr.txt'] ;
+    not_on_disk = ~exist(fullfile(embryoDir, matfn), 'file')  ;
     if overwrite || not_on_disk
         % Which adjusted curve
         load(fullfile(embryoDir, stripefn), 'stripe7curve_frac') ;
@@ -283,19 +325,24 @@ for kk = 1:length(lum.folders)
         msg = [embryoID ': Considering ' label ' curve'] ;
         disp(msg)
 
-        % Optimize the placement of the curve7
+        % Cut into segments before optimizing the placement of the curve7
         disp('Cutting curve into leading and trailing segments')
         lekk = cutCurveIntoLeadingTrailingSegments(curv); 
-        lexk = lekk{1} ;
-        lesk = lekk{2} ;
+        lexk = lekk{1} ;  % leading edge
+        texk = lekk{2} ;  % trailing edge
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Chisq
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Compute chisquared(t) for this curve
         disp('Computing chisquared')
-        [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
-            true, optimize_trans) ;
+        if strcmp(timelineLeadingTrailing, 'leading')
+            [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
+                true, optimize_trans) ;
+        else
+            [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, TEX', TEY', (TES.^2)', ...
+                true, optimize_trans) ;
+        end
         % if allow_rotation
         %     guess = [0, 0, 0]; 
         %     opt = fminsearch(@(x0)curveDifferenceRotTrans(x0, cvfit, xyd), guess, options) ;
@@ -311,8 +358,13 @@ for kk = 1:length(lum.folders)
         if hands_on
             % Load the data to show the time matching
             load(fullfile(embryoDir, stripefn), 'stripe7curve_frac') ;
-            LEXY = cat(3, LEX, LEY) ;
-            dataStruct.refcurves = LEXY ;
+            if strcmp(timelineLeadingTrailing, 'leading')
+                dataStruct.refcurves = cat(3, LEX, LEY) ;
+            elseif strcmp(timelineLeadingTrailing, 'trailing')
+                dataStruct.refcurves = cat(3, TEX, TEY) ;
+            else
+                error("Options.timelineLeadingTrailing must be 'leading' or 'trailing'")
+            end
             dataStruct.dataframe = imread(fullfile(embryoDir, lum.names{kk})) ;
             header_preamble = [embryoID ': '] ;
             [matchtime, matchtime_unc, fit_coefs, nidx, pidx] = ...
@@ -320,7 +372,7 @@ for kk = 1:length(lum.folders)
                             header_preamble, dataStruct) ;
             % Save fit figure
             figfn = fullfile(embryoDir, ...
-                'stripe7_chisq_fit_interactivedomain.png') ;
+                ['timematch_' label '_' timelineLabel 'stripe7_chisq_fit_interactivedomain.png']) ;
             saveas(gcf, figfn)
             clf
         else         
@@ -352,8 +404,9 @@ for kk = 1:length(lum.folders)
         % Save into all embryoID matching dirs
         for qq=1:length(eDirs4ID.folders)
             edir = eDirs4ID.folders{qq} ;
-            disp(['Saving stripe7_chisq_fit.png into ' edir])
-            figfn = fullfile(edir, 'stripe7_chisq_fit.png') ;
+            fitfn = [ 'timematch_' label '_' timelineLabel 'stripe7_chisq_fit.png'] ;
+            disp(['Saving ' fitfn ' into ' edir])
+            figfn = fullfile(edir, fitfn) ;
             saveas(fig, figfn)
         end
         clf
@@ -361,10 +414,10 @@ for kk = 1:length(lum.folders)
         % Save Chisq timing as mat and txt for all matching embryoID dirs
         for qq=1:length(eDirs4ID.folders)
             edir = eDirs4ID.folders{qq} ;
-            disp(['Saving timematch_curve7_chisq.mat into ' edir])
+            disp(['Saving ' matfn ' into ' edir])
 
-            fnmat = fullfile(edir, 'timematch_curve7_chisq.mat') ;
-            fntxt = fullfile(edir, 'timematch_curve7_chisq.txt') ;
+            fnmat = fullfile(edir, matfn) ;
+            fntxt = fullfile(edir, txtfn) ;
             save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')    
 
             disp(['Saving matchtime to ', fntxt])
@@ -429,7 +482,8 @@ for kk = 1:length(lum.folders)
         ylims = ylim;
         plot((1:length(ssr))*dt, ssr, 'k.--')
         ylim(ylims)
-        fn = fullfile(embryoDir, 'stripe7_ssr_fit.png') ;
+        fitfn = [ 'timematch_' label '_' timelineLabel 'stripe7_ssr_fit.png'] ;
+        fn = fullfile(embryoDir, fitfn_ssr) ;
         disp(['Saving figure to ' fn])
         saveas(fig, fn)
         close all
@@ -437,31 +491,32 @@ for kk = 1:length(lum.folders)
         % Save timing as mat and txt
         for qq=1:length(eDirs4ID.folders)
             edir = eDirs4ID.folders{qq} ;
-            disp(['Saving timematch_curve7_chisq.mat into ' edir])
-            fnmat = fullfile(edir, 'timematch_curve7_ssr.mat') ;
-            fntxt = fullfile(edir, 'timematch_curve7_ssr.txt') ;
+            disp(['Saving ' matfn_ssr ' into ' edir])
+            fnmat = fullfile(edir, matfn_ssr) ;
+            fntxt = fullfile(edir, txtfn_ssr) ;
             save(fnmat, 'matchtime', 'matchtime_unc', 'matchtime_minutes', 'matchtime_unc_minutes')
 
             disp(['Saving matchtime to ', fntxt])
             dlmwrite(fntxt, [matchtime_minutes, matchtime_unc_minutes])
         end
     else
+        % Check that timestamp exists in all embryoID dirs
         disp(['Timestamp exists in ' label ' embryoID directory'])
         disp('Checking that timestamp exists in all embryoID directories')
         timestamp_loaded = false ;
         for qq=1:length(eDirs4ID.folders)
             edir = eDirs4ID.folders{qq} ;
-            fnmat0 = fullfile(embryoDir, 'timematch_curve7_chisq.mat') ;
-            fnmat = fullfile(edir, 'timematch_curve7_chisq.mat') ;
-            fntxt = fullfile(edir, 'timematch_curve7_chisq.txt') ;
+            fnmat0 = fullfile(embryoDir, matfn) ;
+            fnmat = fullfile(edir, matfn) ;
+            fntxt = fullfile(edir, txtfn) ;
             if ~exist(fnmat, 'file')
-                disp([' > Copying timematch_curve7_chisq into ' edir])
+                disp([' > Copying ' matfn ' into ' edir])
                 % Load the timestamp if we haven't done so
                 if ~timestamp_loaded
                     load(fnmat0, 'matchtime', 'matchtime_unc', ...
                         'matchtime_minutes', 'matchtime_unc_minutes')  
                 end
-                disp([' > > Saving timematch_curve7_chisq.mat into ' edir])
+                disp([' > > Saving ' matfn ' into ' edir])
                 save(fnmat, 'matchtime', 'matchtime_unc', ...
                     'matchtime_minutes', 'matchtime_unc_minutes')
                 
@@ -476,17 +531,17 @@ for kk = 1:length(lum.folders)
         timestamp_ssr_loaded = false ;
         for qq=1:length(eDirs4ID.folders)
             edir = eDirs4ID.folders{qq} ;
-            fnmat0_ssr = fullfile(embryoDir, 'timematch_curve7_ssr.mat') ;
-            fnmat_ssr = fullfile(edir, 'timematch_curve7_ssr.mat') ;
-            fntxt_ssr = fullfile(edir, 'timematch_curve7_ssr.txt') ;
+            fnmat0_ssr = fullfile(embryoDir, matfn_ssr) ;
+            fnmat_ssr = fullfile(edir, matfn_ssr) ;
+            fntxt_ssr = fullfile(edir, txtfn_ssr) ;
             if ~exist(fnmat_ssr, 'file')                
-                disp([' > Copying timematch_curve7_ssr into ' edir])
+                disp([' > Copying ' matfn_ssr ' into ' edir])
                 % Load the timestamp if we haven't done so
                 if ~timestamp_ssr_loaded
                     load(fnmat0_ssr, 'matchtime', 'matchtime_unc', ...
                         'matchtime_minutes', 'matchtime_unc_minutes')  
                 end
-                disp([' > > Saving timematch_curve7_ssr.mat into ' edir])
+                disp([' > > Saving timematch_stripe7_ssr.mat into ' edir])
                 save(fnmat_ssr, 'matchtime', 'matchtime_unc', ...
                     'matchtime_minutes', 'matchtime_unc_minutes')
                 disp([' > > Copying matchtime to ', fntxt_ssr])

@@ -17,21 +17,22 @@ close all
 %% Add paths (this part can be slow)
 % Add time_align_embryos directory to path so that dynamicAtlas package is
 % available to use.
-tlaDir = '/Volumes/minimalData/code/';
+%tlaDir = '/Volumes/minimalData/code/';
+tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
 cd(fullfile(tlaDir)) ;
 addpath(genpath('dynamicAtlasCode')) ;
 cd('dynamicAtlasCode')
 addpath(genpath('+dynamicAtlas'))
-
+%import dynamicAtlas
 % Atlas path is where the dynamicAtlas resides
-atlasPath = '/Volumes/minimalData/Atlas_Data' ;
-%atlasPath = '/Users/mattlefebvre/Desktop/untitled-folder/'
+%atlasPath = '/Volumes/minimalData/Atlas_Data' ;
+atlasPath = '/Users/mattlefebvre/Desktop/WT_data_server/'
 
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
-da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
+da_1 = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
 
 %% The properties of da are:
 properties(da)
@@ -66,9 +67,9 @@ methods(mapWT)
 % To find embryos with a Runt stain, for ex,
 runts = mapWT.findLabel('Runt')  
 % To find embryos with a t=10 +/- 2 min
-snaps = mapWT.findTime(40, 20) 
+snaps = mapWT.findTime(30, 5) 
 % To find Runt stains with a t=10 +/- 2 min
-runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
+runtsnaps = mapWT.findLabelTime('Runt', 20, 2)
 
 % Note: mapWT has a property called map that contains a key for each label
 % For ex, 'Runt' is a key that returns a struct with fields
@@ -102,8 +103,8 @@ da.makeGradientImages({'Runt'})
 % To control how this is performed, toggle da.timeLineMethod
 % Align dynamic runt nanobody data against each other 
 Options.apCijFrac = 0.0 ;
-
-da.makeMasterTimeline('WT', 'Runt', Options)
+Options = struct();
+da_1.makeMasterTimeline('WT', 'Runt', Options)
 %da.makeMasterTimeline('Tlrm9','Eve',Options)
 
 %% Timestamp other data against the master timeline
@@ -111,6 +112,11 @@ da.makeMasterTimeline('WT', 'Runt', Options)
 % Here timestamp Runt fixed samples against runt timeline
 % You can pass options through a struct if you wish.
 Options = struct() ;
+da.timeStamp('WT', 'Runt', Options)
+
+% Compare leading edge of Runt to TRAILING edge of Eve 
+Options.timelineLabel = 'Eve' ;
+Options.timelineLeadingTrailing = 'trailing' ;
 da.timeStamp('WT', 'Runt', Options)
 
 

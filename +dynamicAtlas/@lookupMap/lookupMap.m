@@ -67,7 +67,7 @@ classdef lookupMap < handle
             %
             
             % name of timer filename for loading times
-            timerfn = 'timematch_curve7_chisq.mat' ;
+            timerfn = 'timematch_*_*stripe7_chisq.mat' ;
             % filename for pullback without filetype extension
             prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;
             % string after prepend for the pullback data

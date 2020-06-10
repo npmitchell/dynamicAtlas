@@ -64,7 +64,7 @@ classdef dynamicAtlas < handle
             %       Method string specifier for building master timeLine(s)
             %   timeStampMethod : optional str (default = 'stripe7')
             %       Method string specifier for time stamping
-            %   timerfn : str, default='timematch_curve7_chisq.mat'
+            %   timerfn : str, default='timematch_*_*stripe7_chisq.mat'
             %       name of file to use to obtain timestamp for each
             %       embryo
             %   prepend : str, default='MAX_Cyl1_2_000000_c*_rot_scaled_view1' 
@@ -75,6 +75,12 @@ classdef dynamicAtlas < handle
             % Returns
             % -------
             % da : dynamicAtlas class instance
+            %
+            
+            if nargin < 3
+                Options = struct() ;
+            end
+            
             disp('Constructing dynamicAtlas')
             da.path = atlasPath ;
             
@@ -106,7 +112,7 @@ classdef dynamicAtlas < handle
             end
             
             % Populate the lookup property
-            da.buildLookup(Options) 
+            da.buildLookup(da.genotypes, Options) 
         end
         
         function addPaths(da)
@@ -159,6 +165,9 @@ classdef dynamicAtlas < handle
             else
                 genotypes_todo = genotypes_subset ;
             end
+            
+            
+            genotypes_todo
             % Go through each genotype directory, build lookupMap class
             for kk=1:length(genotypes_todo)
                 genoDir = fullfile(da.path, genotypes_todo{kk}) ;   
@@ -235,6 +244,16 @@ classdef dynamicAtlas < handle
             %       cutoff
             %   sigma : optional float, default=20 
             %       smoothing used in the stripe ID in iLastik
+            %   optimize_trans : optional bool, default=true
+            %       allow translation of the stripe7 curve in fitting to reference
+            %       curves
+            %   timeLineLabel : optional str, default=<same as label>
+            %       allows the <label> fixed data to  be compared to 
+            %       For ex, label=Runt (fixed data is Runt), but
+            %       masterTimeLineLabel=Eve (live data is Eve).
+            %   timeLineLeadingTrailing : optional str, default='leading'
+            %       whether to use leading edge of timeLine stripe7 data or trailing
+            %       edge
             %
             % Returns
             % -------

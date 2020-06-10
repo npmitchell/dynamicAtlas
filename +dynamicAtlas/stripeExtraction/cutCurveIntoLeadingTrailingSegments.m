@@ -1,8 +1,18 @@
 function segs = cutCurveIntoLeadingTrailingSegments(stripe)
 % cutCurveIntoLeadingTrailingSegments()
-% cut curve into left and right segments (leading and trailing segments)
-%
+% Cut curve into left and right segments (leading and trailing segments)
 % Assume clockwise motion of the curve
+%
+% Parameters
+% ----------
+% stripe : N x 2 float array
+%   the (AP, DV) coordinates of a stripe (both leading and trailing edges)
+%   as (x,y) coordinates
+%
+% Returns
+% -------
+% segs : length 2 cell array of xy positions 
+%   leading edge and trailing edge curves as separate coorinate positions
 %
 % NPMitchell 2020
 

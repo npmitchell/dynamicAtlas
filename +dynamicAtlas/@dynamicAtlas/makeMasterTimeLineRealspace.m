@@ -87,12 +87,14 @@ dynamic_embryos = thismap.findDynamicLabel(label).meta ;
 stainDir = fullfile(da.path, genotype, label) ;
 for ii = 1:length(dynamic_embryos.embryoIDs)
     expts{ii} = fullfile(dynamic_embryos.folders{ii}) ;
+    exptIDs{ii} = dynamic_embryos.embryoIDs{ii} ;
 end
 
 % Determine the master timeline experiment and name its index 'hard'
 % First search for the master timeline experiment via indicator txt file
 hard = 0 ;
 for ii = 1:length(expts)
+    disp(['Seeking timeline designation in ' expts{ii}])
     if ~isempty(dir(fullfile(expts{ii}, 'master_timeline_designee.txt'))) && hard == 0
         hard = ii ;
         disp(['Found master timeline designation in embryo: ' dynamic_embryos.embryoIDs{ii}])
@@ -117,12 +119,18 @@ if hard == 0
         end
     end
     
-    % Now save designation in txt file
-    fntmp = fullfile(expts{hard}, 'master_timeline_designee.txt') ;
-    fid = fopen(fntmp, 'wt');
-    % make header
-    fprintf(fid, 'this embryo is designated as the master timeline'); 
-    fclose(fid);
+    % Now save designation in txt file in the embryoID directory AND in the
+    % timing/genotype/label/ directory
+    fntmps = {fullfile(expts{hard}, 'master_timeline_designee.txt') , ...
+        fullfile(expts{hard}, 'master_timeline_designee.txt') } ;
+    for qq = 1:2
+        fntmp = fntmps{qq} ;
+        fid = fopen(fntmp, 'wt');
+        % make header
+        fprintf(fid, 'this embryo is designated as the master timeline: '); 
+        fprintf(fid, dynamic_embryos.embryoIDs{hard}) ;
+        fclose(fid);
+    end
 end
 
 % build some strings for I/O
@@ -147,11 +155,11 @@ gray = [0.5, 0.5, 0.5] ;
 
 %% I. Subsample the data
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
+    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
     
     % Load time sequence MIPs of dataset ii
     % Search for existing filename matching pattern
-    cand = dir(fullfile(expts{ii}, ssmipfn)) ;
+    cand = dir(fullfile(expts{ii}, ssmipfn)) ;  % candidate tiffs downsampled
     outfn = fullfile(cand(1).folder, cand(1).name) ;
     
     if ~exist(outfn, 'file') || overwrite
@@ -204,7 +212,8 @@ for ii = 1:length(expts)
         if isempty(fns)
             disp(['Train on stripe7 for each subsampled data in iLastik to create: ', ... 
                     probfn])
-            mykey = input("Is training done? or Exit? ['Yes'=Training done, 'Exit'=Exit]: "input('Press Enter when finished.', 's') ;
+            mykey = input("Is training done? or Exit? ['Yes'=Training done, 'Exit'=Exit]: ") ;
+            % input('Press Enter when finished.', 's') ;
             if contains(mykey, 'y') || contains(mykey, 'Y')
                 disp('User declared that training is finished')
             else
@@ -317,7 +326,7 @@ for ii = 1:length(expts)
         end
 
         % Save the curves as a mat file
-        stripe7curves = curves 
+        stripe7curves = curves ;
         save(curvfn, 'stripe7curve_frac')
     end
 end
@@ -331,13 +340,13 @@ end
 
 % consider each experiment pair
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
+    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
     
     loaded_ii = false ;
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+        cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not 
@@ -504,7 +513,7 @@ disp('Done with cross-correlation')
 %% V. ID peaks in correlation to draw curves using fast marching
 clear imI imJ imA imB
 corrImOutDir = fullfile(corrOutDir, 'correspondence_images') ;
-corrPathOutDir = fullfile(corrOutDir, 'cpath') ;
+corrPathOutDir = fullfile(corrOutDir, 'correspondence_paths') ;
 dirs2make = {corrImOutDir, corrPathOutDir} ;
 for di = 1:length(dirs2make) 
     dir2make = dirs2make{di} ;
@@ -520,14 +529,20 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d' extn ] ;
-        cfn = fullfile(corrDatOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+        cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
         
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
+            
+            if exist(cpathfn, 'file')
+                disp(['Overwriting correlations: ' cpathfn])
+            else
+                disp(['Computing correlations for first time: ' cpathfn])
+            end
             
             % Load dataset ii if not already done
             if ~loaded_ii
@@ -551,7 +566,6 @@ for ii = 1:length(expts)
             end
             
             % Self-correspondence
-            this_ijstr = sprintf(ijstr, ii, jj) ;
             tpath = [(1:size(mipI, 3))', (1:size(mipI, 3))'] ;
             time_correspondences = tpath;
             save(cpathfn, 'time_correspondences') ;
@@ -596,14 +610,14 @@ for ii = 1:length(expts)
                 mipfnjj = mfopts(1).name ;
             end
             mipJ = loadtiff(fullfile(expts{jj}, mipfnjj)) ;
-            this_ijstr = sprintf(ijstr, ii, jj) ;
+            ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
 
             % Create directory for overlays
-            overlayDir = fullfile(corrOutDir, ['overlay' this_ijstr]) ;
+            overlayDir = fullfile(corrOutDir, ['overlay' ijstr]) ;
             if ~exist(overlayDir, 'dir')
                 mkdir(overlayDir) 
             end
-            outfnBase = fullfile(overlayDir, ['overlay' this_ijstr ]) ;
+            outfnBase = fullfile(overlayDir, ['overlay' ijstr ]) ;
                         
             % load the correlations
             disp(['Loading cfn from: ' cfn])
@@ -655,11 +669,14 @@ for ii = 1:length(expts)
                     good_button = true ;
                     % Save this 
                     title(['Initial correspondence between ' num2str(ii) ' and ' num2str(jj)])
-                    saveas(gcf, fullfile(corrImOutDir, ['correspondence' this_ijstr '_initial.png']))
-                elseif button && (strcmp(get(gcf, 'CurrentKey'), 'delete') || strcmp(get(gcf, 'CurrentKey'), 'n') )
+                    saveas(gcf, fullfile(corrImOutDir,...
+                        ['correspondence' ijstr '_initial.png']))
+                elseif button && ...
+                        (strcmp(get(gcf, 'CurrentKey'), 'delete') || ...
+                        strcmp(get(gcf, 'CurrentKey'), 'n') )
                     abort = true ;
                     good_button = true ;
-                    move_on = true
+                    move_on = true ;
                 end
             end
             
@@ -1032,23 +1049,23 @@ for ii = 1:length(expts)
                 % end
                 
                 % Save Woffset and cij_exponent        
-                cpath_param_fn = fullfile(corrPathOutDir, sprintf(['cpath_params' ijstr '.mat'], ii, jj)) ;
+                cpath_param_fn = fullfile(corrPathOutDir, ['cpath_params' ijstr '.mat']) ;
                 save(cpath_param_fn, 'Woffset', 'cij_exponent')
                 
                 % Save image
-                figfn = fullfile(corrImOutDir, ['correspondence' this_ijstr '.png']) ;
+                figfn = fullfile(corrImOutDir, ['correspondence' ijstr '.png']) ;
                 disp(['Saving ' figfn])
-                title(['Correspondences between ' num2str(ii) ' and ' num2str(jj) ])
+                title(['Correspondences between ' exptIDs{ii} ' and ' exptIDs{jj} ])
                 axis equal
                 axis tight
                 saveas(gcf, figfn) ;
 
                 % For each match, plot overlay as cyan magenta
-                overlayDir = fullfile(corrPathOutDir, ['overlay' this_ijstr]) ;
+                overlayDir = fullfile(corrPathOutDir, ['overlay' ijstr]) ;
                 if ~exist(overlayDir, 'dir')
                     mkdir(overlayDir) 
                 end
-                outfn = fullfile(overlayDir, ['overlay' this_ijstr '_%04d.png']) ;
+                outfn = fullfile(overlayDir, ['overlay' ijstr '_%04d.png']) ;
 
                 % Save overlays
                 close all
@@ -1063,14 +1080,18 @@ for ii = 1:length(expts)
                         imb = double(imadjustn(squeeze(mipJ(:, :, max(1, min(size(tpath, 1), round(tpath(qq, 2)))))))) ;
                         ima = uint8(255*mat2gray(ima, [0 max(ima(:))])) ;
                         imb = uint8(255*mat2gray(imb, [0 max(imb(:))])) ;
-                        [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
+                        
+                        % Optional: could shift the images for max overlap
+                        % [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
+                        
+                        % Make RGB image
                         rgb = zeros(size(ima, 1), size(ima, 2), 3, 'uint8') ;
                         rgb(:, :, 1) = ima ;
                         rgb(:, :, 2) = imb ;
                         rgb(:, :, 3) = min(ima + imb, 255) ;
                         % save rgb image
                         imshow(rgb)
-                        titlestr = ['Correspondence between ' num2str(ii) ' and ' num2str(jj)] ;
+                        titlestr = ['Correspondence between ' exptIDs{ii} ' and ' exptIDs{jj}] ;
                         titlestr = [titlestr ', $W$=' num2str(Woffset) ': $t_i=$' num2str(tpath(qq,1))] ;
                         title(titlestr, 'Interpreter', 'Latex')
                         axis equal
@@ -1098,7 +1119,7 @@ if ~exist(stripe7CorrDatDir, 'dir')
 end
 
 for ii = 1:length(expts)
-    disp(['dataset ii = ', num2str(ii)])
+    disp(['dataset ii = ', num2str(ii), ':', exptIDs{ii}])
     % Load time sequence MIPs of dataset ii
     curvIfn = fullfile(expts{ii}, [label '_stripe7curve.mat']) ;
     disp(['  Loading curves: ' curvIfn])
@@ -1108,8 +1129,8 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d_' stripe7corr_method ] ;
-        cfn = fullfile(stripe7CorrDatDir, sprintf(['corr_stripe7' ijstr '.mat'], ii, jj)) ;
+        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} '_' stripe7corr_method ] ;
+        cfn = fullfile(stripe7CorrDatDir, ['corr_stripe7' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         
         % Decide to compute the correlations or not
@@ -1231,10 +1252,10 @@ else
         disp(['dataset ii = ', num2str(ii)])
         for jj = ii:length(expts)
             % Define the correlation matrix filename
-            ijstr = [ '_%02d_%02d' extn ] ;
-            cfn = fullfile(corrOutDir, sprintf(['corr' ijstr '.mat'], ii, jj)) ;
+            ijstr = [ '_' !!!_%02d' extn ] ;
+            cfn = fullfile(corrOutDir, ['corr' ijstr '.mat']) ;
             disp(['Seeking cfn = ' cfn])
-            cpathfn = fullfile(corrPathOutDir, sprintf(['cpath' ijstr '.mat'], ii, jj)) ;
+            cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
             if exist(cpathfn, 'file')
                 load(cpathfn, 'time_correspondences');
                 ttc{ii}{jj} = time_correspondences ;
@@ -2231,7 +2252,7 @@ refvars = LVs' ;
 % Align Stripe 7 for each frame with chisquare analysis
 close all
 fig = figure('visible', 'off') ;
-for exptii = 4:length(expts)
+for exptii = 1:length(expts)
     clf
     disp(['dataset ii = ', num2str(exptii)])
     disp(expts{exptii})
@@ -2248,10 +2269,10 @@ for exptii = 4:length(expts)
     chisq = zeros([length(stripe7curves), 1]) ;
     
     % preallocate
-    tmatches = zeros(length(stripe7curves), 1) ;
-    tuncs = zeros(length(stripe7curves), 1) ;
-    tmatches_ssr = zeros(length(stripe7curves), 1) ;
-    tuncs_ssr = zeros(length(stripe7curves), 1) ;
+    tmatches = NaN * ones(length(stripe7curves), 1) ;
+    tuncs = NaN * ones(length(stripe7curves), 1) ;
+    tmatches_ssr = NaN * ones(length(stripe7curves), 1) ;
+    tuncs_ssr = NaN * ones(length(stripe7curves), 1) ;
     tt = 1:length(stripe7curves) ;
     for qq = 1:10:length(tt)
         if mod(qq, 10) == 0
