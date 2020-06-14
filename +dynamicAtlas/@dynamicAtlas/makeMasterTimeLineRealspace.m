@@ -520,7 +520,6 @@ for ii = 1:length(expts)
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
-        
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
@@ -633,8 +632,8 @@ for ii = 1:length(expts)
             axis equal
             axis tight
             msg = 'Does path look ok? Enter=yes, Backspace=no, n/Delete=No correspondence' ;
-            xlabel(['time, dataset ', exptIDs{ii}])
-            ylabel(['time, dataset ', exptIDs{jj}])
+            xlabel(['time, dataset ', exptIDs{jj}])
+            ylabel(['time, dataset ', exptIDs{ii}])
             title(msg)
             disp(msg)
             good_button = false ;
@@ -676,7 +675,7 @@ for ii = 1:length(expts)
                 msg = 'Do endpoints look ok? Enter=yes, Backspace=no/select' ;
                 title(msg)
                 disp(msg)
-                xlabel(['time, dataset ', exptIDs{ii}])
+                xlabel(['time, dataset ', exptIDs{jj}])
                 ylabel(['time, dataset ', exptIDs{jj}])
                 startpt = tpath(1, :) ;
                 % Guess start/endpt to be first/last tpath points
@@ -877,8 +876,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['DT for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -897,8 +896,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['\partial_xW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -917,8 +916,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['\partial_yW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -981,8 +980,8 @@ for ii = 1:length(expts)
                 plot(cpath(:, 2), cpath(:, 1), '-') ;
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Convert cpath to tpath
-                % Remember that the first dimension (rows) is shorter
+                % Convert cpath to tpath: x timeline is integer, y timeline
+                % is float
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 ntimeptsA = round(endpt(1) - startpt(1) + 1) ; 
                 xxx = round(startpt(1)):round(endpt(1)) ;
@@ -994,8 +993,8 @@ for ii = 1:length(expts)
                 % Continue visualization
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 plot(tpath(:, 2), tpath(:, 1), 'o') ;
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 cb = colorbar() ;
                 ylabel(cb, 'correlation')            
                 title('Path ok? Enter=yes, backspace=no/redo')
@@ -1019,11 +1018,9 @@ for ii = 1:length(expts)
                 end
             end
             
+            % If the resulting correspondence path is good, save path and
+            % move on. 
             if ~abort
-                % % Swap back if we swapped I<->J. Do this before plotting
-                % if swap
-                %     tpath = [tpath(:, 2), tpath(:, 1)];
-                % end
                 
                 % Save Woffset and cij_exponent        
                 cpath_param_fn = fullfile(corrPathOutDir, ['cpath_params' ijstr '.mat']) ;
@@ -1083,6 +1080,28 @@ for ii = 1:length(expts)
                 time_correspondences = tpath;
                 save(cpathfn, 'time_correspondences') ;
             end
+        elseif save_images
+            % Do not overwrite the mat or recompute paths, just resave
+            % cpath (correspondence_path) images
+            load(cfn, 'cij')
+            tmp = load(cpathfn, 'time_correspondences') ;
+            tpath = tmp.time_correspondences ;
+            
+            % Plot the path on top of cij
+            close all
+            imagesc(cij);
+            hold on;
+            plot(tpath(:, 2), tpath(:, 1), '-', 'color', yellow) ;
+            xlabel(['time, dataset ', exptIDs{jj}])
+            ylabel(['time, dataset ', exptIDs{ii}])
+            cb = colorbar() ;
+            figfn = fullfile(corrImOutDir, ['correspondence' ijstr '.png']) ;
+            disp(['Saving ' figfn])
+            title(['Correspondences between ' exptIDs{ii} ' and ' exptIDs{jj} ])
+            axis equal
+            axis tight
+            saveas(gcf, figfn) ;
+            
         end
     end
 end
@@ -1989,7 +2008,7 @@ end
 
 % Consider all times
 if redo_optimization || overwrite 
-    for qi = 46:length(times2do)
+    for qi = 1:length(times2do)
         close all
         qq = times2do(qi) ;
         disp(['qq = ' num2str(qq)])
