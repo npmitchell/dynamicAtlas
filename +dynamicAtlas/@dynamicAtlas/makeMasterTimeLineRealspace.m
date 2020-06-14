@@ -55,6 +55,9 @@ if nargin > 3
     if isfield(Options, 'stripe7corr_method')
         stripe7corr_method = Options.stripe7corr_method ;
     end
+    if isfield(Options, 'save_images')
+        save_images = Options.save_images ;
+    end
 end
 
 outdir = fullfile(da.path, 'timing', genotype, label) ;
@@ -314,8 +317,15 @@ for ii = 1:length(expts)
         end
 
         % Save the curves as a mat file
-        stripe7curves = curves 
-        save(curvfn, 'stripe7curve_frac')
+        stripe7curves = curves ;
+        stripe7curves_frac = cell(length(curves), 1) ;
+        for qq = 1:length(curves) 
+            curv = curves{qq} ;
+            curv(:, 1) = curv(:, 1) / size(dat, 2) ;
+            curv(:, 2) = curv(:, 2) / size(dat, 1) ;
+            stripe7curves_frac{qq} = curv ;
+        end
+        save(curvfn, 'stripe7curves', 'stripe7curves_frac')
     end
 end
 
