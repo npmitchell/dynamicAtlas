@@ -2459,7 +2459,7 @@ for exptii = 1:length(expts)
     end
     
     % Plot best fit with errors on cij plot with hard reference
-    ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+    ijstr = [ '_' exptIDs{ii} '_' exptIDs{hard} extn ] ;
     cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
     load(cfn, 'cij')
     close all
