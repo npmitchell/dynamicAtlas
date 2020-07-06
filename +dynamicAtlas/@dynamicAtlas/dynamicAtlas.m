@@ -177,7 +177,7 @@ classdef dynamicAtlas < handle
             end
         end
         
-        makeGradientImages(da, sigmas, steps, cdf_minmax, overwrite)
+        makeGradientImages(da, selectedLabels, sigmas, steps, cdf_minmax, overwrite)
         
         function makeMasterTimeline(da, genotype, label, Options)
             % MAKEMASTERTIMELINE(genotype, label, Options)
