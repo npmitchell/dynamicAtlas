@@ -68,7 +68,7 @@ end
 
 % Unpack Options
 if nargin > 3
-    if isfield(Options, 'preview')
+    if isfield(Options, 'save_fancy')
         save_fancy = Options.save_fancy ;
     end
     if isfield(Options, 'overwrite')
@@ -95,6 +95,7 @@ if nargin > 3
     if isfield(Options, 'optimize_trans')
         timelineLeadingTrailing = Options.timelineLeadingTrailing ;
     end
+
 end
 
 % Unpack more options
@@ -190,6 +191,9 @@ for kk = 1:length(lum.folders)
             % re-read the data
             dat = h5read(pfn, '/exported_data') ;
         end    
+        
+        % % Used to crop half of the image and detect stripe7 only in the
+        % % posterior half
         % midx = round(0.5 * size(dat, 2)) ;
         % midy = round(0.5 * size(dat, 3)) ;
         % dcrop = squeeze(dat(2, midx:end, :)) ;
@@ -207,6 +211,13 @@ for kk = 1:length(lum.folders)
         stripe7curve_frac = curv ;
         stripe7curve_frac(:, 1) = double(stripe7curve_frac(:, 1)) / double(size(dat, 2)) ;
         stripe7curve_frac(:, 2) = double(stripe7curve_frac(:, 2)) / double(size(dat, 3)) ;
+        %%% MAKE A NOTE OF THIS!!! 
+        % added the following line so that the stripe7curv_frac data is
+        % properly scaled.  This will NOT be helpful for all data but here,
+        % because the binary was made on an image that cut off the anterior
+        % 50% of the embryo, we have to add .5 back to the stripe 7 curve
+        % fraction coordinates (stripe7curv_frac)
+        % stripe7curve_frac = stripe7curve_frac + [0.5 , 0];
         save(stripefnkk, 'stripe7curve', 'stripe7curve_frac')
 
         % resize stripe7 curv
@@ -235,7 +246,13 @@ for kk = 1:length(lum.folders)
         alllabels = '' ;
         for qq = 1:nlabels
             % load this channel/label
+            test = fullfile(estruct.folders{qq}, estruct.names{qq});
+            badtest = '/Users/mattlefebvre/Desktop/WT_data_server/WT/Runt/201907031428/MAX_Cyl1_2_000000_c2_rot_scaled_view1.tif';
+            if strcmp(test,badtest)
+                hi = 1
+            end
             imq = double(imread(fullfile(estruct.folders{qq}, estruct.names{qq}))) ;
+
             if qq == 1
                 combined = zeros(size(imq, 1), size(imq, 2), 3) ;
             end
@@ -327,20 +344,29 @@ for kk = 1:length(lum.folders)
 
         % Cut into segments before optimizing the placement of the curve7
         disp('Cutting curve into leading and trailing segments')
-        lekk = cutCurveIntoLeadingTrailingSegments(curv); 
-        lexk = lekk{1} ;  % leading edge
-        texk = lekk{2} ;  % trailing edge
+        edgeskk = cutCurveIntoLeadingTrailingSegments(curv); 
+        % Each element of lekk is a cell. edgeskk{1} is the (AP, DV) coords of
+        % the leading edge. edgeskk{2} is the (AP, DV) coords of the trailing
+        % edge.
+        lekk = edgeskk{1} ;  % leading edge (AP, DV)
+        tekk = edgeskk{2} ;  % trailing edge (AP, DV)
+        
+        % Debug
+        % figure; plot(lekk(:, 1), lekk(:, 2), '.')
+        % hold on;
+        % plot(LEX(:, 1))
 
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Chisq
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Compute chisquared(t) for this curve
         disp('Computing chisquared')
         if strcmp(timelineLeadingTrailing, 'leading')
-            [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, LEX', LEY', (LES.^2)', ...
+            [chisq, chisqn, ~, ssr] = chisquareCurves(lekk, LEX', LEY', (LES.^2)', ...
                 true, optimize_trans) ;
         else
-            [chisq, chisqn, ~, ssr] = chisquareCurves(lexk, TEX', TEY', (TES.^2)', ...
+            [chisq, chisqn, ~, ssr] = chisquareCurves(tekk, TEX', TEY', (TES.^2)', ...
                 true, optimize_trans) ;
         end
         % if allow_rotation
@@ -482,7 +508,7 @@ for kk = 1:length(lum.folders)
         ylims = ylim;
         plot((1:length(ssr))*dt, ssr, 'k.--')
         ylim(ylims)
-        fitfn = [ 'timematch_' label '_' timelineLabel 'stripe7_ssr_fit.png'] ;
+        fitfn_ssr = [ 'timematch_' label '_' timelineLabel 'stripe7_ssr_fit.png'] ;
         fn = fullfile(embryoDir, fitfn_ssr) ;
         disp(['Saving figure to ' fn])
         saveas(fig, fn)
