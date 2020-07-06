@@ -55,6 +55,9 @@ if nargin > 3
     if isfield(Options, 'stripe7corr_method')
         stripe7corr_method = Options.stripe7corr_method ;
     end
+    if isfield(Options, 'save_images')
+        save_images = Options.save_images ;
+    end
 end
 
 outdir = fullfile(da.path, 'timing', genotype, label) ;
@@ -314,8 +317,15 @@ for ii = 1:length(expts)
         end
 
         % Save the curves as a mat file
-        stripe7curves = curves 
-        save(curvfn, 'stripe7curve_frac')
+        stripe7curves = curves ;
+        stripe7curves_frac = cell(length(curves), 1) ;
+        for qq = 1:length(curves) 
+            curv = curves{qq} ;
+            curv(:, 1) = curv(:, 1) / size(dat, 2) ;
+            curv(:, 2) = curv(:, 2) / size(dat, 1) ;
+            stripe7curves_frac{qq} = curv ;
+        end
+        save(curvfn, 'stripe7curves', 'stripe7curves_frac')
     end
 end
 
@@ -500,7 +510,7 @@ disp('Done with cross-correlation')
 %% V. ID peaks in correlation to draw curves using fast marching
 clear imI imJ imA imB
 corrImOutDir = fullfile(corrOutDir, 'correspondence_images') ;
-corrPathOutDir = fullfile(corrOutDir, 'cpath') ;
+corrPathOutDir = fullfile(corrOutDir, 'correspondence_paths') ;
 dirs2make = {corrImOutDir, corrPathOutDir} ;
 for di = 1:length(dirs2make) 
     dir2make = dirs2make{di} ;
@@ -520,7 +530,6 @@ for ii = 1:length(expts)
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
-        
                 
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
@@ -633,8 +642,8 @@ for ii = 1:length(expts)
             axis equal
             axis tight
             msg = 'Does path look ok? Enter=yes, Backspace=no, n/Delete=No correspondence' ;
-            xlabel(['time, dataset ', exptIDs{ii}])
-            ylabel(['time, dataset ', exptIDs{jj}])
+            xlabel(['time, dataset ', exptIDs{jj}])
+            ylabel(['time, dataset ', exptIDs{ii}])
             title(msg)
             disp(msg)
             good_button = false ;
@@ -676,7 +685,7 @@ for ii = 1:length(expts)
                 msg = 'Do endpoints look ok? Enter=yes, Backspace=no/select' ;
                 title(msg)
                 disp(msg)
-                xlabel(['time, dataset ', exptIDs{ii}])
+                xlabel(['time, dataset ', exptIDs{jj}])
                 ylabel(['time, dataset ', exptIDs{jj}])
                 startpt = tpath(1, :) ;
                 % Guess start/endpt to be first/last tpath points
@@ -877,8 +886,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['DT for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -897,8 +906,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['\partial_xW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -917,8 +926,8 @@ for ii = 1:length(expts)
                 plot(path(:, 2), path(:, 1), '.-', 'color', yellow)
                 plot(startpt(:, 2), startpt(:, 1), 'ko')
                 plot(endpt(:, 2), endpt(:, 1), 'ko')
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 title(['\partial_yW for datasets ' exptIDs{ii} ' and ' exptIDs{jj}])
                 axis equal 
                 axis tight
@@ -981,8 +990,8 @@ for ii = 1:length(expts)
                 plot(cpath(:, 2), cpath(:, 1), '-') ;
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-                % Convert cpath to tpath
-                % Remember that the first dimension (rows) is shorter
+                % Convert cpath to tpath: x timeline is integer, y timeline
+                % is float
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 ntimeptsA = round(endpt(1) - startpt(1) + 1) ; 
                 xxx = round(startpt(1)):round(endpt(1)) ;
@@ -994,8 +1003,8 @@ for ii = 1:length(expts)
                 % Continue visualization
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 plot(tpath(:, 2), tpath(:, 1), 'o') ;
-                xlabel(['time, dataset ', exptIDs{ii}])
-                ylabel(['time, dataset ', exptIDs{jj}])
+                xlabel(['time, dataset ', exptIDs{jj}])
+                ylabel(['time, dataset ', exptIDs{ii}])
                 cb = colorbar() ;
                 ylabel(cb, 'correlation')            
                 title('Path ok? Enter=yes, backspace=no/redo')
@@ -1019,11 +1028,9 @@ for ii = 1:length(expts)
                 end
             end
             
+            % If the resulting correspondence path is good, save path and
+            % move on. 
             if ~abort
-                % % Swap back if we swapped I<->J. Do this before plotting
-                % if swap
-                %     tpath = [tpath(:, 2), tpath(:, 1)];
-                % end
                 
                 % Save Woffset and cij_exponent        
                 cpath_param_fn = fullfile(corrPathOutDir, ['cpath_params' ijstr '.mat']) ;
@@ -1057,7 +1064,11 @@ for ii = 1:length(expts)
                         imb = double(imadjustn(squeeze(mipJ(:, :, max(1, min(size(tpath, 1), round(tpath(qq, 2)))))))) ;
                         ima = uint8(255*mat2gray(ima, [0 max(ima(:))])) ;
                         imb = uint8(255*mat2gray(imb, [0 max(imb(:))])) ;
-                        [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
+                        
+                        % Could shift data for maximum overlap, ignoring
+                        % for now
+                        % [shiftdat, shiftfixed] = shiftImagesX(0, ima, imb, 0) ;
+                        
                         rgb = zeros(size(ima, 1), size(ima, 2), 3, 'uint8') ;
                         rgb(:, :, 1) = ima ;
                         rgb(:, :, 2) = imb ;
@@ -1079,6 +1090,28 @@ for ii = 1:length(expts)
                 time_correspondences = tpath;
                 save(cpathfn, 'time_correspondences') ;
             end
+        elseif save_images
+            % Do not overwrite the mat or recompute paths, just resave
+            % cpath (correspondence_path) images
+            load(cfn, 'cij')
+            tmp = load(cpathfn, 'time_correspondences') ;
+            tpath = tmp.time_correspondences ;
+            
+            % Plot the path on top of cij
+            close all
+            imagesc(cij);
+            hold on;
+            plot(tpath(:, 2), tpath(:, 1), '-', 'color', yellow) ;
+            xlabel(['time, dataset ', exptIDs{jj}])
+            ylabel(['time, dataset ', exptIDs{ii}])
+            cb = colorbar() ;
+            figfn = fullfile(corrImOutDir, ['correspondence' ijstr '.png']) ;
+            disp(['Saving ' figfn])
+            title(['Correspondences between ' exptIDs{ii} ' and ' exptIDs{jj} ])
+            axis equal
+            axis tight
+            saveas(gcf, figfn) ;
+            
         end
     end
 end
@@ -1102,7 +1135,7 @@ for ii = 1:length(expts)
     
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_%02d_%02d_' stripe7corr_method ] ;
+        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} '_' stripe7corr_method ] ;
         cfn = fullfile(stripe7CorrDatDir, ['corr_stripe7' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         
@@ -1217,9 +1250,26 @@ end
 % Build ttc: time-time correlation cell
 ttcfn = fullfile(timelineDir, 'ttc.mat') ;
 if exist(ttcfn, 'file') && ~overwrite
-    tmp = load(ttcfn, 'ttc', 'exptIDs') ;
+    tmp = load(ttcfn, 'ttc', 'exptIDs', 'hard', 'hard_reference_ID') ;
     ttc = tmp.ttc ;
-        
+    
+    % Ensure that the exptIDs corresponding to the indices i of i_tau0j are
+    % loaded from the mat file itau0jfn
+    if ~isfield(tmp, 'exptIDs') || ~isfield(tmp, 'hard')
+        % this is bad: the exptIDs were not saved with itau0jfn, so we
+        % cannot for certain know that the indices i in i_tau0j correctly
+        % index exptIDs. The solution is to erase the file on disk which is
+        % missing exptIDs so we can recreate it.
+        disp('exptIDs or hard reference index were not saved with itau0jfn!')
+        msg = ['We must recreate it!', ...
+            'Please erase ', ttcfn, ' from disk now and rerun'];
+        error(msg)
+    end
+    
+    exptIDs = tmp.exptIDs ;
+    hard = tmp.hard ;
+    hard_reference_ID = tmp.hard_reference_ID ;
+    
     % Rebuild expts in RAM in case it is different from the saved one
     [filepath,~] = fileparts(dynamic_embryos.folders{ii}) ;
     for ii = 1:length(exptIDs)
@@ -1234,7 +1284,7 @@ else
     % Populate the correspondences into cell from mat files
     for ii = 1:length(expts)
         disp(['dataset ii = ', exptIDs{ii}])
-        for jj = ii:length(expts)
+        for jj = 1:length(expts)
             % Define the correlation matrix filename
             ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
             cfn = fullfile(corrOutDir, ['corr' ijstr '.mat']) ;
@@ -1247,8 +1297,9 @@ else
         end
     end
     
-    % Save the time-time corr cell
-    save(ttcfn, 'ttc', 'exptIDs')
+    % Save the time-time corr cell, along with the exptIDs it indexes
+    hard_reference_ID = exptIDs{hard} ;
+    save(ttcfn, 'ttc', 'exptIDs', 'hard', 'hard_reference_ID')
 end
 
 % Plot the dynamics
@@ -1333,6 +1384,10 @@ for use_offset = [true false]
 end
 
 %% VIII. Relax timepoints to reference curve (time of dataset #hard)
+% This is assigning an intial guess to the the entire timeline for tau0.
+% This will be updated in the next sections so its OK that its just an
+% intial guess and only includes for example TTC{1}{hard} and not TTC
+% {hard}{1}
 % so-called 'hard reference' is the master timeline
 to_relax = 1:length(ttc) ;
 to_relax = setdiff(to_relax, hard) ;
@@ -1363,11 +1418,29 @@ itau0jfn = fullfile(timelineDir, 'i_tau0j.mat') ;
 if exist(itau0jfn, 'file') && ~overwrite
     % NOTE exptIDs in RAM is overwritten here to ensure that the indices of
     % the saved network correspond to the correct datasets
-    tmp = load(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs') ;
+    tmp = load(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', ...
+        'exptIDs', 'hard', 'hard_reference_ID') ;
     i_tau0j = tmp.i_tau0j ;
     ntp_tot = tmp.ntp_tot ;
     addt = tmp.addt ;
     ntps = tmp.ntps ;
+    % Ensure that the exptIDs corresponding to the indices i of i_tau0j are
+    % loaded from the mat file itau0jfn
+    if ~isfield(tmp, 'exptIDs')
+        % this is bad: the exptIDs were not saved with itau0jfn, so we
+        % cannot for certain know that the indices i in i_tau0j correctly
+        % index exptIDs. The solution is to erase the file on disk which is
+        % missing exptIDs so we can recreate it.
+        msg = ['exptIDs were not saved with itau0jfn! We must recreate it!', ...
+            'Please erase ', itau0jfn, ' from disk now and rerun'];
+        error(msg)
+    end
+    
+    % IF exptIDs were loaded, we must ensure that they are the same as the
+    % ones we already have on RAM. This would only be false if we partially
+    % ran this method and overwrote ttc but not i_tau0j AND happened to
+    % create exptIDs that were scrambled. This is unlikely, but let's check
+    % that everything is ok. 
     if length(exptIDs) == length(tmp.exptIDs)
         for qq = 1:length(exptIDs) 
             if ~strcmp(exptIDs{qq}, tmp.exptIDs{qq})
@@ -1402,21 +1475,30 @@ else
     ntp_tot = sum(ntps) ;
     
     % save data
-    save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs') ;
+    save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs', ...
+        'hard', 'hard_reference_ID') ;
     
     % de-clutter
     clearvars tauv tau0extra tpid ii
 end
+% assigning each frame a linear index.  So ordering here is like
+% (1,...N1,N1+1, ... N1+N2, .... N1+N2+N3, etc).  This indexes these points
+% so that they can be treated like balls on a string which can then be
+% relaxed.
 
 %% IX. Next build NL, KL, BL of correspondences for master timeline
-% NL = neighbor list, KL = spring constant list, and BL = bond list
+% NL = neighbor list meaning which frames are connect to whom, KL = spring
+% constant list, and BL = bond list. i.e if frame 1 is associated with
+% frame 10000 where 10000 would be in another dataset, one element of bl
+% would be 1 10000
 NLKLBLfn = fullfile(timelineDir, 'NL_KL_BL.mat') ;
 
 if exist(NLKLBLfn, 'file') && ~overwrite
-    tmp = load(NLKLBLfn, 'NL', 'KL', 'BL', 'exptIDs') ;
+    tmp = load(NLKLBLfn, 'NL', 'KL', 'BL', 'exptIDs','hard_reference_ID') ;
     NL = tmp.NL ;
     KL = tmp.KL ;
     BL = tmp.BL ;
+    
     if length(exptIDs) == length(tmp.exptIDs)
         for qq = 1:length(exptIDs) 
             if ~strcmp(exptIDs{qq}, tmp.exptIDs{qq})
@@ -1429,60 +1511,71 @@ if exist(NLKLBLfn, 'file') && ~overwrite
             'You must erase ' NLKLBLfn ' on disk and try again'])
     end
     disp('loaded bond list BL, neighbor list NL, k list KL from disk')
+    
+    % Assert that hard reference is unchanged
+    if ~strcmp(exptIDs{hard}, tmp.hard_reference_ID)
+        error(['Hard reference stored with NLKLBL does not match current. ', 
+            'Remove ' NLKLBLfn '  from disk and rerun'])
+    end
 else
     % preallocate Nxlarge array for NL, KL, do not preallocate BL
     NL = zeros(ntp_tot, 30) ;
     KL = zeros(ntp_tot, 30) ;
     first = true ;
     for ii = 1:length(ttc)
-        for jj = ii+1:length(ttc)
-            % Ensure that there are some correspondences
-            if ~isempty(ttc{ii}{jj})
-                nodei = round(ttc{ii}{jj}(:, 1)) + addt(ii);
-                nodej = round(ttc{ii}{jj}(:, 2)) + addt(jj);
-                bladd = [nodei, nodej] ;
+        for jj = 1:length(ttc)
+            if ii ~= jj
+                % Ensure that there are some correspondences
+                if ~isempty(ttc{ii}{jj})
+                    nodei = round(ttc{ii}{jj}(:, 1)) + addt(ii);
+                    nodej = round(ttc{ii}{jj}(:, 2)) + addt(jj);
+                    bladd = [nodei, nodej] ;
 
-                % Add to BL
-                if first
-                    BL = bladd ;
-                    first = false ;
-                else
-                    BL = cat(1, BL, bladd) ;
-                end
-
-                % build NL, KL with redundancy of correspondences built into KL
-                for id = 1:length(bladd)
-                    pair = bladd(id, :) ;
-                    nodei = pair(1) ; 
-                    nodej = pair(2) ;
-                    % ij
-                    if ismember(nodej, NL(nodei, :))
-                        ind = find(NL(nodei, :) == nodej) ;
-                        assert(NL(nodei, ind) == nodej) ;
-                        KL(nodei, ind) = KL(nodei, ind) + 1 ;
+                    % Add to BL
+                    if first
+                        BL = bladd ;
+                        first = false ;
                     else
-                        firstzero = find(NL(nodei, :)==0, 1) ; 
-                        assert(~isempty(firstzero)) 
-                        NL(nodei, firstzero) = nodej ; 
-                        KL(nodei, firstzero) = 1 ;
+                        BL = cat(1, BL, bladd) ;
                     end
 
-                    % ji
-                    if ismember(nodei, NL(nodej, :))
-                        ind = find(NL(nodej, :) == nodei) ;
-                        assert(NL(nodej, ind) == nodei) ;
-                        KL(nodej, ind) = KL(nodej, ind) + 1 ;
-                    else
-                        firstzero = find(NL(nodej, :)==0, 1) ; 
-                        assert(~isempty(firstzero)) 
-                        NL(nodej, firstzero) = nodei ; 
-                        KL(nodej, firstzero) = 1 ;
+                    % build NL, KL with redundancy of correspondences built into KL
+                    for id = 1:length(bladd)
+                        pair = bladd(id, :) ;
+                        nodei = pair(1) ; 
+                        nodej = pair(2) ;
+                        % ij
+                        if ismember(nodej, NL(nodei, :))
+                            ind = find(NL(nodei, :) == nodej) ;
+                            assert(NL(nodei, ind) == nodej) ;
+                            KL(nodei, ind) = KL(nodei, ind) + 1 ;
+                        else
+                            firstzero = find(NL(nodei, :)==0, 1) ; 
+                            assert(~isempty(firstzero)) 
+                            NL(nodei, firstzero) = nodej ; 
+                            KL(nodei, firstzero) = 1 ;
+                        end
+
+                        % ji
+                        if ismember(nodei, NL(nodej, :))
+                            ind = find(NL(nodej, :) == nodei) ;
+                            assert(NL(nodej, ind) == nodei) ;
+                            KL(nodej, ind) = KL(nodej, ind) + 1 ;
+                        else
+                            firstzero = find(NL(nodej, :)==0, 1) ; 
+                            assert(~isempty(firstzero)) 
+                            NL(nodej, firstzero) = nodei ; 
+                            KL(nodej, firstzero) = 1 ;
+                        end
                     end
                 end
             end
         end
     end
     disp('done building bond list BL, neighbor list NL, k list KL ')
+    
+    % SAVE NLKLBLfn
+    save(NLKLBLfn, 'NL', 'KL', 'BL', 'exptIDs', 'hard', 'hard_reference_ID')
 end
 
 %% X. Build timeline network visualization (pairwise_corr_timeline_XXX.png)
@@ -1555,7 +1648,7 @@ if exist(fn, 'file') && ~overwrite
     load(fn, 'i_tau0j_tau0jrelaxed')
 else
     % Relax: fix the time nodes of the hard reference dataset, move all others
-    options = optimset('PlotFcns',@optimplotfval, 'TolFun', 1e-6);
+    options = optimset('PlotFcns',@optimplotfval, 'TolX', 1e-4, 'TolFun', 1e-6);
     x0 = i_tau0j(:, 2) ;
     % pop the indices of the fixed times from the array x0
     fixed_ind = find(i_tau0j(:, 1) == hard) ;
@@ -1599,7 +1692,7 @@ else
     ylim([0, max(i_tau0j(:, 1)) + 1])
     set(gcf, 'Units', 'centimeters');
     set(gcf, 'Position', [0 0 36 16]) ;
-    saveas(gcf, fullfile(outdir, sprintf('relaxation_results.png')))
+    saveas(gcf, fullfile(timelineDir, sprintf('relaxation_results.png')))
 
     % Save the result
     i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
@@ -1828,7 +1921,6 @@ else
     TV(TV==0) = NaN ;
     TS(TS==0) = NaN ;
     
-
     % Now smooth along time dim
     hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
     LXs = LX ; 
@@ -1865,7 +1957,8 @@ else
         TSs(xi, 1:last-1) = ssm ;
     end
     % Save to disk
-    save(curv7MatFn, 'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', 'TX', 'xx')
+    save(curv7MatFn, 'LX', 'LV', 'LS', 'LXs', 'LVs', 'LSs', ...
+        'TX', 'TV', 'TS', 'TXs', 'TVs', 'TSs', 'xx')
 
     % Save the figure versions
     todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
@@ -1925,7 +2018,7 @@ end
 
 % Consider all times
 if redo_optimization || overwrite 
-    for qi = 46:length(times2do)
+    for qi = 1:length(times2do)
         close all
         qq = times2do(qi) ;
         disp(['qq = ' num2str(qq)])
@@ -2366,7 +2459,7 @@ for exptii = 1:length(expts)
     end
     
     % Plot best fit with errors on cij plot with hard reference
-    ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+    ijstr = [ '_' exptIDs{ii} '_' exptIDs{hard} extn ] ;
     cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
     load(cfn, 'cij')
     close all
