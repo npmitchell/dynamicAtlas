@@ -37,7 +37,7 @@ overwrite = false ;         % overwrite previous results
 thres = 0.5 ;
 ssfactor = 4 ;
 stripe7corr_method = 'dist' ; 
-
+save_snaps = false;
 % Unpack Options
 if nargin > 3
     if isfield(Options, 'preview')
@@ -57,6 +57,9 @@ if nargin > 3
     end
     if isfield(Options, 'save_images')
         save_images = Options.save_images ;
+    end
+    if isfield(Options, 'save_calibration_snaps')
+        save_snaps = Options.save_calibration_snaps ;
     end
 end
 
@@ -1519,8 +1522,8 @@ if exist(NLKLBLfn, 'file') && ~overwrite
     end
 else
     % preallocate Nxlarge array for NL, KL, do not preallocate BL
-    NL = zeros(ntp_tot, 30) ;
-    KL = zeros(ntp_tot, 30) ;
+    NL = zeros(ntp_tot, 300) ;
+    KL = zeros(ntp_tot, 300) ;
     first = true ;
     for ii = 1:length(ttc)
         for jj = 1:length(ttc)
@@ -1563,6 +1566,9 @@ else
                             KL(nodej, ind) = KL(nodej, ind) + 1 ;
                         else
                             firstzero = find(NL(nodej, :)==0, 1) ; 
+                            if isempty(firstzero)
+                               tester = 'hi'
+                            end
                             assert(~isempty(firstzero)) 
                             NL(nodej, firstzero) = nodei ; 
                             KL(nodej, firstzero) = 1 ;
@@ -1572,6 +1578,12 @@ else
             end
         end
     end
+    
+    % Find first of the columns that are all zero
+    colsZero = find(all(NL==0), 1) ;  
+    NL = NL(:, 1:colsZero) ;
+    KL = KL(:, 1:colsZero) ;
+    
     disp('done building bond list BL, neighbor list NL, k list KL ')
     
     % SAVE NLKLBLfn
@@ -2364,6 +2376,11 @@ refvars = LVs' ;
 close all
 fig = figure('visible', 'off') ;
 for exptii = 1:length(expts)
+    name_dir_to_do_now = strsplit(expts{exptii},'/'); %% matt added
+    name_expt_to_do_now = name_dir_to_do_now{end}; %% matt added
+    name_to_look_for = ['dset0' num2str(exptii) '_' name_expt_to_do_now '_calibration_cij_tmatches_withSSR.png'] %% matt added
+    if ~exist(fullfile(calibDir , name_to_look_for)) %%matt added
+            
     clf
     disp(['dataset ii = ', num2str(exptii)])
     disp(expts{exptii})
@@ -2385,8 +2402,8 @@ for exptii = 1:length(expts)
     tmatches_ssr = NaN * ones(length(stripe7curves), 1) ;
     tuncs_ssr = NaN * ones(length(stripe7curves), 1) ;
     tt = 1:length(stripe7curves) ;
-    for qq = 1:10:length(tt)
-        if mod(qq, 10) == 0
+    for qq = 1:2:length(tt) %% matt changed
+        if mod(qq, 2) == 0 %% matt changed
             disp(['calibration: qq = ' num2str(qq)])
         end
         stripe = stripe7curves{qq} ;
@@ -2403,7 +2420,7 @@ for exptii = 1:length(expts)
         chisqn = fillmissing(chisqn, 'movmedian', 5) ;
         preamble = ['frame ', num2str(qq), ' of  ', ...
             dynamic_embryos.embryoIDs{exptii}, '->', ...
-            dynamic_embryos.embryoIDs{hard} ' '] ;
+            'Ensemble Stripe '] ;
         if hands_on
             [tmatch, unc, fit_coefs, nidx, pidx] = ...
                 chisqMinUncInteractiveDomain(chisqn, 4, 10, ssr, preamble) ;
@@ -2413,6 +2430,7 @@ for exptii = 1:length(expts)
             pidx = round(tmatch) + 10 ;    
         end
         % Plot the result
+        
         if save_snaps
             timedense = 1:0.1:length(chisqn) ;
             % minimimum of the fit is cstar
@@ -2459,7 +2477,7 @@ for exptii = 1:length(expts)
     end
     
     % Plot best fit with errors on cij plot with hard reference
-    ijstr = [ '_' exptIDs{ii} '_' exptIDs{hard} extn ] ;
+    ijstr = [ '_' exptIDs{exptii} '_' exptIDs{hard} extn ] ;
     cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
     load(cfn, 'cij')
     close all
@@ -2467,22 +2485,20 @@ for exptii = 1:length(expts)
     imagesc(cij)
     hold on;
     plot(tmatches, tt, 'o-', 'color', 'k')
-    plot(tmatches - tuncs, tt, '--', 'color', 'k')
-    plot(tmatches + tuncs, tt, '--', 'color', 'k')
+    errorbar(tmatches, tt, [], [], tuncs, tuncs, 'color', 'k')
     plot(tmatches_ssr, tt, 'o', 'color', 'r')
-    ylabel(['time, dataset ' num2str(exptii) ])
-    xlabel(['time, dataset ' num2str(hard) ])
+    ylabel(['time, dataset ' exptIDs{exptii} ])
+    xlabel(['time, Dynamic Timeline'])
     cb = colorbar() ;
     ylabel(cb, 'cross correlation')
     figoutfn = fullfile(calibDir, ...
-        sprintf('dset%02d_calibration_cij_tmatches.png', exptii));
+        sprintf(['dset%02d_' exptIDs{exptii} '_calibration_cij_tmatches.png'], exptii));
     disp(['Saving ' figoutfn])
     saveas(fig, figoutfn)
     % with SSR
-    plot(tmatches_ssr - tuncs_ssr, tt, '--', 'color', 'r')
-    plot(tmatches_ssr + tuncs_ssr, tt, '--', 'color', 'r')
+    plot(tmatches_ssr, tt, [], [], tuncs_ssr, tuncs_ssr, 'color', 'r')
     figoutfn = fullfile(calibDir, ...
-        sprintf('dset%02d_calibration_cij_tmatches_withSSR.png', exptii));
+        sprintf(['dset%02d_' exptIDs{exptii} '_calibration_cij_tmatches_withSSR.png'], exptii));
     disp(['Saving ' figoutfn])
     saveas(fig, figoutfn)
     
@@ -2490,7 +2506,7 @@ for exptii = 1:length(expts)
     set(gcf, 'visible', 'on')
     pause(1)
     close all
-    
+    end
 end
 
 

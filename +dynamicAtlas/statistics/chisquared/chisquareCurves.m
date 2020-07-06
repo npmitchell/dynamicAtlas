@@ -63,7 +63,7 @@ for ii = 1:size(refcurvsY, 1)
         symmetrize = true ;
         fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, ...
             take_mean, symmetrize) ;
-        options = optimset('TolX', 1e-2, 'TolFun', 0.1);
+        options = optimset('TolX', 1e-3, 'TolFun', 0.001);
         shifts = fminsearch(fun, x0, options) ;
         
         % Get raw SSR if requested
@@ -95,6 +95,15 @@ for ii = 1:size(refcurvsY, 1)
         % variance goes to zero anywhere)
         chisq(ii) = nansum(dists' ./ refvar(idx), 2) ;
     end
+    
+    
+    % Debug 
+    % close all 
+    % figure ;
+    % plot(curv(:, 1), curv(:, 2), '.'); hold on;
+    % plot(refcurv(:, 1), refcurv(:, 2), '.') 
+    % title('checking that optimize translation worked')
+    % waitfor(gcf)
     
     % check result
     % imagesc(d2) 
