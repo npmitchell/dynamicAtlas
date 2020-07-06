@@ -278,8 +278,12 @@ for geno_kk = 1:length(genoKeys)
                                     [X,Y] = meshgrid(1:size(smoothim, 1), 1:size(smoothim, 2));
                                     %surf(X,Y,double(imavg)'), shading interp
                                     [dX,dY] = gradient(double(permute(smoothim, [2, 1, 3])), step);
-                                    dX = dX / max(dX(:)) ;
-                                    dY = dY / max(dY(:));
+                                          
+                                    gradmag = sqrt(dX.^2+dY.^2);
+                                    denominator = max(gradmag(:)) ;
+                                    gradmag = gradmag / denominator ;
+                                    dX = dX / denominator ;
+                                    dY = dY / denominator ;
 
                                     gradmag = sqrt(dX.^2+dY.^2);
                                     if view
