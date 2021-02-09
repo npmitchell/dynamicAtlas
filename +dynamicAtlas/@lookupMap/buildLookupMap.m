@@ -1,4 +1,4 @@
-function [map] = buildLookupMap(lum, save_map) 
+function [map] = buildLookupMap(lum, options) 
 %BUILDLOOKUPMAPTIMING Principal function for lookupTable Class object construction
 %
 % Parameters
@@ -15,8 +15,11 @@ function [map] = buildLookupMap(lum, save_map)
 %       'matchtime' and 'matchtime_unc'.
 %       If cell array, list of names of .mat files or .txt files in rank
 %       order to use for time matching
-% save_map : bool
-%   whether to save the map object to disk
+% optionns : struct with fields
+%   labels : cell array 
+%       the labels to include, if not all labels of a genotype
+%   save_map : bool
+%       whether to save the map object to disk
 %
 % Returns
 % -------
@@ -34,17 +37,26 @@ timematfn = lum.timerfn ; % note: could be string for filename match OR
 % If prepend and exten are not defined, give them a default value
 if nargin < 2
     save_map = false ;
+    labels = {} ;
 end
 
 %% Build a lookuptable for finding embryos at a given time of a given datatype
 map = containers.Map() ;
 
 %% Automatically detect all the labeltype folders in this genoDir
-disp(['Seeking labels in genotype directory: ' genoDir])
-labelDirs = dir(genoDir) ;
-genoParentDir = labelDirs.folder ;
-labelDirs = {labelDirs([labelDirs.isdir]).name} ;
-labelDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
+if isempty(labels)
+    disp(['Seeking labels in genotype directory: ' genoDir])
+    labelDirs = dir(genoDir) ;
+    genoParentDir = labelDirs.folder ;
+    labelDirs = {labelDirs([labelDirs.isdir]).name} ;
+    labelDirs = labelDirs(~ismember(labelDirs, {'.', '..', 'figures'})) ;
+else
+    disp(['Seeking only specified labels in genotype directory: ' genoDir])
+    labelDirs = dir(genoDir) ;
+    genoParentDir = labelDirs.folder ;
+    labelDirs = {labelDirs([labelDirs.isdir]).name} ;
+    labelDirs = labelDirs(ismember(labelDirs, labels)) ;
+end
 
 %% For each labelDir
 % Get the channel names from the name of each labelDir

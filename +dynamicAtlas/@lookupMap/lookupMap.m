@@ -91,16 +91,24 @@ classdef lookupMap < handle
             end
             disp(['Options for lookupMap > ' timerfn])
             
+            options = struct() ;
+            if isfield(Options, 'save_map')
+                options.save_map = Options.save_map ;
+            end
+            if isfield(Options, 'labels')
+                options.labels = Options.labels ;
+            end
+            
             obj.timerfn = timerfn ;
             obj.prepend = prepend ;
             obj.exten = exten ;
             
             % Assign to property of lookupMap instance
-            obj.map = buildLookupMap(obj, false) ;
+            obj.map = buildLookupMap(obj, options) ;
         end
         
         %BUILDLOOKUPMAP Construct the lookup map
-        out = buildLookupMap(obj, save_map) ;
+        out = buildLookupMap(obj, options) ;
         
         function saveLookupMap(obj)
             %SAVELOOKUPMAP Save the constructed lookup map
