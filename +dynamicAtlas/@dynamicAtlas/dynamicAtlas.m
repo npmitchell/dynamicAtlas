@@ -30,11 +30,12 @@ classdef dynamicAtlas < handle
     % handle PIV-based timeline creation
     
     properties
-        path
-        genotypes
-        lookup
-        timeLineMethod
-        timeStampMethod
+        path                % path to the atlas parent directory
+        genotypes           % cell array of string specifiers
+        lookup              % containers.Map() object connecting genotype 
+                            % string specifiers to lookupMap instances
+        timeLineMethod      % 
+        timeStampMethod     % 
     end
     
     %---------------------------------------------------------------------
@@ -59,14 +60,14 @@ classdef dynamicAtlas < handle
             %   the path containing each genotype directory
             % genotypes : optional cell array of strings (default = all)
             %   the genotypes to include in the atlas object
-            % Options : struct with fields
+            % Options : struct with fields 
             %   timeLineMethod : optional str (default = 'realspace')
             %       Method string specifier for building master timeLine(s)
             %   timeStampMethod : optional str (default = 'stripe7')
             %       Method string specifier for time stamping
             %   timerfn : str, default='timematch_*_*stripe7_chisq.mat'
             %       name of file to use to obtain timestamp for each
-            %       embryo
+            %       embryo, passed to lookupMap
             %   prepend : str, default='MAX_Cyl1_2_000000_c*_rot_scaled_view1' 
             %       filename search string without extension for pullback
             %   exten : str, default='.tif'
@@ -156,7 +157,9 @@ classdef dynamicAtlas < handle
             % 
             % Parameters
             % ----------
-            % 
+            % genotypes_subset : optional cell array of string specifiers
+            %   the subset of genotypes to index in the atlas instance
+            % Options : optional struct
             %
             da.lookup = containers.Map() ;
             if nargin < 2
@@ -348,7 +351,7 @@ classdef dynamicAtlas < handle
             qs = da.lookup(genotype).findStaticLabel(label) ;
         end
         
-        function lum = findDynamicGenotypeLabel(da, genotype, label)
+        function qs = findDynamicGenotypeLabel(da, genotype, label)
             %FINDDYNAMICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
@@ -360,16 +363,57 @@ classdef dynamicAtlas < handle
             % 
             % Outputs
             % -------
-            % lum : struct with fields
-            %   folders : Nx1 cell array of paths to label data
-            %   names : Nx1 cell array of label data filenames
-            %   embryoIDs : Nx1 cell array of embryoIDs
-            %   times : Nx1 cell array of timestamps (each could be array)
-            %   unc : Nx1 cell array of timestamp uncertainties
-            %   nTimePoints : Nx1 int array of #timepoints in each dataset
+            % qs : queriedSample class instance
+            %   queriedSample with properties
+            %   meta: struct with fields
+            %       folders : Nx1 cell array of paths to label data
+            %       names : Nx1 cell array of label data filenames
+            %       embryoIDs : Nx1 cell array of embryoIDs
+            %       times : Nx1 cell array of timestamps (each could be array)
+            %       unc : Nx1 cell array of timestamp uncertainties
+            %       nTimePoints : Nx1 int array of #timepoints in each dataset
+            %   data : initially empty cell of data images
+            %       can be populated via qs.getData()
+            %   gradients : initially empty cell of gradient images
+            %       can be populated via qs.getGradients()
+            %   smooth : initially empty cell of smoothed data images
+            %       can be populated via qs.getSmooth()
+            %   PIV : initially empty cell of velocity fields
+            %       can be populated via qs.getPIV()
             qs = da.lookup(genotype).findDynamicLabel(label) ;
         end
             
+        function qs = findDynamicGenotypeLabelWithPIV(da, genotype, label)
+            %findFlowGenotypeLabel(genotype, label2find) 
+            %   Find dynamic embryos of specified genotype with specified 
+            %   label that have measured flowfields v(x,y,t) on embryo
+            %   surface.
+            %   Give the times, folders, and time uncertainties of all
+            %   live samples matching the supplied channel 'label'
+            %
+            % Parameters
+            % ----------
+            % genotype : str, the genotype in which to search
+            % label : string, label name (ex 'Eve' or 'Runt')
+            % 
+            % Outputs
+            % -------
+            % qs : queriedSample class instance
+            
+            qs = da.lookup(genotype).findDynamicLabel(label) ;
+            % Iterate through folders, look for PIV data
+            indicesToRemove = [] ;
+            for qq = 1:length(qs.meta.folders)
+                foldername = qs.meta.folders{qq} ;
+                if isempty(dir(fullfile(foldername, 'PIV_filtered', 'V*.mat')))
+                    % remove this entry, since no PIV exists
+                    indicesToRemove = [indicesToRemove, qq] ;
+                end
+            end
+            disp([num2str(length(qs.meta.names)) ' identified in qs have flow fields (PIV_filtered)' ])
+            qs = qs.removeEntries(indicesToRemove) ;
+        end
+        
         function qs = findGenotypeLabel(da, genotype, label)
             % FINDGENOTYPELABEL(genotype, label)
             %
@@ -380,16 +424,30 @@ classdef dynamicAtlas < handle
             %
             % Outputs
             % -------
-            % lum : struct with fields
-            %   folders : Nx1 cell array of paths to label data
-            %   names : Nx1 cell array of label data filenames
-            %   embryoIDs : Nx1 cell array of embryoIDs
-            %   times : Nx1 cell array of timestamps (each could be array)
-            %   unc : Nx1 cell array of timestamp uncertainties
-            %   nTimePoints : Nx1 int array of #timepoints in each dataset
-            %
+            % qs : queriedSample class instance
+            
             if strcmp(da.timeStampMethod, 'stripe7')
                 qs = da.lookup(genotype).findLabel(label) ;
+            else
+                error(['dynamicAtlas.timeStampMethod not recognized: ',...
+                    da.timeStampMethod])
+            end
+        end
+        
+        function qs = findGenotypeLabelTime(da, genotype, label, time, time_unc)
+            % FINDGENOTYPELABEL(genotype, label)
+            %
+            % Parameters
+            % ----------
+            % genotype : str, the genotype in which to search
+            % label : string, label name (ex 'Eve' or 'Runt')
+            %
+            % Outputs
+            % -------
+            % qs : queriedSample class instance
+            
+            if strcmp(da.timeStampMethod, 'stripe7')
+                qs = da.lookup(genotype).findLabelTime(label, time, time_unc) ;
             else
                 error(['dynamicAtlas.timeStampMethod not recognized: ',...
                     da.timeStampMethod])

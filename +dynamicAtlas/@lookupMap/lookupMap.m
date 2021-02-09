@@ -66,8 +66,10 @@ classdef lookupMap < handle
             %       filename extension for pullback
             %
             
-            % name of timer filename for loading times
-            timerfn = 'timematch_*_*stripe7_chisq.mat' ;
+            % name of timer filename for loading times or cell array of
+            % timer filenames in rank preference order for timing
+            timerfn = {'timematch_*_*stripe7_chisq.mat', ...
+                'timematch_*_cephallicFurrowOnset.txt'} ;
             % filename for pullback without filetype extension
             prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;
             % string after prepend for the pullback data
@@ -204,7 +206,7 @@ classdef lookupMap < handle
         end
         
         function qs = findStaticLabel(obj, label2find)
-            %FINDDYNAMICLABEL(label2find) Find dynamic embryos with label
+            %FINDSTATICLABEL(label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
             %
