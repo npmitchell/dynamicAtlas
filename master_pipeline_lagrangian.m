@@ -38,7 +38,9 @@ atlasPath = '/Volumes/Elements/Atlas_Data' ;
 % Build dynamic atlas with all genotypes in the atlasPath
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
-da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
+options = struct() ;
+options.labels = {'sqh-mCherry'} ;
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
 %% Search for dynamic data 
 genotype = 'WT' ;

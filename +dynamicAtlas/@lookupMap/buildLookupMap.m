@@ -36,7 +36,17 @@ timematfn = lum.timerfn ; % note: could be string for filename match OR
 
 % If prepend and exten are not defined, give them a default value
 if nargin < 2
+    options = struct() ;
+end
+
+if isfield(options, 'save_map')
+    save_map = options.save_map ;
+else
     save_map = false ;
+end
+if isfield(options, 'labels')
+    labels = options.labels ;
+else
     labels = {} ;
 end
 
