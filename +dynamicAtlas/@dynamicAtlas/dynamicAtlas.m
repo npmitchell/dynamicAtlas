@@ -61,6 +61,9 @@ classdef dynamicAtlas < handle
             % genotypes : optional cell array of strings (default = all)
             %   the genotypes to include in the atlas object
             % Options : struct with fields 
+            %   labels : optional cell of strings
+            %       labels to include in the atlas, if only some subset of
+            %       labels are desired as part of the atlas instance
             %   timeLineMethod : optional str (default = 'realspace')
             %       Method string specifier for building master timeLine(s)
             %   timeStampMethod : optional str (default = 'stripe7')
