@@ -213,9 +213,9 @@ classdef dynamicAtlas < handle
             % dynamicAtlas.path/genotype/label/embryoID/timematch_<method>_dynamic.mat
             % dynamicAtlas.path/genotype/label/embryoID/timematch_<method>_dynamic.txt
 
-            if strcmp(da.timeLineMethod, 'realspace')
+            if strcmpi(da.timeLineMethod, 'realspace')
                 da.makeMasterTimeLineRealspace(genotype, label, Options)
-            elseif strcmp(da.timeLineMethod, 'piv')
+            elseif strcmpi(da.timeLineMethod, 'piv')
                 makeMasterTimeLinePIV(da, genotype, label, Options)
             else
                 error(['dynamicAtlas.timeLineMethod not recognized: ',...

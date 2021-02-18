@@ -40,7 +40,8 @@ classdef queriedSample < handle
         gradients = struct()    % struct with fields dx, dy, mag
         smooth                  % cell array of images
         piv = struct('vx', [], ...
-            'vy', [])           % cell array of velocity fields
+            'vy', [], ...
+            'rescaleFactor', 0.4)   % cell array of velocity fields
         meanPIV = struct('vx', [], ...
             'vy', [])           % cell array of average velocity field across sample
     end
@@ -67,7 +68,12 @@ classdef queriedSample < handle
                         disp(['Loading TIFF page ', ...
                             num2str(obj.meta.tiffpages(qq)), ...
                             ' from: ', tiff_fn])
-                        dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                        try
+                            dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                        catch
+                            disp(['Could not load file. Incorrectly named? '  tiff_fn])
+                            dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                        end
                     else
                         disp(['Loading TIFF stack: ' tiff_fn])
                         dataCell{qq} = loadtiff(tiff_fn) ;
@@ -157,6 +163,73 @@ classdef queriedSample < handle
                 if nargout > 0
                     dataCell = obj.data ;
                 end
+            end
+        end
+        
+        function meanIm = getMeanData(obj, normalizeEach, preview)
+            % Load all data and take the mean of all data in the sampling 
+            %
+            % Parameters
+            % ----------
+            % obj : queriedSample instance (self)
+            % normalizeEach : bool (default = true)
+            %   normalize the intensity of each frame as we sum them
+            %   (recommended)
+            % preview : bool (default = false)
+            %   preview the averaging of all members of the queriedSample,
+            %   element by element as we sum them
+            %
+            % Returns
+            % -------
+            % meanIm : 2D double array
+            %   mean image intensity for all samples in queriedSample
+            %   instance
+            %
+            if nargin < 2
+                normalizeEach = true ;
+            end
+            if nargin < 3
+                preview = false ;
+            end
+            dataCell = obj.getData() ;
+            if isempty(dataCell)
+                disp('WARNING: No data in qs! Returning empty array.')
+                meanIm = [] ;
+            else
+                % First image
+                if normalizeEach
+                    toAdd = dataCell{1} ;
+                    meanIm = double(toAdd) / double(max(toAdd(:))) ;
+                else
+                    meanIm = double(dataCell{1}) ;
+                end
+                % check the first image
+                if preview
+                    imagesc(meanIm); 
+                    colorbar ;
+                    pause(0.1)
+                end
+                
+                % Add all other images and normalize at the end
+                for qq = 2:length(dataCell)
+                    
+                    % Normalize the image or just sum it up
+                    if normalizeEach
+                        toAdd = dataCell{qq} ;
+                        meanIm = meanIm + double(toAdd) / double(max(toAdd(:))) ;
+                    else
+                        meanIm = meanIm + double(dataCell{qq}) ;
+                    end
+                    
+                    % check the current sum (normalized)
+                    if preview
+                        imagesc(meanIm / qq);
+                        pause(0.1)
+                    end
+                end            
+                
+                % Normalize by the number of frames summed
+                meanIm = double(meanIm) ./ length(dataCell) ;
             end
         end
         
@@ -277,6 +350,7 @@ classdef queriedSample < handle
         function getPIV(obj)
             % Load PIV results for all entries in queriedSample collection
             nEmbryos = length(obj.meta.folders) ;
+            rescaleFactor = obj.piv.rescaleFactor ;
             for qq = 1:nEmbryos
                 if isa(obj.meta.times, 'cell')
                     % Load each in cell of timestamps
@@ -288,8 +362,8 @@ classdef queriedSample < handle
                         pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
                             sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
                         tmp = load(pivfn) ;
-                        vxcollection(:, :, pp) = tmp.VX ;
-                        vycollection(:, :, pp) = tmp.VY ;
+                        vxcollection(:, :, pp) = tmp.VX / rescaleFactor ;
+                        vycollection(:, :, pp) = tmp.VY / rescaleFactor ;
                     end
                     obj.piv.vx{qq} = vxcollection ;
                     obj.piv.vy{qq} = vycollection ;
@@ -298,8 +372,8 @@ classdef queriedSample < handle
                     pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
                         sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
                     tmp = load(pivfn) ;
-                    obj.piv.vx{qq} = tmp.VX ;
-                    obj.piv.vy{qq} = tmp.VY ;
+                    obj.piv.vx{qq} = tmp.VX / rescaleFactor ;
+                    obj.piv.vy{qq} = tmp.VY / rescaleFactor ;
                 end
             end
         end
@@ -309,6 +383,7 @@ classdef queriedSample < handle
             nEmbryos = length(obj.meta.folders) ;
             vx = zeros(46, 54, nEmbryos) ;
             vy = zeros(46, 54, nEmbryos) ;
+            rescaleFactor = obj.piv.rescaleFactor ;
             for qq = 1:nEmbryos
                 if isa(obj.meta.times, 'cell')
                     error('handle this case of collections here -- see above in getPIV()')
@@ -318,8 +393,8 @@ classdef queriedSample < handle
                         sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
                     if exist(pivfn, 'file')
                         tmp = load(pivfn) ;
-                        vx(:, :, qq) = tmp.VX ;
-                        vy(:, :, qq) = tmp.VY ;
+                        vx(:, :, qq) = tmp.VX / rescaleFactor ;
+                        vy(:, :, qq) = tmp.VY / rescaleFactor ;
                     else
                         if timestamp == obj.meta.nTimePoints(qq)
                             disp('Skipping final timepoint from meanPIV')
@@ -355,14 +430,18 @@ classdef queriedSample < handle
             % resizeCoordSys: 696 x 820
             % pivCoordSys: 46 x 54
             EdgeLength = 15;
-            % isf = 0.4;
+            % rescaleFactor = 0.4;
             % szX_orig = 1738 ;
             % szY_orig = 2050 ;
 
             % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
-            szX = 696 ;
-            szY = 820 ;
-
+            if obj.piv.rescaleFactor == 0.4
+                szX = 696 ;
+                szY = 820 ;
+            else
+                error('code for this rescaleFactor convention here')
+            end
+                
             % in resized pixels
             [X0,Y0] = meshgrid(EdgeLength/2:EdgeLength:(szX-EdgeLength/2), ...
                 EdgeLength/2:EdgeLength:(szY-EdgeLength/2)); 
@@ -390,4 +469,3 @@ classdef queriedSample < handle
     end
     
 end
-

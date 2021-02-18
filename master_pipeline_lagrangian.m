@@ -1,5 +1,5 @@
 %% MASTER TIMING PIPELINE
-% Master pipeline for computing lagrangian-advected patterns.
+% Template pipeline for computing lagrangian-advected patterns.
 % Here we demonstrate by advecting Runt pattern along average PIV field
 % built solely from sqh-mCherry and comparing to a later timepoint.
 %
@@ -39,7 +39,7 @@ atlasPath = '/Volumes/Elements/Atlas_Data' ;
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
 options = struct() ;
-options.labels = {'sqh-mCherry'} ;
+options.labels = {'sqh-mCherry', 'Runt'} ;
 da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
 %% Search for dynamic data 
@@ -50,154 +50,59 @@ qs = da.findDynamicGenotypeLabel(genotype, label) ;
 %% Build average flow field at each point in time
 pivStack = qs.buildPIVStack(da, genotype, label) ;
 
+%% Create an ensemble reference Runt image and advect along pathlines
+% Note there is a 12 minute difference between PIV timeline and Runt
+% To find Runt stains with a t=10 +/- 2 min 
+runtsnaps = da.findGenotypeLabelTime('WT', 'Runt', 12, 2) ;
+im0 = runtsnaps.getMeanData() ;
 
-function applyOpticalFlow(pivStack, embryoID, Options)
+Options = struct() ;
+Options.outDir = outDir ;
+% first timepoint of the desired image sequence
+Options.minT = round(qs.getMinTime) ;
+% last timepoint of the desired image sequence
+Options.maxT = round(qs.getMaxTime) ;
+% Whether to plot a video of some Lagrangian tracer beads first
+Options.plot_scatterpaths = false ;
+% Apply optical flow to reference image im0
+applyOpticalFlow(pivStack, im0, Options)
 
-    npivx = pivStack.npivx ;
-    npivy = pivStack.npivy ;
-    % Note on convention: 
-    % The number of unique X0 = size(PIV, 1)
-    % The number of unique Y0 = size(PIV, 2)
-    options = struct() ;
-    timePoints = mint:maxt ;
-    options.timePoints = timePoints ;
-    options.Lx = szY ;
-    options.Ly = szX ;
-    [YY, XX] = pullbackPathlines(pivStack, Y0, X0, 0, options) ;
-
-    % Visualize the result
-    if plot_scatterpaths
-        clf
-        tidx2do = 1:10:length(timePoints) ;
-        tidx2do = [tidx2do, setdiff(1:length(timePoints), tidx2do)] ;
-        for tidx = tidx2do
-            xx = squeeze(XX(tidx, :, :)) ;
-            yy = squeeze(YY(tidx, :, :)) ;
-            scatter(xx(:), yy(:), 10, 'filled')
-            axis equal
-            axis off
-            title(['$t = $' num2str(timePoints(tidx)) ' min'], 'interpreter', 'latex')
-
-            xlim([0, szX])
-            ylim([0, szY])
-            outfn = fullfile(outDir, sprintf('scat_%06d.png', tidx)) ;
-            saveas(gcf, outfn)
-            pause(0.1)
+% Compare to mean over time
+dmyk = 1 ;
+for tt = round(qs.getMinTime):round(qs.getMaxTime)
+    imfn = fullfile(outDir, 'meanRunt', [sprintf('%03d', dmyk), '.png']) ;
+    if ~exist(imfn, 'file')
+        runtsnaps = da.findGenotypeLabelTime('WT', 'Runt', 12+tt, 1) ;
+        im0 = runtsnaps.getMeanData() ;
+        if ~isempty(im0)
+            imwrite(im0, imfn)
         end
     end
-
-    %% Texture patch
-    if plot_texturepaths
-        gutDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/gut_morphogenesis/' ;
-        addpath(fullfile(gutDir, 'gut_matlab', 'mesh_handling'))
-        addpath(fullfile(gutDir, 'gut_matlab', 'mesh_handling', 'rectilinearMesh'))
-        addpath(fullfile(gutDir, 'TexturePatch'))
-        % Reference image
-        imfn = '/Volumes/Elements/Atlas_Data/WT/Runt/202001150004/MAX_Cyl1_2_000000_c1_rot_scaled_view1_ss04.tif' ;
-        t0_furrow = 12 ;
-        im0 = imread(imfn, t0_furrow);
-        % Define a triangulation on the image
-        faces = defineFacesRectilinearGrid([], npivx, npivy) ;
-        % [pbX, pbY] = meshgrid(linspace(min(X0(:)), max(X0(:)), npivy)', ...
-        %     linspace(min(Y0(:)), max(Y0(:)), npivx)') ;
-        pbV = [X0(:), Y0(:)] ;
-        [imX, imY] = meshgrid(linspace(1, size(im0, 1), npivy)', ...
-            linspace(1, size(im0, 2), npivx)') ;
-        imV = [imX(:), imY(:)] ;
-
-        % check the triangulation -- periodic dimension is in x
-        % trisurf(faces, pbX(:), pbY(:), 0*pbX(:))
-        % view(2) ; axis equal ;
-        % waitfor(gcf)
-
-        % Test texturepatch
-        % Options = struct() ;
-        % imout = texture_patch_to_image(faces, pbV, faces, imV, im0, Options) ;
-        % imshow(imout)
-        % waitfor(gcf) 
-
-        %% Make texture patch vertices into pathlines
-        % outDir = fullfile(atlasPath, 'pullbackPathlines') ;
-        outDir = fullfile('/Users/npmitchell/Desktop/tmp/WT_pullbackPathlines') ;
-        if ~exist(outDir, 'dir')
-            mkdir(outDir)
-        end
-        tidx2do = 1:10:length(timePoints) ;
-        tidx2do = [tidx2do, setdiff(1:length(timePoints), tidx2do)] ;
-        for tidx = tidx2do
-            disp(['tidx = ' num2str(tidx)])
-            % [imx, imy] = ndgrid(1:size(im0, 1), 1:size(im0, 2)) ;
-            % griddedInterpolant(imx, imy, double(im0), 'natural', 'nearest')
-
-            xtmp = squeeze(XX(tidx,:,:))' ;
-            ytmp = squeeze(YY(tidx,:,:))' ;
-            pbV = [xtmp(:), ytmp(:)] ;
-
-            % CHECK 1
-            check1 = false ;
-            if check1
-                % Show coord vertices
-                subplot(2, 1, 1)
-                scatter(pbV(:, 1), pbV(:, 2), 10, 'filled')
-                axis equal 
-
-                subplot(2, 1, 2)
-                scatter(imV(:, 1), imV(:, 2), 10, 'filled')
-                axis equal 
-                waitfor(gcf)
-            end
-
-            % CHECK 2
-            check2 = false ;
-            if check2
-                % Show coord vertices with faces
-                subplot(2, 1, 1)
-                trisurf(faces, pbV(:, 1), pbV(:, 2), 0*pbV(:, 1))
-                view(2)
-                axis equal 
-
-                subplot(2, 1, 2)
-                trisurf(faces,imV(:, 1), imV(:, 2), 0*imV(:, 2))
-                view(2)
-                axis equal 
-                waitfor(gcf)
-            end
-            Options = struct() ;
-            Options.baseSize = 100 ;
-            imout = texture_patch_to_image(faces, pbV, faces, imV, im0, Options) ;
-
-            outfn = fullfile(outDir, 'texture', sprintf('texture_%06d.png', tidx)) ;
-            title(['$t = $' num2str(timePoints(tidx)) ' min'], 'interpreter', 'latex')
-
-            if tidx == 1
-                outsize = size(imout) ;
-            else
-                if any(size(imout) ~= outsize)
-                    imout = imresize(imout, outsize) ;
-                end
-            end
-
-            imwrite(imout, outfn)
-            close all
-
-            % MONTAGE
-            % tiffpage = max(1, round(tidx + t0_furrow + mint)) ;
-            % disp(['reading page ' num2str(tiffpage)])
-            % imref = imread(imfn, tiffpage);
-            % imshowpair(imref, imresize(imout, size(im0)), 'montage')
-            % 
-            % outfn = fullfile(outDir, 'montage', sprintf('montage_%06d.png', tidx)) ;
-            % title(['$t = $' num2str(timePoints(tidx)) ' min'], 'interpreter', 'latex')
-            % saveas(gcf, outfn)
-            % close all
-        end
-    end
+    dmyk = dmyk + 1 ;
 end
 
 
+%% OTHER FUNCTIONALITY -- Apply average flow field to a single Runt image
+% Create a reference image to advect 
+imfn = '/Volumes/Elements/Atlas_Data/WT/Runt/202001150004/MAX_Cyl1_2_000000_c1_rot_scaled_view1_ss04.tif' ;
+t0_furrow = 12 ;
+im0 = imread(imfn, t0_furrow);
 
+outDir = fullfile('/Users/npmitchell/Desktop/tmp/WT_pullbackPathlines') ;
+if ~exist(outDir, 'dir')
+    mkdir(outDir)
+end
 
-
+Options = struct() ;
+Options.outDir = outDir ;
+% first timepoint of the desired image sequence
+Options.minT = round(qs.getMinTime) ;
+% last timepoint of the desired image sequence
+Options.maxT = round(qs.getMaxTime) ;
+% Whether to plot a video of some Lagrangian tracer beads first
+Options.plot_scatterpaths = true ;
+% Apply optical flow to reference image im0
+applyOpticalFlow(pivStack, im0, Options)
 
 
 %% Search for dynamic data with PIV

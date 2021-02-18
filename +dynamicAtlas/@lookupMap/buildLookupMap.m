@@ -138,32 +138,42 @@ for ii = 1:length(labelDirs)
                 timematfn = {timematfn} ;
             end
             
+            time_is_matched = false ;
             if isa(timematfn, 'cell')
                 for qq = 1:length(timematfn)
-                    tmatMatches = dir(fullfile(fnmatch(1).folder, timematfn{qq})) ;
-                    if ~isempty(tmatMatches)
-                        matmatch = tmatMatches(1).name ;
-                        disp(['loading time from ' matmatch])
-                        if strcmpi(matmatch(end-2:end), 'mat')
-                            load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')
-                        elseif strcmpi(matmatch(end-2:end), 'txt')
-                            % Interpret first column as timestamps, second as
-                            % time uncertainties
-                            matchtime_min_unc = dlmread(fullfile(fnmatch(1).folder, matmatch), ',') ;
-                            try
-                                assert(all(size(matchtime_min_unc) == [ntps, 2]))
-                                matchtime_minutes = matchtime_min_unc(:, 1) ;
-                                matchtime_unc_minutes = matchtime_min_unc(:, 2) ;
-                            catch
-                                error(['Error with file: If timestamps stored in txt file, must be two columns with values, uncertainties: ' matmatch])
+                    % Try seeking this filename type if we haven't already
+                    % matched the time of this sample
+                    if ~time_is_matched 
+                        tmatMatches = dir(fullfile(fnmatch(1).folder, timematfn{qq})) ;
+                        if ~isempty(tmatMatches)
+                            matmatch = tmatMatches(1).name ;
+                            disp(['loading time from ' matmatch])
+                            if strcmpi(matmatch(end-2:end), 'mat')
+                                load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')
+                                time_is_matched = true ;
+                            elseif strcmpi(matmatch(end-2:end), 'txt')
+                                % Interpret first column as timestamps, second as
+                                % time uncertainties
+                                matchtime_min_unc = dlmread(fullfile(fnmatch(1).folder, matmatch), ',') ;
+                                try
+                                    assert(all(size(matchtime_min_unc) == [ntps, 2]))
+                                    matchtime_minutes = matchtime_min_unc(:, 1) ;
+                                    matchtime_unc_minutes = matchtime_min_unc(:, 2) ;
+                                    time_is_matched = true ;
+                                catch
+                                    error(['Error with file: If timestamps stored in txt file, must be two columns with values, uncertainties: ' matmatch])
+                                end
+                            else
+                                load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')
                             end
                         else
-                            load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')
+                            disp(['Could not load timestamp for experiment: ' embryo ' using timematchfn=' timematfn{qq}])
+                            matchtime_minutes = NaN * ones(1, ntps) ;
+                            matchtime_unc_minutes = NaN * ones(1, ntps) ;
+                            % Re-iterate that this did not work to match
+                            % the time (redundant, so commented out)
+                            % time_is_matched = false ;
                         end
-                    else
-                        disp(['Could not load timestamp for experiment: ' embryo])
-                        matchtime_minutes = NaN * ones(1, ntps) ;
-                        matchtime_unc_minutes = NaN * ones(1, ntps) ;
                     end
                 end                
             else

@@ -57,7 +57,7 @@ embryoID = '201905091604' ;
 qs = da.findEmbryo(embryoID) ;
 % Now qs is a queriedSample object with methods
 qs.getData() ;
-qs
+qs.getMeanData() ;
 
 %% Each genotype's map is now stored with a container called da.lookup
 % example is

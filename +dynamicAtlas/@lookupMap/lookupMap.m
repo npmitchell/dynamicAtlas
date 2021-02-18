@@ -263,6 +263,7 @@ classdef lookupMap < handle
             
             folders = {}; 
             names = {} ;
+            labels4struct = {} ;
             embryoIDs = {}; 
             timepts = []; 
             uncs = []; 
