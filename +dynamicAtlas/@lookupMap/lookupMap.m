@@ -71,7 +71,7 @@ classdef lookupMap < handle
             timerfn = {'timematch_*_*stripe7_chisq.mat', ...
                 'timematch_*_cephallicFurrowOnset.txt'} ;
             % filename for pullback without filetype extension
-            prepend = 'MAX_Cyl1_2_000000_c*_rot_scaled_view1' ;
+            prepend = 'MAX_Cyl1_2_00000*_c*_rot_scaled_view1' ;
             % string after prepend for the pullback data
             exten = '.tif' ;
             obj.genoDir = genoDir ;

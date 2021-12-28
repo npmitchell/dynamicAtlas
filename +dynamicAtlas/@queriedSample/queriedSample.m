@@ -354,16 +354,24 @@ classdef queriedSample < handle
             for qq = 1:nEmbryos
                 if isa(obj.meta.times, 'cell')
                     % Load each in cell of timestamps
-                    timestamps = obj.meta.tiffpages{qq} ;
+                    ntimestamps = obj.meta.nTimePoints(qq) ;
+                    timestamps = 1:ntimestamps ;
                     vxcollection = zeros(46, 54, length(timestamps)) ;
                     vycollection = zeros(46, 54, length(timestamps)) ;
-                    for pp = 1:length(timestamps)
-                        timestamp = timestamps(pp) ;
-                        pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
-                            sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
-                        tmp = load(pivfn) ;
-                        vxcollection(:, :, pp) = tmp.VX / rescaleFactor ;
-                        vycollection(:, :, pp) = tmp.VY / rescaleFactor ;
+                    for pp = 1:(ntimestamps-1)
+                        tiffpage = timestamps(pp) ;
+                        try
+                            pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
+                                sprintf('VeloT_medfilt_%06d.mat', tiffpage)) ;
+                            tmp = load(pivfn) ;
+                            vxcollection(:, :, pp) = tmp.VX / rescaleFactor ;
+                            vycollection(:, :, pp) = tmp.VY / rescaleFactor ;
+                        catch
+                            disp('Warning: some timepoints have no velocity, returned these as NaN')
+                        
+                            vxcollection(:, :, pp) = NaN ;
+                            vycollection(:, :, pp) = NaN ;
+                        end
                     end
                     obj.piv.vx{qq} = vxcollection ;
                     obj.piv.vy{qq} = vycollection ;
