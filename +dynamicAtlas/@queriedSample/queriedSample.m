@@ -232,7 +232,7 @@ classdef queriedSample < handle
                 meanIm = double(meanIm) ./ length(dataCell) ;
             end
         end
-        
+                
         function dataCell = getSmooth(obj, sigma, step)
             %GETGRADIENTS(obj) 
             %   Load the smoothed TIFFs for all data in this queriedSample

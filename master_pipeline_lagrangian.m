@@ -44,8 +44,11 @@ da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
 %% Search for dynamic data 
 genotype = 'WT' ;
-label = 'sqh-mCherry' ;
+% label = 'sqh-mCherry' ;
+label = 'Runt' ;
 qs = da.findDynamicGenotypeLabel(genotype, label) ;
+
+qs = findEmbryo(da, embryoID) ;
 
 %% Build average flow field at each point in time
 pivStack = qs.buildPIVStack(da, genotype, label) ;

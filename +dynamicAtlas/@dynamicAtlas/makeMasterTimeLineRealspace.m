@@ -1933,22 +1933,32 @@ else
     TV(TV==0) = NaN ;
     TS(TS==0) = NaN ;
     
-    % Now smooth along time dim
+    % Now smooth along time dimension
+    % hh is a tripulse kernel -- like __/\__ over time
     hh = [1 2 3 2 1] / sum([1 2 3 2 1]) ;
+    % initialize smoothed ('s') vectors
     LXs = LX ; 
     LVs = LV ; 
     LSs = LS ;
     TXs = TX ; 
     TVs = TV ; 
     TSs = TS ;
-    % Filter each row BEFORE NANs only
+    % Filter each row BEFORE NANs only -- if stripe disappears for any xx,
+    % then we ignore those NaNs.
+    % Consider each row of LX, which is a y(x) for a single x position. 
     for xi = 1:size(LX, 1) 
-        disp(['filtering row ' num2str(xi)])
-        % Leading
+        disp(['filtering row (ie DV position) ' num2str(xi)])
+        % Leading edge of stripe
         xrow = LX(xi, :) ;
         vrow = LV(xi, :) ;
         srow = LS(xi, :) ;
+        % we want to filter all data up to when the data is NaN. But if
+        % there is no NaN data, then we want to filter the entire "row" 
         last = find(isnan(xrow), 1) ;
+        if isempty(last)
+            % There were no NaNs! So we filter the whole row
+            last = length(xrow) + 1 ; 
+        end
         rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
         vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
         ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
@@ -1957,10 +1967,15 @@ else
         LSs(xi, 1:last-1) = ssm ;
         clear rsm vsm ssm 
 
-        % Trailing
+        % Trailing edge of stripe
         xrow = TX(xi, :) ;
         vrow = TV(xi, :) ;
         srow = TS(xi, :) ;
+        last = find(isnan(xrow), 1) ;
+        if isempty(last)
+            % There were no NaNs! So we filter the whole row
+            last = length(xrow) + 1 ; 
+        end
         rsm = imfilter(xrow(1:last-1), hh, 'replicate') ;
         vsm = imfilter(vrow(1:last-1), hh, 'replicate') ;
         ssm = imfilter(srow(1:last-1), hh, 'replicate') ;
@@ -1975,13 +1990,13 @@ else
     % Save the figure versions
     todo = {LX, LS, TX, TS, LXs, LSs, TXs, TSs} ;
     labels = {'AP position of stripe 7 (raw)', ...
-        'AP stdev of stripe 7 (raw)', ...
+        'AP variance of stripe 7 (raw)', ...
         'AP position of trailing edge stripe 7 (raw)', ...
-        'AP stdev of trailing edge stripe 7 (raw)', ...
+        'AP variance of trailing edge stripe 7 (raw)', ...
         'AP position of stripe 7 (smoothed)', ...
-        'AP stdev of stripe 7 (smoothed)', ...
+        'AP variance of stripe 7 (smoothed)', ...
         'AP position of trailing edge stripe 7 (smoothed)', ...
-        'AP stdev of trailing edge stripe 7 (smoothed)'} ;
+        'AP variance of trailing edge stripe 7 (smoothed)'} ;
     names = {'posL_raw', 'stdL_raw', 'posT_raw', 'stdT_raw', ...
         'posL_smooth', 'stdL_smooth', 'posT_smooth', 'stdT_smooth'} ;
     for i = 1:length(todo)
@@ -2095,7 +2110,6 @@ if redo_optimization || overwrite
         end
         
         % Symmetrize by flipping the stripe also
-        
         for sn = 1:length(stripes)  
             stripe = stripes{sn} ;        
             % Chop into two curves: leading, trailing
@@ -2120,6 +2134,7 @@ if redo_optimization || overwrite
             refcurv(:, 2) = LXs(:, qi) ;
             fun = @(x)ssrCurves(lead + [x(1) x(2)], refcurv, true, true) ;
             shifts = fminsearch(fun, x0) ;
+            % leado is leading edge with shifts 
             leado = lead + [shifts(1), shifts(2)] ;
             % Modulo for wDV
             leado(:, 1) = mod(leado(:, 1), 1) ;
@@ -2129,12 +2144,13 @@ if redo_optimization || overwrite
             % plot(leado(:, 1), leado(:, 2), '.'); hold on;
             % plot(refcurv(:, 1), refcurv(:, 2), '.')
 
-            % trailing optimization
+            % trailing edge optimization
             refcurv = zeros(length(TXs(:, qi)), 2) ;
             refcurv(:, 1) = double(1:length(TXs(:, qi))) / double(length(TXs(:, qi))) ;
             refcurv(:, 2) = TXs(:, qi) ;
             fun = @(x)ssrCurves(trail + [x(1) x(2)], refcurv, true, true) ;
             shifts = fminsearch(fun, x0) ;
+            % trailo is trailing edge with shifts in AP/DV for shape collapse
             trailo = trail + [shifts(1), shifts(2)] ;
             % Modulo for wDV
             trailo(:, 1) = mod(trailo(:, 1), 1) ;
@@ -2144,10 +2160,10 @@ if redo_optimization || overwrite
             trailing = cat(1, trailing, trailo) ;
         end
         
-        
-        % Do stats
+        % Compute statistics 
         dx = 1.0 / size(xx, 1) ;
         edges = 0:dx:1.0 ;
+        % binnedstats returns [midptx, meany, variancey].
         lstat = binnedstats(leading, edges) ;
         tstat = binnedstats(trailing, edges) ;
 

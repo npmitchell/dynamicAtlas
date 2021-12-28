@@ -12,7 +12,9 @@ function vstat = binnedstats(arr, dx)
 % Returns
 % -------
 % vstat : #bins x 3 float array
-%   the bin centers, mean y value in each bin, and variance of values in bin
+%   the bin centers,
+%   mean y value in each bin
+%   variance of values in bin
 %
 % NPMitchell 2020
 

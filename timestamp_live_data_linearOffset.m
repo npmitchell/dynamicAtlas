@@ -1,8 +1,6 @@
-%% MASTER TIMING PIPELINE
-% Master pipeline for building master timelines & timestamping fixed 
-% samples using dynamic timeline.
-% Demos of functionality are shown along the way.
-%
+%% TIMING SCRIPT -- from linear offset of live data wrt master timeline
+% Adding timestamps to live data 
+% 
 % NPMitchell 2020
 
 %% First mount the server onto your machine 
@@ -18,21 +16,50 @@ close all
 % Add time_align_embryos directory to path so that dynamicAtlas package is
 % available to use.
 tlaDir = '/Volumes/minimalData/code/';
-% tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
 cd(fullfile(tlaDir)) ;
+disp(['Adding path to dynamicAtlasCode'])
 addpath(genpath('dynamicAtlasCode')) ;
 cd('dynamicAtlasCode')
+disp(['Adding path to +dynamicAtlasCode'])
 addpath(genpath('+dynamicAtlas'))
 %import dynamicAtlas
 % Atlas path is where the dynamicAtlas resides
 % atlasPath = '/Volumes/minimalData/Atlas_Data' ;
-atlasPath = '/Users/npmitchell/Desktop/Atlas_Data/'
+atlasPath = '/Users/npmitchell/Desktop/Atlas_Data/' ;
 
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
-da_1 = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
+
+
+%% Some offsets computed via |piv|(t) curve collapse
+% Hannah's twist control shh::GFP movies:
+
+sqhT = struct('202006261115', -1, ...
+ '202007011145', 21, ...
+ '202007081130', 13, ...
+ '202007091200', 21, ...
+ '202008131005', 10, ...
+ '202009041145', 11) ;
+
+% Runt::LlamaTag-GFP movies:
+
+runtT = struct('202001210044', 6, ...
+ '202001142033', 27, ...
+ '202001150004', 18, ... % # Noah's master timeline embryo
+ '202001141730', 13) ;
+
+% Runt movies 202001141943, 202001210000 start too late for the inflection point-based PIV method to work. But since you have relative timing between them and the Runt master timeline based on stripes, this should be no problem.
+
+% Eve::YFP movies:
+
+eveT = struct('201406122111', 23, ...
+  '202001201216', -1, ...
+  '202001201716', 24, ...
+  '202001202210', 10) ;
+
 
 %% The properties of da are:
 properties(da)
@@ -44,7 +71,7 @@ methods(da)
 % da.buildLookup({'WT', 'Eve'}) 
 
 %% We can grab all the data from a label within a genotype 
-qs = da.findGenotypeLabel('WT', 'Runt') ;
+qs = da.findGenotypeLabel('WT', 'sqh') ;
 % Now we can see what data lies in this slice via
 qs.meta
 % and we can extract that data via 
