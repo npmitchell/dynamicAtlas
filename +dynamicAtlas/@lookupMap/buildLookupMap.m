@@ -161,7 +161,7 @@ for ii = 1:length(labelDirs)
                                     matchtime_unc_minutes = matchtime_min_unc(:, 2) ;
                                     time_is_matched = true ;
                                 catch
-                                    error(['Error with file: If timestamps stored in txt file, must be two columns with values, uncertainties: ' matmatch])
+                                    error(['Error with file: If timestamps stored in txt file, must be two columns with values, uncertainties: ' fullfile(fnmatch(1).folder, matmatch)])
                                 end
                             else
                                 load(fullfile(fnmatch(1).folder, matmatch), 'matchtime_minutes', 'matchtime_unc_minutes')

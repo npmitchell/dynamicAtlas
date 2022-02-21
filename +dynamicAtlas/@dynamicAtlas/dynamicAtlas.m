@@ -333,7 +333,7 @@ classdef dynamicAtlas < handle
         end
         
         function qs = findStaticGenotypeLabel(da, genotype, label)
-            %FINDDYNAMICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
+            %FINDSTATICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
             %   Give the times, folders, and time uncertainties of all
             %   live samples matching the supplied channel 'label'
             %
