@@ -232,7 +232,51 @@ classdef queriedSample < handle
                 meanIm = double(meanIm) ./ length(dataCell) ;
             end
         end
+                        
+        function ensurePIV(obj, options)
+            % Make sure each embryo in the queriedSample has PIV and
+            % PIV_filtered measurements: one .mat per timepoint
+            nEmbryos = length(obj.meta.folders) ;
+            rescaleFactor = obj.piv.rescaleFactor ;
+            if nargin < 2
+                options = struct() ;
+            end
+            % default options
+            if isfield(options, 'isf')
+                if options.isf ~= rescaleFactor 
+                    error('rescaling factor (isf) passed to ensurePIV does not match dataset global rescaleFactor')
+                end
+            else
+                options.isf = rescaleFactor ;
+            end
+            if ~isfield(options, 'overwrite')
+                options.overwrite = false ;
+            end
+            if isfield(options, 'median_order')
+                median_order = options.median_order ;
+            else
+                median_order = 3 ;
+            end
+            for qq = 1:nEmbryos
                 
+                % check if PIV has already been computed or if we are
+                % overwriting the existing results
+                input_path = fullfile(obj.meta.folders{qq}, 'PIV') ;
+                fns = dir(fullfile(input_path, 'Velo*.mat')) ;
+                recompute = options.overwrite || ~exist(input_path, 'dir') || ...
+                    isempty(fns) ;
+                if recompute
+                    PIVTimeseries(obj.meta.folders{qq}, options) 
+                end
+                % check if filtered PIV already exists
+                output_path = fullfile(obj.meta.folders{qq}, 'PIV_filtered') ;
+                fns = dir(fullfile(output_path, 'Velo*.mat')) ;
+                if options.overwrite || ~exist(output_path, 'dir') || isempty(fns) 
+                    runMedianFilterOnPIVField(input_path, output_path, median_order);
+                end
+            end
+        end
+        
         function dataCell = getSmooth(obj, sigma, step)
             %GETGRADIENTS(obj) 
             %   Load the smoothed TIFFs for all data in this queriedSample

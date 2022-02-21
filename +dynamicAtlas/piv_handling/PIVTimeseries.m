@@ -1,3 +1,4 @@
+function PIVTimeseries(inputDir, options) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %   Using GetPIV we computes the flow field estimate based on an image sequence 
@@ -8,30 +9,55 @@
 %   field overlayed. 
 %   
 %   Written by: Sebastian J Streichan, KITP, February 14, 2013
-%   NPM added histequalize option on 27
+%   NPM added histequalize option and made function
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Name    = 'sqhCherryII_mean_rot_scaled_view1_intensity_scaled.tif';%'cylinder1_rot_scaled_view1.ome.tif';
 Name = 'MAX_Cyl1_2_000000_c1_rot_scaled_view1.tif';
-
-
 StackSize   = length(imfinfo(Name));
 EdgeLength  = 15;   % Length of box edges in pixels; 
-EdgeLength2 = 5;    % Length of boxedges in interpolated field
+% EdgeLength2 = 5;    % Length of boxedges in interpolated field
 isf         = .4;   % image scaling factor. 
 step        = 1;    % stp in timeframes.
 smooth      = 1;    % set to 1 if gaussian smoothing is desired
 KernelSize  = 10;    % Smoothing kernel size
 sigma       = 2;  % standard deviation of gaussian kernel
 histequilize= true ; % equilize histograms of raw data across each image (40x40 bins of image equilized)
+
+if nargin > 1
+    if isfield(options, 'Name')
+        Name = options.Name ;
+    end
+    if isfield(options, 'EdgeLength')
+        EdgeLength = options.EdgeLength ;
+    end
+    if isfield(options, 'isf')
+        isf = options.isf ;
+    end
+    if isfield(options, 'smooth')
+        smooth = options.smooth ;
+    end
+    if isfield(options, 'KernelSize')
+        KernelSize = options.KernelSize ;
+    end
+    if isfield(options, 'sigma')
+        sigma = options.sigma ;
+    end
+    if isfield(options, 'histequilize')
+        histequilize = options.histequilize ;
+    end
+end
+
+%% Define the grid on which to compute the flow field
+% Get image size for defining grid on which to evaluate PIV
 im1 = imread(Name,1);
 im1 = imresize(im1,isf,'bicubic');
 
-%% 
 % define the grid on which to compute the flow field
 [X1,Y1] = meshgrid(EdgeLength/2:EdgeLength:size(im1,1)-EdgeLength/2,EdgeLength/2:EdgeLength:size(im1,2)-EdgeLength/2); 
 
+%% Compute PIV for each frame
 for t = 1:  StackSize-step
     disp(['Running PIV on timestamp t = ' num2str(t)])
 
@@ -58,23 +84,23 @@ for t = 1:  StackSize-step
         VX  = imfilter(VX,fspecial('gaussian',KernelSize,sigma))/step;
         VY  = imfilter(VY,fspecial('gaussian',KernelSize,sigma))/step;
     end
-    VX = VX-nanmean(VX(:));
-    VY = VY-nanmean(VY(:));
-    %VX = VX.*I;
-    %VY = VY.*I;
+    % VX = VX-nanmean(VX(:));
+    % VY = VY-nanmean(VY(:));
+    % VX = VX.*I;
+    % VY = VY.*I;
     
     % Display image and overlay flow field.
-%     imshow(im1',[])
-%     hold on 
-%     f = 10;
-%     quiver(X1,Y1,f*VX,f*VY,0,'g-')
-%     pause(.1)
+    %     imshow(im1',[])
+    %     hold on 
+    %     f = 10;
+    %     quiver(X1,Y1,f*VX,f*VY,0,'g-')
+    %     pause(.1)
     % records a movie
     %M(t)    = getframe(gcf); 
-    if (~exist('PIV', 'dir'))
-        mkdir('PIV')
+    if ~exist(fullfile(inputDir, 'PIV'), 'dir')
+        mkdir(fullfile(inputDir, 'PIV'))
     end
-    save(sprintf('PIV/VeloT_%06d.mat',t),'VX','VY');
+    save(sprintf(fullfile(inputDir, 'PIV', 'VeloT_%06d.mat'),t),'VX','VY');
 
 end
 %play a movie;

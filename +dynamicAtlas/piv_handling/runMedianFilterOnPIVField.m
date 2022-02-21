@@ -69,7 +69,7 @@ for t = 1 : numT
     VY = piv_filtered_y(:,:,t);
     
     %file name used to save the filtered struct
-    save_filename = strcat(output_path, sprintf('/VeloT_medfilt_%06d.mat', t));
+    save_filename = fullfile(output_path, sprintf('/VeloT_medfilt_%06d.mat', t));
     
     %saves the filtered piv for this timepoint to the given file name
     save(save_filename, 'VX', 'VY');

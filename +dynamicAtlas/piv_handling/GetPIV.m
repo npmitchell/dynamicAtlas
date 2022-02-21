@@ -1,4 +1,4 @@
-function [VX,VY] = GetPIV(im1,im2,X1,Y1,EdgeLength)
+function [VX,VY] = GetPIV(im1,im2,X1,Y1,EdgeLength, histequilize)
     
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,9 +11,17 @@ function [VX,VY] = GetPIV(im1,im2,X1,Y1,EdgeLength)
     %   Output are components of the flow fiel on the grid
     %   
     %   Written by: Sebastian J Streichan, KITP, February 01, 2013
+    %   NPM added histeq step (optional)
     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    % Histogram equilization
+    if nargin > 5 
+       if histequilize
+           im1 = histeq(im1) ;
+           im2 = histeq(im2) ;
+       end
+    end
     
     si      = size(im1);
     nb      = ceil(si/EdgeLength);
