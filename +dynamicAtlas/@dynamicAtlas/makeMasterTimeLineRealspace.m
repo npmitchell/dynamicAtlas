@@ -2,6 +2,8 @@ function makeMasterTimeLineRealspace(da, genotype, label, Options)
 % MAKEMASTERTIMELINEREALSPACE(genotype, label, Options)
 %   Build a master timeline for this genotype based on the dynamic
 %   pullbacks contained in genotype/label/ using realspace correlation
+%   (cross correlation between raw intensity of image sequence against each 
+%   other image sequence)
 %   
 % Parameters
 % ----------
@@ -28,7 +30,7 @@ function makeMasterTimeLineRealspace(da, genotype, label, Options)
 % NPMitchell 2020
 
 %% -I. Declaration
-corr_method = 'realspace' ; % realspace for correlation 
+corr_method = 'realspace' ; % realspace for direct cross correlation, 'phase' for phase correlation between images
 
 %% 0. Preparations
 % General options
@@ -346,7 +348,7 @@ for ii = 1:length(expts)
     loaded_ii = false ;
     for jj = 1:length(expts)
         % Define the correlation matrix filename
-        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
+        ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ; % corrmethod is included in extn
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
         disp(['Seeking cfn = ' cfn])
         
@@ -463,7 +465,7 @@ for ii = 1:length(expts)
             xlabel(['timepoint for dataset ' exptIDs{jj}])
             ylabel(['timepoint for dataset ' exptIDs{ii}])
             axis equal
-            cfn = fullfile(corrDatOutDir, ['cij' ijstr '.png']) ;
+            cfn = fullfile(corrDatOutDir, ['cij' ijstr '_' corr_method '.png']) ;
             cb = colorbar() ;
             ylabel(cb, 'correlation')
             set(gca,'YDir','normal')
@@ -501,7 +503,9 @@ for ii = 1:length(expts)
                 set(gca,'YDir','normal')
                 axis tight
                 title('phase correlation offset \deltay')
-                saveas(gcf, cfn)           
+                saveas(gcf, cfn)     
+            else
+                disp(['method was not phase, simply compared the two images'])
             end
         else
             disp('Skipping since already done')
@@ -531,7 +535,8 @@ for ii = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
-        disp(['Seeking cfn = ' cfn])
+        disp(['Seeking corrPath ' cpathfn])
+        disp(['   -> for path on correlation from cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
                 
         % Decide to compute the correlations or not
@@ -630,7 +635,7 @@ for ii = 1:length(expts)
                 tpath(tq, 2) = ind ;
             end
             
-            % Use correlation heatmap
+            % Use correlation heatmap to extract correspondence curve
             close all
             imagesc(cij);
             hold on;
@@ -665,7 +670,7 @@ for ii = 1:length(expts)
                 elseif button && (strcmp(get(gcf, 'CurrentKey'), 'delete') || strcmp(get(gcf, 'CurrentKey'), 'n') )
                     abort = true ;
                     good_button = true ;
-                    move_on = true
+                    move_on = true ;
                 end
             end
             
@@ -1205,7 +1210,7 @@ for ii = 1:length(expts)
             % Save cij, dxij, dyij        
             save(cfn, 'cij') 
             
-            % Plot heatmap of phase correlations, dxs, and dys
+            % Plot heatmap of similarity between curves, dxs, and dys
             close all
             imagesc(cij)
             xlabel(['timepoint for dataset ' exptIDs{jj}])
@@ -1302,7 +1307,10 @@ else
     
     % Save the time-time corr cell, along with the exptIDs it indexes
     hard_reference_ID = exptIDs{hard} ;
-    save(ttcfn, 'ttc', 'exptIDs', 'hard', 'hard_reference_ID')
+    readme = ['ttc{i}{j} contains the contents of correspondence_i_j_exten.mat. ',  ...
+        'This means that ttc{i}{j}(p,1) contains the timestamp of timeline i ', ...
+        'corresponding to the ttc{i}{j}(p,2) indexed timepoint of timeline j.'] ;
+    save(ttcfn, 'ttc', 'exptIDs', 'hard', 'hard_reference_ID', 'readme')
 end
 
 % Plot the dynamics

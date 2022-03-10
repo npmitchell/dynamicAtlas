@@ -105,12 +105,12 @@ else
             % refine by eroding + dilating
             minmaxsz = [minsz, maxsz ] ; 
             [bw, bw2, good_enough, move_on, placement] = ...
-                morphologicalOpLoop(bw, dcrop, placement, thres, minmaxsz) ;
+                morphologicalOpLoop(bw, dcrop, placement, thres, minmaxsz,msg) ;
             disp('end of routine e/d')
         elseif button && (strcmp(get(gcf, 'CurrentKey'), 'a') || ...
                 strcmp(get(gcf, 'CurrentKey'), 'p'))
             [bw, bw2, placement] = ...
-                anteriorMoveSegmentation(bw, placement, minsz, maxsz) ;
+                anteriorMoveSegmentation(bw, placement, minsz, maxsz,msg) ;
             disp('end of routine a')
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'u')
             % recall current state [ie UNDO]

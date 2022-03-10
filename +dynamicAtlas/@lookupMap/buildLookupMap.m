@@ -1,5 +1,6 @@
 function [map] = buildLookupMap(lum, options) 
 %BUILDLOOKUPMAPTIMING Principal function for lookupTable Class object construction
+% This builds a searchable object indexing datasets in a lookupMap
 %
 % Parameters
 % ----------

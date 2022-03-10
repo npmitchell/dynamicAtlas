@@ -1,5 +1,5 @@
 function [bw, bw2, placement, button] = ...
-    anteriorMoveSegmentation(bw, placement, minsz, maxsz)
+    anteriorMoveSegmentation(bw, placement, minsz, maxsz,msg)
 %ANTERIORMOVESEGMENTATION(bw, placement, minsz, maxsz)
 %   Select a region of the BW segmented image that is anterior or posterior
 % to current selection (indexed by 'placement') to find stripe 7
@@ -57,7 +57,7 @@ while (strcmp(get(gcf, 'CurrentKey'), 'a') || ...
     end
     % [~, ind] = max(centry) ;
     [~, sortind] = sort(centry) ;
-    bw2 = false(size(dcrop)) ;
+    bw2 = false(size(bw)) ;
     ind = min(length(sortind), ...
         max(1, length(sortind)-placement)) ;
     bw2(cc.PixelIdxList{sortind(ind)}) = true ;

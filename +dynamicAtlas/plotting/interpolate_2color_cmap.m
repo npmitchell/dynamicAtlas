@@ -87,9 +87,14 @@ end
         b = Lab(3);
 
         M = sqrt(L*L + a*a + b*b);
-        s = (M > 0.001) * acos(L/M);
-        h = (s > 0.001) * atan2(b,a);
-
+        if M > 0.001
+            s = acos(L/M);
+            h = atan2(b,a);
+        else
+            s = 0 ;
+            h = 0 ;
+        end
+        
         Msh = [M s h];
     end
 

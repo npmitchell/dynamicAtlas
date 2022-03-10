@@ -1,5 +1,5 @@
-function [chisq, chisqn, ssr, ssr_raw] = chisquareCurves(curv, refcurvsX, ...
-    refcurvsY, refvars, smooth_var, optimize_translation)
+function [chisq, chisqn, ssr, ssr_raw, shifts] = chisquareCurves(curv, refcurvsX, ...
+    refcurvsY, refvariance, LperiodicX, LperiodicY, smooth_var, optimize_translation, preview)
 % chisquareCurves(curv, refcurvs, refvar, take_mean, symmetrize)
 % 
 % todo: enable refcurvs and refvar to be cell instead of 2D array
@@ -14,6 +14,14 @@ function [chisq, chisqn, ssr, ssr_raw] = chisquareCurves(curv, refcurvsX, ...
 %   an array of y coordinates to compare to curv to generate a chisquared
 % refvars : N x 1 float array
 %   variance of the reference curve at each evaluation site (refcurvsX)
+% LperiodicX : length 1 float
+%   if first dimension is periodic, give length for modulo
+% LperiodicY : length 1 float
+%   if second dimension is periodic, give height for modulo
+% smooth_var : positive definite or false
+%   fractional width along curve for which to smooth the variance using
+%   moving median filter
+%   
 %
 % Returns
 % -------
@@ -49,7 +57,7 @@ for ii = 1:size(refcurvsY, 1)
     refcurvY = refcurvsY(ii, :) ;
     
     refcurv = [ refcurvX(:), refcurvY(:) ] ;
-    refvar = refvars(ii, :) ;
+    refvar = refvariance(ii, :) ;
     
     % mask zeros in variance
     refvar(refvar == 0) = NaN ;
@@ -63,8 +71,37 @@ for ii = 1:size(refcurvsY, 1)
         symmetrize = true ;
         fun = @(x)ssrCurves(curv + [x(1) x(2)], refcurv, ...
             take_mean, symmetrize) ;
-        options = optimset('TolX', 1e-3, 'TolFun', 0.001);
+        options = optimset('TolX', 1e-3, 'TolFun', 0.00001);
         shifts = fminsearch(fun, x0, options) ;
+        disp(['optimal translation = ', num2str(shifts)])
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if preview
+            clf
+            subplot(1, 2, 1)
+            if smooth_var
+                var2plot = movmedian(refvar, smooth_var * length(refvar), 'omitnan') ;
+            else
+                var2plot = refvar ;
+            end
+            errorbar(refcurv(:, 1), refcurv(:, 2), [], [], sqrt(var2plot), sqrt(var2plot))
+            hold on;
+            plot(curv(:, 1), curv(:, 2), '.') ;
+            plot(curv(:, 1)+ shifts(1), curv(:, 2)+shifts(2), '.')
+            legend({'reference', 'curve', 'optimal curve'})
+            hold off;
+            axis equal
+            subplot(1, 2, 2)
+            plot(chisq, '.-')
+            if nargout > 1
+                yyaxis right
+                plot(chisqn, '.-')
+            end
+            sgtitle(['t= ' num2str(ii) '/' num2str(size(refcurvsY, 1))])
+            
+            pause(1e-7)
+        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         % Get raw SSR if requested
         if nargout > 3
@@ -74,8 +111,14 @@ for ii = 1:size(refcurvsY, 1)
         % Now offset the curve for optimization
         curv = curv + [shifts(1), shifts(2)] ;
         
-        % Modulo for wDV
-        curv(:, 1) = mod(curv(:, 1), 1) ;
+        % Modulo for periodic AP
+        if LperiodicX
+            curv(:, 1) = mod(curv(:, 1), LperiodicX) ;
+        end
+        % Modulo for periodic DV
+        if LperiodicY
+            curv(:, 2) = mod(curv(:, 2), LperiodicY) ;
+        end
     else
         % no need to optimize, so ssr will be the same as ssr_raw
         if nargout > 3
@@ -89,7 +132,7 @@ for ii = 1:size(refcurvsY, 1)
     % Should we smooth the variance over the whole curve?
     if smooth_var
         % yes, smooth the variance by taking mean variance
-        chisq(ii) = nansum(dists' ./ nanmean(refvar(idx)), 2) ;
+        chisq(ii) = nansum(dists' ./ movmedian(refvar(idx), smooth_var * length(idx), 'omitnan'), 2) ;
     else
         % no, use position-dependent variance (may give some nans if
         % variance goes to zero anywhere)

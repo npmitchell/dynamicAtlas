@@ -18,8 +18,8 @@ close all
 % available to use.
 % tlaDir = '/Volumes/minimalData/code/';
 % tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
-% tlaDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/dynamicAtlas/code';
-tlaDir = '/mnt/data/code/';
+tlaDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/dynamicAtlas/code';
+% tlaDir = '/mnt/data/code/';
 
 cd(fullfile(tlaDir)) ;
 addpath(genpath('dynamicAtlas')) ;
@@ -30,29 +30,53 @@ addpath(genpath('+dynamicAtlas'))
 % Define atlasPath to be where the dynamicAtlas resides (the parent
 % dynamicAtlas directory, not the project directory '+dynamicAtlas')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%atlasPath = '/Volumes/minimalData/Atlas_Data' ;
+% atlasPath = '/Volumes/minimalData/Atlas_Data' ;
 %atlasPath = '/Users/mattlefebvre/Desktop/WT_data_server/'
-% atlasPath = '/Volumes/Elements/Atlas_Data' ;
-atlasPath = '/run/user/1001/gvfs/afp-volume:host=flydrive.local,user=npmitchell,volume=minimalData/Atlas_Data/' ;
+atlasPath = '/Volumes/Elements/Atlas_Data' ;
+% atlasPath = '/run/user/1001/gvfs/afp-volume:host=flydrive.local,user=npmitchell,volume=minimalData/Atlas_Data/' ;
 
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
 options = struct() ;
-options.labels = {'endoECad-GFP', 'ECad-GFP'} ;
-da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
+% options.labels = { 'Runt'} ;  %'histone-mCherry' 'histone-RFP'} ; % '
+% da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
+
+options.labels = {'headIllumination', 'singlePlaneIllumination', 'moesin-GFP', 'utr-mCherry'} ;
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'optoRhoGEF2_sqhCherry', 'WT'}, options) ;
+
+%% Build average flow field at each point in time
+genotype = 'optoRhoGEF2_sqhCherry' ;
+label = 'headIllumination' ;
+qs = da.findDynamicGenotypeLabel(genotype, label) ;
+
+options = struct() ;
+options.method = 'default';
+qs.ensurePIV(options) ;
+
+%% Build average flow field at each point in time
+genotype = 'WT' ;
+label = 'moesin-GFP' ;
+qs = da.findDynamicGenotypeLabel(genotype, label) ;
+options = struct() ;
+options.method = 'default';
+qs.ensurePIV(options) ;
+
+label = 'utr-mCherry' ;
+qs = da.findDynamicGenotypeLabel(genotype, label) ;
+options = struct() ;
+options.method = 'default';
+qs.ensurePIV(options) ;
 
 %% Search for dynamic data 
 genotype = 'WT' ;
 % label = 'sqh-mCherry' ;
-label = 'endoECad-GFP' ;
+% label = 'histone-mCherry' ;
+label = 'Runt' ;
 qs = da.findDynamicGenotypeLabel(genotype, label) ;
+qs = da.findStaticGenotypeLabel(genotype, label) ;
 
-
-%% Build average flow field at each point in time
-options = struct() ;
-qs.ensurePIV(options) ;
 
 %% Create an ensemble reference Runt image and advect along pathlines
 % Note there is a 12 minute difference between PIV timeline and Runt

@@ -16,9 +16,10 @@ function runMedianFilterOnPIVField(input_PIV_path, output_path, median_order)
 % which have been run through median filter
 % 
 %
-% Vishank Jain-Sharma 2020
+% Vishank Jain-Sharma 2020, edits NPMitchell 2022
 
 %navigate to path with all the original PIV mat structures
+currentDir = cd ;
 cd(input_PIV_path)
 
 %finds all .mat files within the directory
@@ -37,6 +38,7 @@ piv_master_x = zeros(dim1, dim2, numT);
 piv_master_y = zeros(dim1, dim2, numT);
 
 %loads in all the PIV structures for X and Y components separately
+disp('loading PIV results')
 for t = 1 : numT
     piv_temp = load(fullfile(input_PIV_path, d(t).name));
     piv_master_x(:,:,t) = piv_temp.VX;
@@ -50,15 +52,18 @@ piv_filtered_y = zeros(dim1, dim2, numT);
 %performs median filter on each vector in time in the array, will be 
 %dim1*dim2 medfilt1 operations performed. Uses median_order for order of
 %medfilt1, representing the number of entries which median is taken over
+disp('filtering PIV results')
 for i = 1 : dim1
     for j = 1 : dim2
-        piv_filtered_x(i,j,:) = medfilt1(piv_master_x(i,j,:), median_order);
-        piv_filtered_y(i,j,:) = medfilt1(piv_master_y(i,j,:), median_order);
+        piv_filtered_x(i,j,:) = medfilt1m(piv_master_x(i,j,:), median_order);
+        piv_filtered_y(i,j,:) = medfilt1m(piv_master_y(i,j,:), median_order);
     end
 end
 
 %makes output directory
-mkdir(output_path);
+if ~exist(output_path, 'dir')
+    mkdir(output_path);
+end
 
 %extracts components from each timepoint, puts into struct, and saves
 %to output_path folder
@@ -69,13 +74,24 @@ for t = 1 : numT
     VY = piv_filtered_y(:,:,t);
     
     %file name used to save the filtered struct
-    save_filename = fullfile(output_path, sprintf('/VeloT_medfilt_%06d.mat', t));
+    fnEnding = strsplit(d(t).name, 'VeloT_') ;
+    save_filename = fullfile(output_path, sprintf('VeloT_medfilt_%s', fnEnding{2}));
+    
+    clf
+    subplot(1, 2, 1)
+    imagesc(VX)
+    colorbar; title(['$v_x$, t=' num2str(t)], 'interpreter', 'latex')
+    subplot(1, 2, 2)
+    imagesc(VY)
+    colorbar; title(['$v_y$, t=' num2str(t)], 'interpreter', 'latex')
+    pause(0.1)
     
     %saves the filtered piv for this timepoint to the given file name
     save(save_filename, 'VX', 'VY');
     
     clear VX VY
 end
+cd(currentDir)
 
 
 end

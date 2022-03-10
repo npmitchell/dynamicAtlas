@@ -1,5 +1,5 @@
 function [bw, bw2, good_enough, move_on, placement] =...
-    morphologicalOpLoop(bw, dcrop_orig, placement, thres, minmaxsz)
+    morphologicalOpLoop(bw, dcrop_orig, placement, thres, minmaxsz, msg)
 %MORPHOLOGICALOPLOOP(bw, dcrop_orig, placement, thres, minmaxsz)
 %   Loop to extract mask segmentation by iterative dilation & erosion
 % 
@@ -52,7 +52,7 @@ while (strcmp(get(gcf, 'CurrentKey'), 'e') || ...
     % recall current state later as bwprev
     bwprevA = bw2 ;
     % Filter out small regions
-    bw = bwareafilt(bw, [minsz maxsz]) ;
+    bw = bwareafilt(bw, minmaxsz) ;
     cc = bwconncomp(bw) ;
     rp = regionprops(cc) ;
     centry = zeros(length(rp), 1) ;
@@ -80,7 +80,7 @@ while (strcmp(get(gcf, 'CurrentKey'), 'e') || ...
         % Filter out small regions
         bw2 = bwareafilt(bw, minmaxsz) ;
     else
-        bw2 = false(size(dcrop)) ;
+        bw2 = false(size(bw)) ;
         bw2(cc.PixelIdxList{sortind(end-placement)}) = true ;
     end
     % Show the image

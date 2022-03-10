@@ -237,6 +237,8 @@ classdef dynamicAtlas < handle
             % genotype : str
             % stain : str
             % Options : struct with optional fields
+            %   method : optional char, default='stripe7' 
+            %       method by which we timestamp this embryo
             %   save_fancy : optional bool, default=true
             %   overwrite : optional bool, default=false
             %       overwrite previous results
@@ -268,7 +270,17 @@ classdef dynamicAtlas < handle
             % -------
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.mat
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.txt
-            timeStampStripe7(da, genotype, label, Options)
+            if nargin < 4
+                Options = struct() ;
+            end
+            if isfield(Options, 'method')
+                method = Options.method ;
+            else
+                method = 'stripe7' ;
+            end
+            if strcmpi(method, 'stripe7')
+                timeStampStripe7(da, genotype, label, Options)
+            end
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -307,17 +319,18 @@ classdef dynamicAtlas < handle
                 genoKey = genoKeys{ii} ;
                 lum = da.lookup(genoKey) ;
                 tstruct = lum.findTime(tfind, eps) ;
-                if ~isempty(tstruct.embryoIDs)
-                    for qq = 1:length(tstruct.embryoIDs)
+                tmeta = tstruct.meta ;
+                if ~isempty(tmeta.embryoIDs)
+                    for qq = 1:length(tmeta.embryoIDs)
                         genotypes{length(genotypes) + qq} = genoKey ; 
-                        labels{length(labels) + qq} = tstruct.labels{qq} ; 
-                        folders{length(folders) + qq} = tstruct.folders{qq} ; 
-                        names{length(names) + qq} = tstruct.names{qq} ; 
-                        embryoIDs{length(embryoIDs) + qq} = tstruct.embryoIDs{qq} ; 
+                        labels{length(labels) + qq} = tmeta.labels{qq} ; 
+                        folders{length(folders) + qq} = tmeta.folders{qq} ; 
+                        names{length(names) + qq} = tmeta.names{qq} ; 
+                        embryoIDs{length(embryoIDs) + qq} = tmeta.embryoIDs{qq} ; 
                     end
-                    times = [times, tstruct.times] ;
-                    uncs = [times, tstruct.uncs] ;
-                    tiffpages = [times, tstruct.tiffpages] ;
+                    times = [times, tmeta.times] ;
+                    uncs = [times, tmeta.uncs] ;
+                    tiffpages = [times, tmeta.tiffpages] ;
                 end 
             end
             outstruct = struct() ;
@@ -344,13 +357,23 @@ classdef dynamicAtlas < handle
             % 
             % Outputs
             % -------
-            % lum : struct with fields
-            %   folders : Nx1 cell array of paths to label data
-            %   names : Nx1 cell array of label data filenames
-            %   embryoIDs : Nx1 cell array of embryoIDs
-            %   times : Nx1 cell array of timestamps (each could be array)
-            %   unc : Nx1 cell array of timestamp uncertainties
-            %   nTimePoints : Nx1 int array of #timepoints in each dataset
+            % qs : queriedSample class instance
+            %   queriedSample with properties
+            %   meta: struct with fields
+            %       folders : Nx1 cell array of paths to label data
+            %       names : Nx1 cell array of label data filenames
+            %       embryoIDs : Nx1 cell array of embryoIDs
+            %       times : Nx1 cell array of timestamps (each could be array)
+            %       unc : Nx1 cell array of timestamp uncertainties
+            %       nTimePoints : Nx1 int array of #timepoints in each dataset
+            %   data : initially empty cell of data images
+            %       can be populated via qs.getData()
+            %   gradients : initially empty cell of gradient images
+            %       can be populated via qs.getGradients()
+            %   smooth : initially empty cell of smoothed data images
+            %       can be populated via qs.getSmooth()
+            %   PIV : initially empty cell of velocity fields
+            %       can be populated via qs.getPIV()
             qs = da.lookup(genotype).findStaticLabel(label) ;
         end
         
@@ -384,6 +407,41 @@ classdef dynamicAtlas < handle
             %   PIV : initially empty cell of velocity fields
             %       can be populated via qs.getPIV()
             qs = da.lookup(genotype).findDynamicLabel(label) ;
+        end
+            
+        function qs = findDynamicGenotypeLabelTime(da, genotype, label, time, deltaT)
+            %FINDDYNAMICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
+            %   Give the times, folders, and time uncertainties of all
+            %   live samples matching the supplied channel 'label'
+            %
+            % Parameters
+            % ----------
+            % genotype : str, the genotype in which to search
+            % label : string, label name (ex 'Eve' or 'Runt')
+            % time : target timestamp to search for within da instance
+            % deltaT : range of acceptable times are time+/-deltaT
+            % 
+            % Outputs
+            % -------
+            % qs : queriedSample class instance
+            %   queriedSample with properties
+            %   meta: struct with fields
+            %       folders : Nx1 cell array of paths to label data
+            %       names : Nx1 cell array of label data filenames
+            %       embryoIDs : Nx1 cell array of embryoIDs
+            %       times : Nx1 cell array of timestamps (each could be array)
+            %       unc : Nx1 cell array of timestamp uncertainties
+            %       nTimePoints : Nx1 int array of #timepoints in each dataset
+            %   data : initially empty cell of data images
+            %       can be populated via qs.getData()
+            %   gradients : initially empty cell of gradient images
+            %       can be populated via qs.getGradients()
+            %   smooth : initially empty cell of smoothed data images
+            %       can be populated via qs.getSmooth()
+            %   PIV : initially empty cell of velocity fields
+            %       can be populated via qs.getPIV()
+            lum = da.lookup(genotype) ;
+            qs = lum.findDynamicLabelTime(label, time, deltaT) ;
         end
             
         function qs = findDynamicGenotypeLabelWithPIV(da, genotype, label)

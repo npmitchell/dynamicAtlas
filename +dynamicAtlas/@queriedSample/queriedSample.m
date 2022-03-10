@@ -4,6 +4,13 @@ classdef queriedSample < handle
     %   Holds a subset of embryos in the atlas and offers methods for
     %   interrogating the properties of those embryos, such as loading the
     %   data, smoothed data, gradients, flow fields.
+    %
+    %   Note that a queriedSample can slice across embryos, labels, 
+    %   genotypes, or timestamps. There are few restrictions about what
+    %   kinds of embryos can be contained in the queried sample. For
+    %   example, da.findTime() will return a queriedSample of all embryos
+    %   of any genotype in the da (dynamicAtlas instance) that match a
+    %   timestamp range.
     %   
     % Properties
     % ----------
@@ -39,6 +46,7 @@ classdef queriedSample < handle
         data                    % cell array of images
         gradients = struct()    % struct with fields dx, dy, mag
         smooth                  % cell array of images
+        dynamicAtlas            % dynamicAtlas object from which qs is made
         piv = struct('vx', [], ...
             'vy', [], ...
             'rescaleFactor', 0.4)   % cell array of velocity fields
@@ -49,8 +57,16 @@ classdef queriedSample < handle
     
     methods
         function obj = queriedSample(sampleStruct)
+            % sampleStruct:  struct with fields 
+            %   labels, folders, names, ...
+            %   embryoIDs, times, uncs, tiffpages, nTimePoints
             obj.meta = sampleStruct ;
         end
+        
+        % function obj = findTime()
+        % It is not idiomatic to findTime() here, instead use LUM
+        
+        timeStamp(obj, da, genotype, label, options)
         
         function dataCell = getData(obj)
             %GETDATA(obj) Load the TIFFs for all data in this queriedSample
@@ -264,14 +280,14 @@ classdef queriedSample < handle
                 input_path = fullfile(obj.meta.folders{qq}, 'PIV') ;
                 fns = dir(fullfile(input_path, 'Velo*.mat')) ;
                 recompute = options.overwrite || ~exist(input_path, 'dir') || ...
-                    isempty(fns) ;
+                    (length(fns)<(obj.meta.nTimePoints(qq)-1)) ;
                 if recompute
                     PIVTimeseries(obj.meta.folders{qq}, options) 
                 end
                 % check if filtered PIV already exists
                 output_path = fullfile(obj.meta.folders{qq}, 'PIV_filtered') ;
-                fns = dir(fullfile(output_path, 'Velo*.mat')) ;
-                if options.overwrite || ~exist(output_path, 'dir') || isempty(fns) 
+                ffns = dir(fullfile(output_path, 'Velo*.mat')) ;
+                if options.overwrite || ~exist(output_path, 'dir') || length(ffns) < length(fns) 
                     runMedianFilterOnPIVField(input_path, output_path, median_order);
                 end
             end
@@ -420,6 +436,7 @@ classdef queriedSample < handle
                     obj.piv.vx{qq} = vxcollection ;
                     obj.piv.vy{qq} = vycollection ;
                 else
+                    % There is only one timepoint in this dataset (fixed)
                     timestamp = obj.meta.tiffpages(qq) ;
                     pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
                         sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;

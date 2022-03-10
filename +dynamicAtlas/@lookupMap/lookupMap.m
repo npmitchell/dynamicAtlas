@@ -119,7 +119,7 @@ classdef lookupMap < handle
         function qs = findTime(obj, tfind, eps)
             %FINDTIME(tfind, eps) Find all instances with time near tfind
             %   Give the labels, folders, and time uncertainties of all
-            %   stained samples matching the supplied time tfind, within
+            %   samples matching the supplied time tfind, within
             %   a value eps of that time. Returns an output struct.
             %
             % Parameters
@@ -127,6 +127,11 @@ classdef lookupMap < handle
             % obj : the class instance of lookup
             % tfind : float or int timestamp
             % eps : optional, the allowed difference from tstamp
+            %
+            % Returns
+            % -------
+            % qs : QueriedSample instance
+            %   QueriedSample containing all samples with matching time
             
             if nargin < 3
                 eps = 0.5 ;
@@ -238,6 +243,56 @@ classdef lookupMap < handle
             qs = dynamicAtlas.queriedSample(buildStructWrtTime(obj, 'dynamic', label2find)) ;
         end
         
+        function qs = findStaticLabelTime(obj, label2find, tfind, deltaT)
+            %FINDSTATICLABELTIME(label2find, tfind, deltaT) Find dynamic embryos with label
+            %   Give the times, folders, and time uncertainties of all
+            %   live samples matching the supplied channel 'label'
+            %   at timestamps in range tfind-deltaT < t < tfind+deltaT.
+            %
+            % Parameters
+            % ----------
+            % obj : the class instance of lookup
+            % label2find : string, label name (ex 'Eve' or 'Runt')
+            % tfind : timestamp to search for (within tfind+/- deltaT)
+            % deltaT : halfwidth of range of times for which to search
+            %
+            % Returns
+            % -------
+            % qs : queriedSample instance
+            %   collection of the data matching criteria, as queriedSample 
+            %   class instance
+            qs = dynamicAtlas.queriedSample(buildStructWrtTime(obj, 'static', label2find, tfind, deltaT)) ;
+        end
+        
+        function qs = findDynamicLabelTime(obj, label2find, tfind, deltaT)
+            %FINDDYNAMICLABELTIME(label2find, tfind, deltaT) Find dynamic embryos with label
+            %   Give the times, folders, and time uncertainties of all
+            %   dynamic/live samples matching the supplied channel 'label' 
+            %   at timestamps in range tfind-deltaT < t < tfind+deltaT.
+            %
+            % Parameters
+            % ----------
+            % obj : the class instance of lookup
+            % label2find : string, label name (ex 'Eve' or 'Runt')
+            % tfind : timestamp to search for (within tfind+/- deltaT)
+            % deltaT : halfwidth of range of times for which to search
+            %
+            % Returns
+            % -------
+            % qs : queriedSample instance
+            %   collection of the data matching criteria, as queriedSample 
+            %   class instance
+            if nargin < 3
+                tfind = 1 ;
+            end
+            if nargin < 4
+                deltaT = 1 ;
+            end
+            tmp = buildStructWrtTime(obj, 'dynamic', label2find, tfind, deltaT) ;
+            
+            qs = dynamicAtlas.queriedSample(tmp) ;
+        end
+               
         function qs = findLabelTime(obj, label2find, tfind, eps)
             %FINDLABELTIME(label2find, tfind, eps)
             %   Give the times, folders, and time uncertainties of all
@@ -373,8 +428,8 @@ classdef lookupMap < handle
             qs = dynamicAtlas.queriedSample(estruct) ;
         end
         
-        % Util methods
-        outstruct = buildStructWrtTime(obj, timestr, label2find) ;
+        % Util methods 
+        outstruct = buildStructWrtTime(obj, timestr, label2find, tfind, deltaT) ;
         
     end
     

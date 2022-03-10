@@ -37,9 +37,11 @@ function [xstar, err, fit_coefs, nidx, pidx] = ...
 if nargin < 6 
     dataframe = [] ;
     refcurves = [] ;
+    datacurve = [] ;
 else
     dataframe = dataStruct.dataframe ;
     refcurves = dataStruct.refcurves ;
+    datacurve = dataStruct.datacurve ;
 end
 if isempty(dataframe) 
     do_overlay = false ;
@@ -102,6 +104,7 @@ end
 % Iteratively update fit domain
 fig = figure('visible', 'on') ;
 fit_is_fine = false ;
+first = true ;
 while ~fit_is_fine
     id2fit = nidx:pidx ;  
     c2fit = chisq(id2fit) ;
@@ -149,21 +152,37 @@ while ~fit_is_fine
     
     % If we have data to overlay, make two subpanels
     if do_overlay
-        subplot(1, 2, 1)    
+        subh = subplot(1, 2, 1) ;
     end
     plot(chisq, '.-')
     hold on;
     yy = polyval(fit_coefs.p, timedense, fit_coefs.S, fit_coefs.mu) ;
     plot(timedense, yy, '--')
     plot(nidx:pidx, chisq(nidx:pidx), 'o')
-    if length(ssr) == length(chisq) 
-        plot(1:length(chisq), ssr / ssr(idx), 'x')
-    end
     errorbar(xstar, cstar, err, 'horizontal')
-    ylim([min(cstar * 1.1, 0), max(30, cstar * 2)])
+    if first
+        ylim([min(cstar * 1.1, 0), max(30, cstar * 2)])
+    else
+        xlim(xlims)
+        ylim(ylimsL)
+    end
+    ylabel('\chi^2 / N')
+    
+    % Absolute SSR on right axis
+    yyaxis right
+    if length(ssr) == length(chisq) 
+        plot(1:length(chisq), ssr, 'x')
+    end
+    if ~first
+        xlim(xlims)
+        ylim(ylimsR)
+    end
+    % Go back to controling left axis
+    yyaxis left
+    
+    ylabel('Sum of squared residuals between stripe and reference stripe')
     %xlims = xlim() ;
     xlim([0 length(chisq)])
-    ylabel('\chi^2 / N')
     xlabel('time')
     legend({'$\chi^2/N$', 'fit', 'data for fit',...
         '$\Sigma(x-\bar{x})^2$ (normalized)'}, ...
@@ -181,6 +200,7 @@ while ~fit_is_fine
         xcurv = squeeze(refcurves(:, indx, 1)) ;
         ycurv = squeeze(refcurves(:, indx, 2)) ;
         plot(xcurv * size(dataframe, 2), ycurv * size(dataframe, 1), '.')
+        plot(datacurve(:, 1)* size(dataframe, 2), datacurve(:, 2)* size(dataframe, 1), '-') ;
     end
     
     % Update domain
@@ -195,27 +215,39 @@ while ~fit_is_fine
             nidx0 = nidx ;
             nidx = min(pidx - 2, nidx + 1) ;
             pidx = max(nidx0 + 2, pidx - 1) ;
-            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'uparrow')
             move_on = true;
             nidx = max(1, nidx - 1) ;
             pidx = min(length(chisq), pidx + 1) ;
-            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'rightarrow')
             move_on = true;
             nidx = min(pidx - 2, nidx + 1) ;
             pidx = min(length(chisq), pidx + 1) ;
-            clf
         elseif button && strcmp(get(gcf, 'CurrentKey'), 'leftarrow')
             move_on = true;
             nidx = max(1, nidx - 1) ;
             pidx = max(nidx + 2, pidx - 1) ;
-            clf
         end
         if ~move_on
             disp('Bad button press, try again: Enter, up, or down arrow')
         end
     end  
+    
+    % Get xylims for left axis and clear figure to update
+    if do_overlay
+        set(gcf, 'currentaxes', subh)
+    end
+    xlims = xlim ;
+    yyaxis left
+    ylimsL = ylim ;
+    yyaxis right
+    ylimsR = ylim ;
+    first = false ;
+
+    % clear figure to update
+    if ~fit_is_fine
+        clf
+    end
 end
 
 

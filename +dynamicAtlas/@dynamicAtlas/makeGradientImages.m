@@ -36,9 +36,9 @@ if nargin < 2
     selectedLabels = [] ;
 end
 if nargin < 3
-    sigmas = [5, 10, 20, 30, 50] ; 
+    sigmas = [20] ; 
 elseif isempty(sigmas)
-    sigmas = [5, 10, 20, 30, 50] ; 
+    sigmas = [20] ; 
 end
 if nargin < 4
     steps = [1] ;
