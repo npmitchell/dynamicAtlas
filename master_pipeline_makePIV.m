@@ -40,19 +40,19 @@ atlasPath = '/Volumes/Elements/Atlas_Data' ;
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
 options = struct() ;
-% options.labels = { 'Runt'} ;  %'histone-mCherry' 'histone-RFP'} ; % '
-% da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
+options.labels = { 'Runt'} ;  %'histone-mCherry' 'histone-RFP'} ; % '
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
-options.labels = {'headIllumination', 'singlePlaneIllumination', 'moesin-GFP', 'utr-mCherry'} ;
-da = dynamicAtlas.dynamicAtlas(atlasPath, {'optoRhoGEF2_sqhCherry', 'WT'}, options) ;
-
-%% Build average flow field at each point in time
-genotype = 'optoRhoGEF2_sqhCherry' ;
-label = 'headIllumination' ;
-qs = da.findDynamicGenotypeLabel(genotype, label) ;
-
+%% Build flow field at each point in time using PIVLab
+qs = da.findDynamicGenotypeLabel('WT', 'Runt') ;
 options = struct() ;
-options.method = 'default';
+options.method = 'pivlab'; % 'default' is the other option
+qs.ensurePIV(options) ;
+
+%% Compute PIV for a single embryo
+qs = da.findEmbryo('202001142033') ;
+options = struct() ;
+options.method = 'pivlab'; % 'default' is the other option
 qs.ensurePIV(options) ;
 
 %% Build average flow field at each point in time
