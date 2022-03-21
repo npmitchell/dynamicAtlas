@@ -253,6 +253,7 @@ classdef queriedSample < handle
             % Make sure each embryo in the queriedSample has PIV and
             % PIV_filtered measurements: one .mat per timepoint
             nEmbryos = length(obj.meta.folders) ;
+            method = 'default' ;
             rescaleFactor = obj.piv.rescaleFactor ;
             if nargin < 2
                 options = struct() ;
@@ -264,6 +265,16 @@ classdef queriedSample < handle
                 end
             else
                 options.isf = rescaleFactor ;
+            end
+            if isfield(options, 'method')
+                method = options.method ;
+            end
+            
+            if ~isfield(options, 'overwrite')
+                options.overwrite = false ;
+            end
+            if ~isfield(options, 'method')
+                options.method = method ;
             end
             if ~isfield(options, 'overwrite')
                 options.overwrite = false ;
@@ -277,15 +288,24 @@ classdef queriedSample < handle
                 
                 % check if PIV has already been computed or if we are
                 % overwriting the existing results
-                input_path = fullfile(obj.meta.folders{qq}, 'PIV') ;
+                if strcmpi(method, 'pivlab')
+                    input_path = fullfile(obj.meta.folders{qq}, 'PIVlab') ;
+                else
+                    input_path = fullfile(obj.meta.folders{qq}, 'PIV') ;
+                end
                 fns = dir(fullfile(input_path, 'Velo*.mat')) ;
                 recompute = options.overwrite || ~exist(input_path, 'dir') || ...
                     (length(fns)<(obj.meta.nTimePoints(qq)-1)) ;
                 if recompute
                     PIVTimeseries(obj.meta.folders{qq}, options) 
                 end
+                
                 % check if filtered PIV already exists
-                output_path = fullfile(obj.meta.folders{qq}, 'PIV_filtered') ;
+                if strcmpi(method, 'default')
+                    output_path = fullfile(obj.meta.folders{qq}, 'PIV_filtered') ;
+                elseif strcmpi(method, 'pivlab')
+                    output_path = fullfile(obj.meta.folders{qq}, 'PIVlab_filtered') ;
+                end
                 ffns = dir(fullfile(output_path, 'Velo*.mat')) ;
                 if options.overwrite || ~exist(output_path, 'dir') || length(ffns) < length(fns) 
                     runMedianFilterOnPIVField(input_path, output_path, median_order);
@@ -407,7 +427,28 @@ classdef queriedSample < handle
             end
         end
         
-        function getPIV(obj)
+        function piv = getPIV(obj, options)
+            % piv = getPIV(obj, options)
+            % 
+            % Parameters
+            % ----------
+            % options : optional struct with optional fields
+            %   method : string specifier ('default' or 'pivlab')
+            %       how the piv was computed.
+            % 
+            % Returns
+            % -------
+            % piv : struct with fields
+            %   vx
+            %   vy 
+            %
+            method = 'default';
+            if nargin < 2 
+                options = struct() ;
+            end
+            if isfield(options, 'method')
+                method = options.method ;
+            end
             % Load PIV results for all entries in queriedSample collection
             nEmbryos = length(obj.meta.folders) ;
             rescaleFactor = obj.piv.rescaleFactor ;
@@ -416,19 +457,58 @@ classdef queriedSample < handle
                     % Load each in cell of timestamps
                     ntimestamps = obj.meta.nTimePoints(qq) ;
                     timestamps = 1:ntimestamps ;
-                    vxcollection = zeros(46, 54, length(timestamps)) ;
-                    vycollection = zeros(46, 54, length(timestamps)) ;
+                    if strcmpi(method, 'default')
+                        vxcollection = zeros(46, 54, length(timestamps)) ;
+                        vycollection = zeros(46, 54, length(timestamps)) ;
+                        
+                        % get evaluation coordinates
+                        % pivCoordSys: 46 x 54
+                        EdgeLength = 15;
+                        % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
+                        rescaleFactor = 0.4 ;
+                        szX = 696 ;
+                        szY = 820 ;
+                        % PIV evaluation coordinates in resized pixels
+                        [X0,Y0] = meshgrid(EdgeLength/2:EdgeLength:(szX-EdgeLength/2), ...
+                            EdgeLength/2:EdgeLength:(szY-EdgeLength/2)); 
+
+                        obj.piv.X0 = X0 ;
+                        obj.piv.Y0 = Y0 ;
+                    else
+                        vxcollection = zeros(86, 101, length(timestamps)) ;
+                        vycollection = zeros(86, 101, length(timestamps)) ;
+                        first = true ;
+                    end
+                    
                     for pp = 1:(ntimestamps-1)
                         tiffpage = timestamps(pp) ;
                         try
-                            pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
-                                sprintf('VeloT_medfilt_%06d.mat', tiffpage)) ;
-                            tmp = load(pivfn) ;
-                            vxcollection(:, :, pp) = tmp.VX / rescaleFactor ;
-                            vycollection(:, :, pp) = tmp.VY / rescaleFactor ;
+                            if strcmpi(method, 'default')
+                                pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
+                                    sprintf('VeloT_medfilt_%06d.mat', tiffpage)) ;
+                                tmp = load(pivfn) ;
+                                vxcollection(:, :, pp) = tmp.VX / (rescaleFactor *dt) ;
+                                vycollection(:, :, pp) = tmp.VY / (rescaleFactor *dt) ;
+                            else
+                                pivfnRaw = fullfile(obj.meta.folders{qq}, 'PIVlab', ...
+                                    sprintf('VeloT_fine_%06d.mat', tiffpage)) ;
+                                pivfn = fullfile(obj.meta.folders{qq}, 'PIVlab_filtered', ...
+                                    sprintf('VeloT_medfilt_fine_%06d.mat', tiffpage)) ;
+                                tmp = load(pivfn) ;
+                                if first
+                                    load(pivfnRaw, 'convert_to_um_per_min', 'X0', 'Y0') ;
+                                    obj.piv.X0 = X0 ;
+                                    obj.piv.Y0 = Y0 ;
+                                    first = false ;
+                                else
+                                    load(pivfnRaw, 'convert_to_um_per_min') ;
+                                end
+                                vxcollection(:, :, pp) = tmp.VX * convert_to_um_per_min ;
+                                vycollection(:, :, pp) = tmp.VY * convert_to_um_per_min ;
+                            end
                         catch
                             disp('Warning: some timepoints have no velocity, returned these as NaN')
-                        
+
                             vxcollection(:, :, pp) = NaN ;
                             vycollection(:, :, pp) = NaN ;
                         end
@@ -436,52 +516,181 @@ classdef queriedSample < handle
                     obj.piv.vx{qq} = vxcollection ;
                     obj.piv.vy{qq} = vycollection ;
                 else
-                    % There is only one timepoint in this dataset (fixed)
+                    % There is only one timepoint in this queriedSample?
                     timestamp = obj.meta.tiffpages(qq) ;
-                    pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
-                        sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
-                    tmp = load(pivfn) ;
-                    obj.piv.vx{qq} = tmp.VX / rescaleFactor ;
-                    obj.piv.vy{qq} = tmp.VY / rescaleFactor ;
-                end
-            end
-        end
-        
-        function meanPIV = getMeanPIV(obj)
-            % Load PIV results for all entries in queriedSample collection
-            nEmbryos = length(obj.meta.folders) ;
-            vx = zeros(46, 54, nEmbryos) ;
-            vy = zeros(46, 54, nEmbryos) ;
-            rescaleFactor = obj.piv.rescaleFactor ;
-            for qq = 1:nEmbryos
-                if isa(obj.meta.times, 'cell')
-                    error('handle this case of collections here -- see above in getPIV()')
-                else
-                    timestamp = obj.meta.tiffpages(qq) ;
-                    pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
-                        sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
-                    if exist(pivfn, 'file')
+                    
+                    if strcmpi(method, 'default')
+                        pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
+                            sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
                         tmp = load(pivfn) ;
-                        vx(:, :, qq) = tmp.VX / rescaleFactor ;
-                        vy(:, :, qq) = tmp.VY / rescaleFactor ;
+                        obj.piv.vx{qq} = tmp.VX / rescaleFactor ;
+                        obj.piv.vy{qq} = tmp.VY / rescaleFactor ;
                     else
-                        if timestamp == obj.meta.nTimePoints(qq)
-                            disp('Skipping final timepoint from meanPIV')
-                            vx(:, :, qq) = NaN ;
-                            vy(:, :, qq) = NaN ;
-                        else
-                            disp(['PIV does not exist but tp is not final tp: ' pivfn])
-                            vx(:, :, qq) = NaN ;
-                            vy(:, :, qq) = NaN ;
-                        end
+                        error('handle case here')
                     end
                 end
             end
-            obj.meanPIV.vx = nanmean(vx, 3) ;
-            obj.meanPIV.vy = nanmean(vy, 3) ;
+            if nargout > 0
+                piv = obj.piv ;
+            end
+        end
+        
+        function meanPIV = getMeanPIV(obj, options)
+            %meanPIV = getMeanPIV(obj, options)
+            % Load PIV results for all entries in queriedSample collection
+            %
+            % Parameters
+            % ----------
+            % options : struct with fields
+            %   method : 'default' or 'pivlab'
+            % 
+            % Returns
+            % -------
+            % meanPIV : 
+            %   mean flow across all samples in the queriedSample
+            
+            % default options
+            method = 'default' ;
+            preview = false ;
+            if nargin < 2
+                options = struct() ;
+            end
+            if isfield(options, 'method')
+                method = options.method ;
+            end
+            if isfield(options, 'preview')
+                preview = options.preview ;
+            end
+            
+            nEmbryos = length(obj.meta.folders) ;
+
+            % figure out the total number of frames in the queriedSample 
+            nPages = 0 ;
+            for qq = 1:nEmbryos
+                nPages = nPages + length(obj.meta.tiffpages{qq}) ;
+            end
+            
+            % preallocate the velocity information
+            if strcmpi(method, 'default')
+                vx = zeros(46, 54, nPages) ;
+                vy = zeros(46, 54, nPages) ;
+            else
+                vx = zeros(86, 101, nPages) ;
+                vy = zeros(86, 101, nPages) ;
+            end
+            
+            rescaleFactor = obj.piv.rescaleFactor ;
+            dmyk = 1 ;
+            for qq = 1:nEmbryos
+                dt = dlmread(fullfile(obj.meta.folders{qq}, 'dt.txt')) ;
+                % if isa(obj.meta.tiffpages, 'cell') && length(obj.meta.tiffpages) > 1
+                %     error('handle this case of collections here -- see above in getPIV()')
+                for tpageID = 1:length(obj.meta.tiffpages{qq})
+                    timestamp = obj.meta.tiffpages{qq}(tpageID); 
+                    if strcmpi(method, 'default')
+                        pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
+                            sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
+                        if exist(pivfn, 'file')
+                            tmp = load(pivfn) ;
+                            vx(:, :, dmyk) = tmp.VX / (rescaleFactor * dt) ;
+                            vy(:, :, dmyk) = tmp.VY / (rescaleFactor * dt) ;
+                        else
+                            if timestamp == obj.meta.nTimePoints(qq)
+                                disp('Skipping final timepoint from meanPIV')
+                                vx(:, :, dmyk) = NaN ;
+                                vy(:, :, dmyk) = NaN ;
+                            else
+                                disp(['PIV does not exist but tp is not final tp: ' pivfn])
+                                vx(:, :, dmyk) = NaN ;
+                                vy(:, :, dmyk) = NaN ;
+                            end
+                        end
+                    elseif strcmpi(method, 'pivlab') || strcmpi(method, 'pivlab_filtered') 
+                        if strcmpi(method, 'pivlab_filtered') 
+                            pivfnRaw = fullfile(obj.meta.folders{qq}, 'PIVlab', ...
+                                sprintf('VeloT_fine_%06d.mat', timestamp)) ;
+                            pivfn = fullfile(obj.meta.folders{qq}, 'PIVlab_filtered', ...
+                                sprintf('VeloT_medfilt_fine_%06d.mat', timestamp)) ;
+                        else
+                            pivfn = fullfile(obj.meta.folders{qq}, 'PIVlab', ...
+                                sprintf('VeloT_fine_%06d.mat', timestamp)) ;
+                        end
+                        if exist(pivfn, 'file')
+                            if strcmpi(method, 'pivlab_filtered') 
+                                tmp = load(pivfn) ;
+                                load(pivfnRaw, 'convert_to_um_per_min') ;
+                                tmp.convert_to_um_per_min = convert_to_um_per_min ;
+                            else
+                                tmp = load(pivfn) ;
+                            end
+                            vx(:, :, dmyk) = tmp.VX * tmp.convert_to_um_per_min ;
+                            vy(:, :, dmyk) = tmp.VY * tmp.convert_to_um_per_min ;
+                            assert(any(~isnan(vx(:))))
+                        else
+                            if timestamp == obj.meta.nTimePoints(qq)
+                                disp('Skipping final timepoint from meanPIV')
+                                vx(:, :, dmyk) = NaN ;
+                                vy(:, :, dmyk) = NaN ;
+                            else
+                                disp(['PIV does not exist but tp is not final tp: ' pivfn])
+                                vx(:, :, dmyk) = NaN ;
+                                vy(:, :, dmyk) = NaN ;
+                            end
+                        end
+                    end
+                    dmyk = dmyk + 1 ;
+                end
+            end
+            
+            % Get evaluation points
+            if strcmpi(method, 'pivlab')
+                X0 = tmp.X0 ;
+                Y0 = tmp.Y0 ;
+                obj.meanPIV.convert_to_um_per_min = tmp.convert_to_um_per_min ;
+            else
+                EdgeLength = 15;
+                % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
+                if rescaleFactor == 0.4
+                    szX = 696 ;
+                    szY = 820 ;
+                    % PIV evaluation coordinates in resized pixels
+                    [X0,Y0] = meshgrid(EdgeLength/2:EdgeLength:(szX-EdgeLength/2), ...
+                        EdgeLength/2:EdgeLength:(szY-EdgeLength/2)); 
+                    X0 = X0' ;
+                    Y0 = Y0' ;
+                else
+                    error('handle this rescaleFactor here')
+                end
+                obj.meanPIV.convert_to_um_per_min = (rescaleFactor * dt) ;
+            end
+            
+            % Take mean
+            obj.meanPIV.vx = mean(vx, 3, 'omitnan') ;
+            obj.meanPIV.vy = mean(vy, 3, 'omitnan') ;
+            obj.meanPIV.X0 = X0 ;
+            obj.meanPIV.Y0 = Y0 ;
             if nargout > 0
                 meanPIV = obj.meanPIV ;
             end
+                       
+            % Preview flow timecourse & output
+            if preview
+                subplot(1, 2, 2)
+                quiver(X0, Y0, obj.meanPIV.vx * 10, obj.meanPIV.vy * 10, 0)
+                axis equal 
+                axis tight
+                
+                for dmyk = 1:nPages
+                    subplot(1, 2, 1)
+                    quiver(X0, Y0, squeeze(vx(:, :, dmyk)) * 10, ...
+                        squeeze(vy(:, :, dmyk)) * 10, 0)
+                    title(['page = ' num2str(dmyk)])
+                    axis equal 
+                    axis tight
+                    pause(0.01)
+                end
+            end
+            
         end
         
         function pivStack = buildPIVStack(obj, da, genotype, labels, deltaTime)

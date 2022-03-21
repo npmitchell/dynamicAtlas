@@ -27,6 +27,9 @@ sigma       = 2;  % standard deviation of gaussian kernel
 histequilize= true ; % equilize histograms of raw data across each image (40x40 bins of image equilized)
 
 if nargin > 1
+    if isfield(options, 'method')
+        method = options.method ;
+    end
     if isfield(options, 'Name')
         Name = options.Name ;
     end
@@ -51,23 +54,31 @@ if nargin > 1
 end
 
 %% Define the grid on which to compute the flow field
-% Get image size for defining grid on which to evaluate PIV
-im1 = imread(fullfile(inputDir, Name), 1);
-im1 = imresize(im1,isf,'bicubic');
+if strcmpi(method, 'default')
+    % Get image size for defining grid on which to evaluate PIV
+    im1 = imread(fullfile(inputDir, Name), 1);
+    im1 = imresize(im1,isf,'bicubic');
 
-% define the grid on which to compute the flow field
-[X1,Y1] = meshgrid(EdgeLength/2:EdgeLength:size(im1,1)-EdgeLength/2,EdgeLength/2:EdgeLength:size(im1,2)-EdgeLength/2); 
+    % define the grid on which to compute the flow field
+    [X1,Y1] = meshgrid(EdgeLength/2:EdgeLength:size(im1,1)-EdgeLength/2,EdgeLength/2:EdgeLength:size(im1,2)-EdgeLength/2); 
+end
+
+%% Get full data for page-by-page analysis
+disp(['Reading tiff: ' fullfile(inputDir, Name)])
+dat = loadtiff(fullfile(inputDir, Name)) ;
 
 %% Compute PIV for each frame
+dt = dlmread(fullfile(inputDir, 'dt.txt')) ;
+pix2um = dlmread(fullfile(inputDir, 'pix2um.txt')) ;
 for t = 1:  StackSize-step
     disp(['Running PIV on timestamp t = ' num2str(t)])
 
     % read the image and scale
-    im1     = imread(fullfile(inputDir, Name),t);
-    im2     = imread(fullfile(inputDir, Name),t+step);
+    im1     = dat(:,:,t);
+    im2     = dat(:,:,t+step);
     im1     = imresize(im1,isf,'bicubic'); % rescale image if desired
     im2     = imresize(im2,isf,'bicubic');
-    %  im1 = im1(20:end-20,20:end-20);
+    % im1 = im1(20:end-20,20:end-20);
     % im2 = im2(20:end-20,20:end-20);
    if strcmpi(method, 'default')
        
@@ -115,9 +126,69 @@ for t = 1:  StackSize-step
         save(sprintf(fullfile(inputDir, 'PIV', 'VeloT_%06d.mat'),t),'VX','VY');
 
     elseif strcmpi(method, 'pivlab')
-        getPIVLab()
-   end
+        
+        opts = struct() ;
+        % Standard PIV Settings
+        opts.intArea1        = EdgeLength*8 ;
+        opts.step            = round(opts.intArea1 * 0.5) ;
+        opts.subpixFindr     = 1  ;
+        opts.mask            = [] ;
+        opts.roi             = [] ;
+        opts.numPasses       = 4  ;
+        opts.intArea2        = EdgeLength*4 ;
+        opts.intArea3        = EdgeLength*2 ;
+        opts.intArea4        = EdgeLength ;
+        opts.repeat          = 1  ;
+        opts.disAuto         = 0  ;
+        % Image proc
+        opts.clahe = histequilize ;
+        opts.claheW          = 40 ;
+        opts.highPass        = 0  ;
+        opts.highPassSz      = 15 ;
+        opts.clipping        = 0  ;
+        opts.wiener          = 0  ;
+        opts.wienerW         = 3  ;
+        % Post-processing        
+        opts.calu            = 1. ;
+        opts.calv            = 1  ;
+        opts.valid_vel       = [] ;
+        opts.do_stdev_check  = 1 ;
+        opts.stdthresh       = 5  ;
+        opts.do_local_median = 0  ;
+        opts.neigh_thresh    = 2  ;
+        [VX, VY, VX_filt, VY_filt, X0, Y0] = ...
+            getPIVLab(im1, im2, opts) ;
+        
+        % Inspect velocity
+        clf  
+        quiver(X0, Y0, VX, VY, 10)
+        axis equal
+        title(['$\vec{v}$, t=' num2str(t)], 'interpreter', 'latex')
+        xlim([0, 696]) ;
+        ylim([0, 820]) ;
+        pause(0.0001)
 
+        % Display image and overlay flow field.
+        %     imshow(im1',[])
+        %     hold on 
+        %     f = 10;
+        %     quiver(X1,Y1,f*VX,f*VY,0,'g-')
+        %     pause(.1)
+        % records a movie
+        %M(t)    = getframe(gcf); 
+        if ~exist(fullfile(inputDir, 'PIVlab'), 'dir')
+            mkdir(fullfile(inputDir, 'PIVlab'))
+        end
+        fn = sprintf(fullfile(inputDir, 'PIVlab', 'VeloT_fine_%06d.mat'),t) ; 
+        VX = VX' ;
+        VY = VY' ;
+        VX_filt = VX_filt' ;
+        VY_filt = VY_filt' ;
+        X0 = X0' ;
+        Y0 = Y0' ;
+        convert_to_um_per_min = pix2um / (isf * dt) ;
+        save(fn,'VX','VY','VX_filt','VY_filt','X0','Y0', 'convert_to_um_per_min');
+   end
 end
 %play a movie;
 %implay(M) 

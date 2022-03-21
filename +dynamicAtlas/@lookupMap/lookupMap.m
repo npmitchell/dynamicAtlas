@@ -393,6 +393,7 @@ classdef lookupMap < handle
             embryoIDs = {} ;
             timepts = {} ;  % contains arrays for dynamic data, float for fixed data
             uncs = {} ; 
+            tiffpages = {} ;
             nTimePoints = [] ;
             dmyk = 1 ;
             % get all the labels
@@ -412,6 +413,7 @@ classdef lookupMap < handle
                         timepts{dmyk} = substruct.times{jj} ;
                         uncs{dmyk} = substruct.uncs{jj} ;
                         nTimePoints(dmyk) = substruct.nTimePoints(jj) ;
+                        tiffpages{dmyk} = 1:substruct.nTimePoints(jj) ;
                         dmyk = dmyk + 1 ;
                     end
                 end
@@ -425,6 +427,7 @@ classdef lookupMap < handle
             estruct.times = timepts ;
             estruct.uncs = uncs ;
             estruct.nTimePoints = nTimePoints ; 
+            estruct.tiffpages = tiffpages ;
             qs = dynamicAtlas.queriedSample(estruct) ;
         end
         
