@@ -1,0 +1,6 @@
+# backup matlab files
+*.m~
+*.asv
+
+# MacOSX files
+.DS*
