@@ -9,24 +9,23 @@ Example for computing and recalling velocity measurements
 	%
 	% NPMitchell 2021
 
+
 	%% First mount the server onto your machine 
 	% for example, on a Mac: Apple+K afp://flydrive.synology.me
 	% mount minimalData/ 
+	
 
 	%% Let's clear our environment
 	clc
 	clear
 	close all
-
-
+	
+	
 	%% Add paths (this part can be slow)
 	% Add time_align_embryos directory to path so that dynamicAtlas package is
 	% available to use.
-	% tlaDir = '/Volumes/minimalData/code/';
-	% tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
-	tlaDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/dynamicAtlas/code';
-	% tlaDir = '/mnt/data/code/';
-
+	tlaDir = '/Volumes/minimalData/code/';
+	
 	cd(fullfile(tlaDir)) ;
 	addpath(genpath('dynamicAtlas')) ;
 	cd('dynamicAtlas')
@@ -36,11 +35,8 @@ Example for computing and recalling velocity measurements
 	% Define atlasPath to be where the dynamicAtlas resides (the parent
 	% dynamicAtlas directory, not the project directory '+dynamicAtlas')
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	% atlasPath = '/Volumes/minimalData/Atlas_Data' ;
-	%atlasPath = '/Users/mattlefebvre/Desktop/WT_data_server/'
-	atlasPath = '/Volumes/DOGIC/Atlas_Data' ;
-	% atlasPath = '/run/user/1001/gvfs/afp-volume:host=flydrive.local,user=npmitchell,volume=minimalData/Atlas_Data/' ;
-
+	atlasPath = '/Volumes/minimalData/Atlas_Data' ;
+	
 	%% Build the dynamicAtlas
 	% Build dynamic atlas with all genotypes in the atlasPath
 	% da = dynamicAtlas.dynamicAtlas(atlasPath) ;
@@ -101,7 +97,7 @@ Example for computing and recalling velocity measurements
 	% Apply optical flow to reference image im0
 	applyOpticalFlow(pivStack, im0, Options)
 
-	% Compare to mean over time
+	%% Compare to mean over time
 	dmyk = 1 ;
 	for tt = round(qs.getMinTime):round(qs.getMaxTime)
 	    imfn = fullfile(outDir, 'meanRunt', [sprintf('%03d', dmyk), '.png']) ;
@@ -114,7 +110,7 @@ Example for computing and recalling velocity measurements
 	    end
 	    dmyk = dmyk + 1 ;
 	end
-
+	
 
 	%% OTHER FUNCTIONALITY -- Apply average flow field to a single Runt image
 	% Create a reference image to advect 

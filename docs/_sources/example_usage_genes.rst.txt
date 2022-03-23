@@ -76,6 +76,8 @@ Example for gathering gene patterns from atlas
 			prMovies{prID}(tID, :, :) = meanIm ;
 		end
 	end
+	
+	% Now prMovies is a series of images of the mean gene expression patterns over time! 
 
 
 
