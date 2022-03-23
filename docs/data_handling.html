@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Example for gathering gene patterns from atlas" href="example_usage_genes.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="external" href="external.html" /><link rel="prev" title="curve_handling" href="curve_handling.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
-        <title>dynamicAtlas 2022 documentation</title>
+        <title>data_handling - dynamicAtlas 2022 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
@@ -121,7 +121,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">dynamicAtlas 2022 documentation</div></a>
+      <a href="index.html"><div class="brand">dynamicAtlas 2022 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -141,7 +141,7 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
   <span class="sidebar-brand-text">dynamicAtlas 2022 documentation</span>
@@ -170,14 +170,14 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1 has-children"><a class="reference internal" href="basics.html">basics</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="curve_handling.html">curve_handling</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="data_handling.html">data_handling</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">data_handling</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="external.html">external</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
@@ -233,97 +233,200 @@
           </label>
         </div>
         <article role="main">
-          <section id="welcome-to-dynamicatlas-s-documentation">
-<h1>Welcome to dynamicAtlas’s documentation!<a class="headerlink" href="#welcome-to-dynamicatlas-s-documentation" title="Permalink to this headline">#</a></h1>
-<p>DynamicAtlas is a MATLAB toolkit for interfacing with a library of fixed and live datasets of a morphological process, here focusing on the stage of development called ‘germ band extension’ in the fruit fly.</p>
-<p>Suppose we want to create an lookup table of ALL data in the library. This is simple. First where is the data? Call that path <code class="docutils literal notranslate"><span class="pre">atlasPath</span></code></p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">atlasPath</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'/path/to/the/data/dynamicAtlas/'</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">})</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Now <code class="docutils literal notranslate"><span class="pre">da</span></code> is an instance of the dynamicAtlas class with access to all the data through its methods.</p>
-<p>What if we just want a subset of the WT library? We can look for just certain geonotypes (parent directories) and/or for certain labels (subdirectories in the library). Let’s grab all the data stained for the transcription factor Runt in embryos that have a wild-type genotype. We can create an atlas of this subset of the data like:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">options</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">struct</span><span class="p">()</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">options</span><span class="p">.</span><span class="n">labels</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">}</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">},</span><span class="w"> </span><span class="n">options</span><span class="p">)</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Then we could slice all of this data with a given timestamp range
-(timestamp-delta, timestamp+delta) via</p>
-<p>Then we have a queriedSample object called <code class="docutils literal notranslate"><span class="pre">qs</span></code>. It has some interesting methods like <code class="docutils literal notranslate"><span class="pre">getData()</span></code> and <code class="docutils literal notranslate"><span class="pre">getPIV()</span></code> which load the pullback images of the tissue or the velocities for us to analyze it. To execute these methods, simply run
-<code class="docutils literal notranslate"><span class="pre">qs.getData()</span></code> or <code class="docutils literal notranslate"><span class="pre">qs.getPIV()</span></code>.
-We can also ask for things like the mean velocity across all the data in the queried sample using <code class="docutils literal notranslate"><span class="pre">qs.getMeanPIV()</span></code>.</p>
-<p>Alternatively, we could slice the atlas data for only frames of live datasets of a given genotype and a given label with a given timestamp range:</p>
-<p>Similar methods to check out are <code class="docutils literal notranslate"><span class="pre">da.findEmbryo('202006261115')</span></code>, <code class="docutils literal notranslate"><span class="pre">da.findStaticGenotypeLabel()</span></code> and similar.</p>
-<section id="examples-of-using-dynamicatlas">
-<h2>Examples of using dynamicAtlas<a class="headerlink" href="#examples-of-using-dynamicatlas" title="Permalink to this headline">#</a></h2>
+          <section id="data-handling">
+<h1>data_handling<a class="headerlink" href="#data-handling" title="Permalink to this headline">#</a></h1>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Example scripts:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_genes.html">Example for gathering gene patterns from atlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_piv.html">Example for computing and recalling velocity measurements</a></li>
+</div>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="module-data_handling">
+<span id="full-contents"></span><h2>Full Contents:<a class="headerlink" href="#module-data_handling" title="Permalink to this headline">#</a></h2>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="data_handling.inpaint_nans">
+<span class="sig-prename descclassname"><span class="pre">data_handling.</span></span><span class="sig-name descname"><span class="pre">inpaint_nans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">A</span></em>, <em class="sig-param"><span class="pre">method</span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_handling.inpaint_nans" title="Permalink to this definition">#</a></dt>
+<dd><p>INPAINT_NANS: in-paints over nans in an array
+usage: B=INPAINT_NANS(A)          % default method
+usage: B=INPAINT_NANS(A,method)   % specify method used</p>
+<p>Solves approximation to one of several pdes to
+interpolate and extrapolate holes in an array</p>
+<dl>
+<dt>arguments (input):</dt><dd><p>A - nxm array with some NaNs to be filled in</p>
+<dl>
+<dt>method - (OPTIONAL) scalar numeric flag - specifies</dt><dd><p>which approach (or physical metaphor to use
+for the interpolation.) All methods are capable
+of extrapolation, some are better than others.
+There are also speed differences, as well as
+accuracy differences for smooth surfaces.</p>
+<p>methods {0,1,2} use a simple plate metaphor.
+method  3 uses a better plate equation,</p>
+<blockquote>
+<div><p>but may be much slower and uses
+more memory.</p>
+</div></blockquote>
+<p>method  4 uses a spring metaphor.
+method  5 is an 8 neighbor average, with no</p>
+<blockquote>
+<div><p>rationale behind it compared to the
+other methods. I do not recommend
+its use.</p>
+</div></blockquote>
+<dl>
+<dt>method == 0 –&gt; (DEFAULT) see method 1, but</dt><dd><p>this method does not build as large of a
+linear system in the case of only a few
+NaNs in a large array.
+Extrapolation behavior is linear.</p>
+</dd>
+<dt>method == 1 –&gt; simple approach, applies del^2</dt><dd><p>over the entire array, then drops those parts
+of the array which do not have any contact with
+NaNs. Uses a least squares approach, but it
+does not modify known values.
+In the case of small arrays, this method is
+quite fast as it does very little extra work.
+Extrapolation behavior is linear.</p>
+</dd>
+<dt>method == 2 –&gt; uses del^2, but solving a direct</dt><dd><p>linear system of equations for nan elements.
+This method will be the fastest possible for
+large systems since it uses the sparsest
+possible system of equations. Not a least
+squares approach, so it may be least robust
+to noise on the boundaries of any holes.
+This method will also be least able to
+interpolate accurately for smooth surfaces.
+Extrapolation behavior is linear.</p>
+<p>Note: method 2 has problems in 1-d, so this
+method is disabled for vector inputs.</p>
+</dd>
+<dt>method == 3 –+ See method 0, but uses del^4 for</dt><dd><p>the interpolating operator. This may result
+in more accurate interpolations, at some cost
+in speed.</p>
+</dd>
+<dt>method == 4 –+ Uses a spring metaphor. Assumes</dt><dd><p>springs (with a nominal length of zero)
+connect each node with every neighbor
+(horizontally, vertically and diagonally)
+Since each node tries to be like its neighbors,
+extrapolation is as a constant function where
+this is consistent with the neighboring nodes.</p>
+</dd>
+<dt>method == 5 –+ See method 2, but use an average</dt><dd><p>of the 8 nearest neighbors to any element.
+This method is NOT recommended for use.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt>arguments (output):</dt><dd><p>B - nxm array with NaNs replaced</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>[x,y] = meshgrid(0:.01:1);
+z0 = exp(x+y);
+znan = z0;
+znan(20:50,40:70) = NaN;
+znan(30:90,5:10) = NaN;
+znan(70:75,40:90) = NaN;</p>
+<p>z = inpaint_nans(znan);</p>
+<p>See also: griddata, interp1</p>
+<p>Author: John D’Errico
+e-mail address: <a class="reference external" href="mailto:woodchips%40rochester.rr.com">woodchips<span>@</span>rochester<span>.</span>rr<span>.</span>com</a>
+Release: 2
+Release date: 4/15/06</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="data_handling.medfilt1m">
+<span class="sig-prename descclassname"><span class="pre">data_handling.</span></span><span class="sig-name descname"><span class="pre">medfilt1m</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">x</span></em>, <em class="sig-param"><span class="pre">r</span></em>, <em class="sig-param"><span class="pre">z</span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_handling.medfilt1m" title="Permalink to this definition">#</a></dt>
+<dd><p>One-dimensional adaptive median filtering with missing values.</p>
+<p>Applies a width s=2*r+1 one-dimensional median filter to vector x, which
+may contain missing values (elements equal to z). If x contains no
+missing values, y(j) is set to the median of x(j-r:j+r). If x contains
+missing values, y(j) is set to the median of x(j-R:j+R), where R is the
+smallest radius such that sum(valid(x(j-R:j+R)))&gt;=s, i.e. the number of
+valid values in the window is at least s (a value x is valid x~=z). Note
+that the radius R is adaptive and can vary as a function of j.</p>
+<p>This function uses a modified version of medfilt1.m from Matlab’s ‘Signal
+Processing Toolbox’. Note that if x contains no missing values,
+medfilt1m(x) and medfilt1(x) are identical execpt at boundary regions.</p>
+<dl class="simple">
+<dt>USAGE</dt><dd><p>y = medfilt1m( x, r, [z] )</p>
+</dd>
+<dt>INPUTS</dt><dd><p>x      - [nx1] length n vector with possible missing entries
+r      - filter radius
+z      - [NaN] element that represents missing entries</p>
+</dd>
+<dt>OUTPUTS</dt><dd><p>y      - [nx1] filtered vector x</p>
+</dd>
+<dt>EXAMPLE</dt><dd><p>x=repmat((1:4)’,1,5)’; x=x(:)’; x0=x;
+n=length(x); x(rand(n,1)&gt;.8)=NaN;
+y = medfilt1m(x,2); [x0; x; y; x0-y]</p>
+</dd>
+</dl>
+<p>See also MODEFILT1, MEDFILT1</p>
+<p>Piotr’s Computer Vision Matlab Toolbox      Version 2.35
+Copyright 2014 Piotr Dollar.  [pdollar-at-gmail.com]
+Licensed under the Simplified BSD License [see external/bsd.txt]</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="data_handling.shiftImagesX">
+<span class="sig-prename descclassname"><span class="pre">data_handling.</span></span><span class="sig-name descname"><span class="pre">shiftImagesX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">shiftx</span></em>, <em class="sig-param"><span class="pre">tdat</span></em>, <em class="sig-param"><span class="pre">fixed</span></em>, <em class="sig-param"><span class="pre">fillval</span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_handling.shiftImagesX" title="Permalink to this definition">#</a></dt>
+<dd><p>SHIFTIMAGESX(shiftx, tdat, fixed)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shiftx</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">int</span> <span class="pre">(or</span> <span class="pre">float,</span> <span class="pre">dealt</span> <span class="pre">as</span> <span class="pre">int)</span></code></span>) – the shift applied to tdat</p></li>
+<li><p><strong>tdat</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">M</span> <span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span> <span class="pre">image</span></code></span>) – the image to shift relative to fixed</p></li>
+<li><p><strong>fixed</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">M</span> <span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span> <span class="pre">image</span></code></span>) – the image to keep fixed but extend in x if necessary</p></li>
+<li><p><strong>fillval</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span></code></span>) – value to fill out of bounds pixels
+default value is to fill with the shift value (to penalize these
+pixels in an optimization)</p></li>
 </ul>
-</div>
-</section>
-<section id="classes-and-folders">
-<h2>Classes and Folders<a class="headerlink" href="#classes-and-folders" title="Permalink to this headline">#</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Classes in +dynamicAtlas:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="dynamicAtlas.html">dynamicAtlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lookupMap.html">lookupMap</a></li>
-<li class="toctree-l1"><a class="reference internal" href="queriedSample.html">queriedSample</a></li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>shiftdat</strong> (<em>N+few x M+few image</em>)</p></li>
+<li><p><strong>shiftfixed</strong> (<em>N+few x M+few image</em>)</p></li>
+<li><p><em>NPMitchell 2019</em></p></li>
 </ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="basics.html">basics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="curve_handling.html">curve_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data_handling.html">data_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="external.html">external</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matchTime.html">matchTime</a></li>
-<li class="toctree-l1"><a class="reference internal" href="piv_handling.html">piv_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="statistics.html">statistics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="stripeExtraction.html">stripeExtraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tiff_handling.html">tiff_handling</a></li>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="data_handling.slidingmax">
+<span class="sig-prename descclassname"><span class="pre">data_handling.</span></span><span class="sig-name descname"><span class="pre">slidingmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dat</span></em>, <em class="sig-param"><span class="pre">win</span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_handling.slidingmax" title="Permalink to this definition">#</a></dt>
+<dd><blockquote>
+<div><p>sliding one dimensional maximum</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dat</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">1</span> <span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span> <span class="pre">array</span></code></span>) – the data to be “smoothed” via sliding maximum</p></li>
+<li><p><strong>win</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">int</span></code></span>) – window size (full width)</p></li>
 </ul>
-</div>
-</section>
-<section id="some-details-on-how-dynamicatlas-works">
-<h2>Some details on how dynamicAtlas works<a class="headerlink" href="#some-details-on-how-dynamicatlas-works" title="Permalink to this headline">#</a></h2>
-<p>We saw how to make a dynamicAtlas class instance and a queriedSample class instance.
-There is one more class in this toolkit that helps it all run smoothly called a lookupMap. You don’t have to use the lookupMap if you want to keep things simple, but in case you want to look under the hood, let’s take a look.
-You can instantiate the map using the <code class="docutils literal notranslate"><span class="pre">lookup</span></code> method of dynamicAtlas:</p>
-<p>Now mapWT has methods:</p>
-<p>To find embryos with a Runt stain, you can say:</p>
-<p>Alternatively, we can take a peek within the lookup map of da to get
-all Runt labels, regardless of genotype:</p>
-<p>or even index the map stored in da’s lookup map:</p>
-<p>To find embryos with a t=10 +/- 2 min</p>
-<p>To find Runt stains with a t=10 +/- 2 min</p>
-</section>
-<section id="master-timeline-generation">
-<h2>Master timeline generation<a class="headerlink" href="#master-timeline-generation" title="Permalink to this headline">#</a></h2>
-<p>Fixed samples are timestamped according to their morphology against live datasets.
-If we want to build such a master timeline from scratch, we can do so as follows.</p>
-<p>Use dynamic datasets within the lookupMap to build master timeline.
-To control how this is performed, toggle da.timeLineMethod:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">da</span><span class="p">.</span><span class="n">makeMasterTimeline</span><span class="p">(</span><span class="s">'WT'</span><span class="p">,</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-</div>
-<p>Timestamp other data against the master timeline.
-To control how this is performed, toggle da.timeStampMethod.</p>
-</section>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>maxdata</strong> (<em>N x 1 float or int array</em>) – the 1d data “smoothed” via sliding max</p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="data_handling.springEnergy1D">
+<span class="sig-prename descclassname"><span class="pre">data_handling.</span></span><span class="sig-name descname"><span class="pre">springEnergy1D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">xx</span></em>, <em class="sig-param"><span class="pre">BL</span></em>, <em class="sig-param"><span class="pre">fixed_ind</span></em>, <em class="sig-param"><span class="pre">fixed_x</span></em><span class="sig-paren">)</span><a class="headerlink" href="#data_handling.springEnergy1D" title="Permalink to this definition">#</a></dt>
+<dd><p>xx has only mobile dof
+Insert fixed positions into xx</p>
+</dd></dl>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</section>
 </section>
 
         </article>
@@ -331,16 +434,26 @@ To control how this is performed, toggle da.timeStampMethod.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="example_usage_genes.html">
+          <a class="next-page" href="external.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Example for gathering gene patterns from atlas</div>
+                <div class="title">external</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+          <a class="prev-page" href="curve_handling.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">curve_handling</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -373,16 +486,12 @@ To control how this is performed, toggle da.timeStampMethod.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Welcome to dynamicAtlas’s documentation!</a><ul>
-<li><a class="reference internal" href="#examples-of-using-dynamicatlas">Examples of using dynamicAtlas</a></li>
-<li><a class="reference internal" href="#classes-and-folders">Classes and Folders</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#some-details-on-how-dynamicatlas-works">Some details on how dynamicAtlas works</a></li>
-<li><a class="reference internal" href="#master-timeline-generation">Master timeline generation</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">data_handling</a><ul>
+<li><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li><a class="reference internal" href="#module-data_handling">Full Contents:</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
 </ul>
 
           </div>

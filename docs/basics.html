@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Example for gathering gene patterns from atlas" href="example_usage_genes.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="curve_handling" href="curve_handling.html" /><link rel="prev" title="queriedSample" href="queriedSample.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
-        <title>dynamicAtlas 2022 documentation</title>
+        <title>basics - dynamicAtlas 2022 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
@@ -121,7 +121,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">dynamicAtlas 2022 documentation</div></a>
+      <a href="index.html"><div class="brand">dynamicAtlas 2022 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -141,7 +141,7 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
   <span class="sidebar-brand-text">dynamicAtlas 2022 documentation</span>
@@ -170,8 +170,8 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
-<li class="toctree-l1 has-children"><a class="reference internal" href="basics.html">basics</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
+<ul class="current">
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">basics</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="curve_handling.html">curve_handling</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
@@ -233,97 +233,161 @@
           </label>
         </div>
         <article role="main">
-          <section id="welcome-to-dynamicatlas-s-documentation">
-<h1>Welcome to dynamicAtlas’s documentation!<a class="headerlink" href="#welcome-to-dynamicatlas-s-documentation" title="Permalink to this headline">#</a></h1>
-<p>DynamicAtlas is a MATLAB toolkit for interfacing with a library of fixed and live datasets of a morphological process, here focusing on the stage of development called ‘germ band extension’ in the fruit fly.</p>
-<p>Suppose we want to create an lookup table of ALL data in the library. This is simple. First where is the data? Call that path <code class="docutils literal notranslate"><span class="pre">atlasPath</span></code></p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">atlasPath</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'/path/to/the/data/dynamicAtlas/'</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">})</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Now <code class="docutils literal notranslate"><span class="pre">da</span></code> is an instance of the dynamicAtlas class with access to all the data through its methods.</p>
-<p>What if we just want a subset of the WT library? We can look for just certain geonotypes (parent directories) and/or for certain labels (subdirectories in the library). Let’s grab all the data stained for the transcription factor Runt in embryos that have a wild-type genotype. We can create an atlas of this subset of the data like:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">options</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">struct</span><span class="p">()</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">options</span><span class="p">.</span><span class="n">labels</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">}</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">},</span><span class="w"> </span><span class="n">options</span><span class="p">)</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Then we could slice all of this data with a given timestamp range
-(timestamp-delta, timestamp+delta) via</p>
-<p>Then we have a queriedSample object called <code class="docutils literal notranslate"><span class="pre">qs</span></code>. It has some interesting methods like <code class="docutils literal notranslate"><span class="pre">getData()</span></code> and <code class="docutils literal notranslate"><span class="pre">getPIV()</span></code> which load the pullback images of the tissue or the velocities for us to analyze it. To execute these methods, simply run
-<code class="docutils literal notranslate"><span class="pre">qs.getData()</span></code> or <code class="docutils literal notranslate"><span class="pre">qs.getPIV()</span></code>.
-We can also ask for things like the mean velocity across all the data in the queried sample using <code class="docutils literal notranslate"><span class="pre">qs.getMeanPIV()</span></code>.</p>
-<p>Alternatively, we could slice the atlas data for only frames of live datasets of a given genotype and a given label with a given timestamp range:</p>
-<p>Similar methods to check out are <code class="docutils literal notranslate"><span class="pre">da.findEmbryo('202006261115')</span></code>, <code class="docutils literal notranslate"><span class="pre">da.findStaticGenotypeLabel()</span></code> and similar.</p>
-<section id="examples-of-using-dynamicatlas">
-<h2>Examples of using dynamicAtlas<a class="headerlink" href="#examples-of-using-dynamicatlas" title="Permalink to this headline">#</a></h2>
+          <section id="basics">
+<h1>basics<a class="headerlink" href="#basics" title="Permalink to this headline">#</a></h1>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Example scripts:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_genes.html">Example for gathering gene patterns from atlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_piv.html">Example for computing and recalling velocity measurements</a></li>
+</div>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="module-basics">
+<span id="full-contents"></span><h2>Full Contents:<a class="headerlink" href="#module-basics" title="Permalink to this headline">#</a></h2>
+<dl class="mat script">
+<dt class="sig sig-object mat" id="basics.demo_renameBatchFilesSubSubdirs">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">demo_renameBatchFilesSubSubdirs</span></span><a class="headerlink" href="#basics.demo_renameBatchFilesSubSubdirs" title="Permalink to this definition">#</a></dt>
+<dd><p>DEMO FOR renameBatchFilesSubSubdirs</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.ensureDir">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">ensureDir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dirpath</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.ensureDir" title="Permalink to this definition">#</a></dt>
+<dd><p>ENSUREDIR(dirpath) create a directory if it does not exist already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dirpath</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – The path to create if it does not exist</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dirpath</strong> (<em>str</em>) – Returns the input, for convenience</p></li>
+<li><p><em>NPMitchell 2019</em></p></li>
 </ul>
-</div>
-</section>
-<section id="classes-and-folders">
-<h2>Classes and Folders<a class="headerlink" href="#classes-and-folders" title="Permalink to this headline">#</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Classes in +dynamicAtlas:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="dynamicAtlas.html">dynamicAtlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lookupMap.html">lookupMap</a></li>
-<li class="toctree-l1"><a class="reference internal" href="queriedSample.html">queriedSample</a></li>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.getsize">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">getsize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">this</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.getsize" title="Permalink to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>GETSIZE Show the size on disk of an object.</dt><dd><p>Only works if the properties GetAccess method is set to public</p>
+</dd>
+</dl>
+<p>NPM 2019</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.linecount">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">linecount</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">fid</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.linecount" title="Permalink to this definition">#</a></dt>
+<dd><p>count lines in the file with fileID fid</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.renameBatchFiles">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">renameBatchFiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">directory</span></em>, <em class="sig-param"><span class="pre">fnSearchStr</span></em>, <em class="sig-param"><span class="pre">oldchar</span></em>, <em class="sig-param"><span class="pre">newchar</span></em>, <em class="sig-param"><span class="pre">dryrun</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.renameBatchFiles" title="Permalink to this definition">#</a></dt>
+<dd><p>change (batch) file names</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – path to file to rename</p></li>
+<li><p><strong>fnSearchStr</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string specifier to find files to rename</p></li>
+<li><p><strong>oldchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string to replace in old filenames</p></li>
+<li><p><strong>newchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – replacement string in new filenames</p></li>
+<li><p><strong>dryrun</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">optional</span> <span class="pre">bool,</span> <span class="pre">default=false</span></code></span>) – do not actually replace files, just test I/O</p></li>
 </ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="basics.html">basics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="curve_handling.html">curve_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data_handling.html">data_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="external.html">external</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matchTime.html">matchTime</a></li>
-<li class="toctree-l1"><a class="reference internal" href="piv_handling.html">piv_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="statistics.html">statistics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="stripeExtraction.html">stripeExtraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tiff_handling.html">tiff_handling</a></li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>&lt;none&gt;</em></p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
 </ul>
-</div>
-</section>
-<section id="some-details-on-how-dynamicatlas-works">
-<h2>Some details on how dynamicAtlas works<a class="headerlink" href="#some-details-on-how-dynamicatlas-works" title="Permalink to this headline">#</a></h2>
-<p>We saw how to make a dynamicAtlas class instance and a queriedSample class instance.
-There is one more class in this toolkit that helps it all run smoothly called a lookupMap. You don’t have to use the lookupMap if you want to keep things simple, but in case you want to look under the hood, let’s take a look.
-You can instantiate the map using the <code class="docutils literal notranslate"><span class="pre">lookup</span></code> method of dynamicAtlas:</p>
-<p>Now mapWT has methods:</p>
-<p>To find embryos with a Runt stain, you can say:</p>
-<p>Alternatively, we can take a peek within the lookup map of da to get
-all Runt labels, regardless of genotype:</p>
-<p>or even index the map stored in da’s lookup map:</p>
-<p>To find embryos with a t=10 +/- 2 min</p>
-<p>To find Runt stains with a t=10 +/- 2 min</p>
-</section>
-<section id="master-timeline-generation">
-<h2>Master timeline generation<a class="headerlink" href="#master-timeline-generation" title="Permalink to this headline">#</a></h2>
-<p>Fixed samples are timestamped according to their morphology against live datasets.
-If we want to build such a master timeline from scratch, we can do so as follows.</p>
-<p>Use dynamic datasets within the lookupMap to build master timeline.
-To control how this is performed, toggle da.timeLineMethod:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">da</span><span class="p">.</span><span class="n">makeMasterTimeline</span><span class="p">(</span><span class="s">'WT'</span><span class="p">,</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-</div>
-<p>Timestamp other data against the master timeline.
-To control how this is performed, toggle da.timeStampMethod.</p>
-</section>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.renameBatchFilesSubSubdirs">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">renameBatchFilesSubSubdirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">directory</span></em>, <em class="sig-param"><span class="pre">fnSearchStr</span></em>, <em class="sig-param"><span class="pre">oldchar</span></em>, <em class="sig-param"><span class="pre">newchar</span></em>, <em class="sig-param"><span class="pre">dryrun</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.renameBatchFilesSubSubdirs" title="Permalink to this definition">#</a></dt>
+<dd><p>change (batch) file names in every subdir of a directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – path of grandparent directory of file to rename</p></li>
+<li><p><strong>fnSearchStr</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string specifier to find files to rename</p></li>
+<li><p><strong>oldchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string to replace in old filenames</p></li>
+<li><p><strong>newchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – replacement string in new filenames</p></li>
+<li><p><strong>dryrun</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">optional</span> <span class="pre">bool,</span> <span class="pre">default=false</span></code></span>) – do not actually replace files, just test I/O</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>&lt;none&gt;</em></p></li>
+<li><p><em>Example Usage</em></p></li>
+<li><p><em>————-</em></p></li>
+<li><p><em>direc = ‘/Volumes/minimalData/Atlas_Data/WT/’ ;</em></p></li>
+<li><p><em>fnSearchStr = ‘timematch_curve7_</em>.*’ ;*</p></li>
+<li><p><em>oldchar = ‘timematch_curve7_’ ;</em></p></li>
+<li><p><em>newchar = ‘timematch_Runt_Runtstripe7_’ ;</em></p></li>
+<li><p><em>dryrun = true ;</em></p></li>
+<li><p><em>renameBatchFilesSubSubdirs(direc, fnSearchStr, oldchar, newchar, dryrun)</em></p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.renameBatchFilesSubdirs">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">renameBatchFilesSubdirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">directory</span></em>, <em class="sig-param"><span class="pre">fnSearchStr</span></em>, <em class="sig-param"><span class="pre">oldchar</span></em>, <em class="sig-param"><span class="pre">newchar</span></em>, <em class="sig-param"><span class="pre">dryrun</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.renameBatchFilesSubdirs" title="Permalink to this definition">#</a></dt>
+<dd><p>change (batch) file names in every subdir of a directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>directory</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – path to file to rename</p></li>
+<li><p><strong>fnSearchStr</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string specifier to find files to rename</p></li>
+<li><p><strong>oldchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – string to replace in old filenames</p></li>
+<li><p><strong>newchar</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – replacement string in new filenames</p></li>
+<li><p><strong>dryrun</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">optional</span> <span class="pre">bool,</span> <span class="pre">default=false</span></code></span>) – do not actually replace files, just test I/O</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>&lt;none&gt;</em></p></li>
+<li><p><em>Example Usage</em></p></li>
+<li><p><em>————-</em></p></li>
+<li><p><em>directory = ‘/Volumes/minimalData/Atlas_Data/WT/’</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p>NPMitchell 2020</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.subdirs">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">subdirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">directory</span></em>, <em class="sig-param"><span class="pre">subdirs2ignore</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.subdirs" title="Permalink to this definition">#</a></dt>
+<dd><p>SUBDIRS(directory, subdirs2ignore)</p>
+<p>NPMitchell 2020</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="basics.write_txt_with_header">
+<span class="sig-prename descclassname"><span class="pre">basics.</span></span><span class="sig-name descname"><span class="pre">write_txt_with_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">fn</span></em>, <em class="sig-param"><span class="pre">dat</span></em>, <em class="sig-param"><span class="pre">header</span></em><span class="sig-paren">)</span><a class="headerlink" href="#basics.write_txt_with_header" title="Permalink to this definition">#</a></dt>
+<dd><p>WRITE_TXT_WITH_HEADER(FN, DAT, HEADER) Write data to a txt file with header</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">char</span></code></span>) – the filename (full path) of the txt file</p></li>
+<li><p><strong>dat</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">array</span></code></span>) – the data to write to disk</p></li>
+<li><p><strong>header</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">char</span></code></span>) – the header string for the txt file</p></li>
+<li><p><strong>2019</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">NPMitchell</span></code></span>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</section>
 </section>
 
         </article>
@@ -331,16 +395,26 @@ To control how this is performed, toggle da.timeStampMethod.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="example_usage_genes.html">
+          <a class="next-page" href="curve_handling.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Example for gathering gene patterns from atlas</div>
+                <div class="title">curve_handling</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+          <a class="prev-page" href="queriedSample.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">queriedSample</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -373,16 +447,12 @@ To control how this is performed, toggle da.timeStampMethod.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Welcome to dynamicAtlas’s documentation!</a><ul>
-<li><a class="reference internal" href="#examples-of-using-dynamicatlas">Examples of using dynamicAtlas</a></li>
-<li><a class="reference internal" href="#classes-and-folders">Classes and Folders</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#some-details-on-how-dynamicatlas-works">Some details on how dynamicAtlas works</a></li>
-<li><a class="reference internal" href="#master-timeline-generation">Master timeline generation</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">basics</a><ul>
+<li><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li><a class="reference internal" href="#module-basics">Full Contents:</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
 </ul>
 
           </div>

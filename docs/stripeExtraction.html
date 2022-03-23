@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Example for gathering gene patterns from atlas" href="example_usage_genes.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="tiff_handling" href="tiff_handling.html" /><link rel="prev" title="statistics" href="statistics.html" />
 
     <meta name="generator" content="sphinx-4.4.0, furo 2022.03.04"/>
-        <title>dynamicAtlas 2022 documentation</title>
+        <title>stripeExtraction - dynamicAtlas 2022 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=935aa2abcc5c1da4283d1dc201fb1f0add16d23a" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=25ceb02ed1c46dc30f2321ff83e92799f69dfdb9" />
@@ -121,7 +121,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="#"><div class="brand">dynamicAtlas 2022 documentation</div></a>
+      <a href="index.html"><div class="brand">dynamicAtlas 2022 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -141,7 +141,7 @@
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
       
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
   <span class="sidebar-brand-text">dynamicAtlas 2022 documentation</span>
@@ -170,7 +170,7 @@
 </li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1 has-children"><a class="reference internal" href="basics.html">basics</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
@@ -195,7 +195,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="statistics.html">statistics</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="stripeExtraction.html">stripeExtraction</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">stripeExtraction</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="tiff_handling.html">tiff_handling</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="simple">
@@ -233,97 +233,160 @@
           </label>
         </div>
         <article role="main">
-          <section id="welcome-to-dynamicatlas-s-documentation">
-<h1>Welcome to dynamicAtlas’s documentation!<a class="headerlink" href="#welcome-to-dynamicatlas-s-documentation" title="Permalink to this headline">#</a></h1>
-<p>DynamicAtlas is a MATLAB toolkit for interfacing with a library of fixed and live datasets of a morphological process, here focusing on the stage of development called ‘germ band extension’ in the fruit fly.</p>
-<p>Suppose we want to create an lookup table of ALL data in the library. This is simple. First where is the data? Call that path <code class="docutils literal notranslate"><span class="pre">atlasPath</span></code></p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">atlasPath</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">'/path/to/the/data/dynamicAtlas/'</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">})</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Now <code class="docutils literal notranslate"><span class="pre">da</span></code> is an instance of the dynamicAtlas class with access to all the data through its methods.</p>
-<p>What if we just want a subset of the WT library? We can look for just certain geonotypes (parent directories) and/or for certain labels (subdirectories in the library). Let’s grab all the data stained for the transcription factor Runt in embryos that have a wild-type genotype. We can create an atlas of this subset of the data like:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">options</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">struct</span><span class="p">()</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">options</span><span class="p">.</span><span class="n">labels</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">}</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
-<span class="n">da</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">dynamicAtlas</span><span class="p">.</span><span class="n">dynamicAtlas</span><span class="p">(</span><span class="n">atlasPath</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="s">'WT'</span><span class="p">},</span><span class="w"> </span><span class="n">options</span><span class="p">)</span><span class="w"> </span><span class="p">;</span>``<span class="w"></span>
-</pre></div>
-</div>
-<p>Then we could slice all of this data with a given timestamp range
-(timestamp-delta, timestamp+delta) via</p>
-<p>Then we have a queriedSample object called <code class="docutils literal notranslate"><span class="pre">qs</span></code>. It has some interesting methods like <code class="docutils literal notranslate"><span class="pre">getData()</span></code> and <code class="docutils literal notranslate"><span class="pre">getPIV()</span></code> which load the pullback images of the tissue or the velocities for us to analyze it. To execute these methods, simply run
-<code class="docutils literal notranslate"><span class="pre">qs.getData()</span></code> or <code class="docutils literal notranslate"><span class="pre">qs.getPIV()</span></code>.
-We can also ask for things like the mean velocity across all the data in the queried sample using <code class="docutils literal notranslate"><span class="pre">qs.getMeanPIV()</span></code>.</p>
-<p>Alternatively, we could slice the atlas data for only frames of live datasets of a given genotype and a given label with a given timestamp range:</p>
-<p>Similar methods to check out are <code class="docutils literal notranslate"><span class="pre">da.findEmbryo('202006261115')</span></code>, <code class="docutils literal notranslate"><span class="pre">da.findStaticGenotypeLabel()</span></code> and similar.</p>
-<section id="examples-of-using-dynamicatlas">
-<h2>Examples of using dynamicAtlas<a class="headerlink" href="#examples-of-using-dynamicatlas" title="Permalink to this headline">#</a></h2>
+          <section id="stripeextraction">
+<h1>stripeExtraction<a class="headerlink" href="#stripeextraction" title="Permalink to this headline">#</a></h1>
 <div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Example scripts:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_genes.html">Example for gathering gene patterns from atlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example_usage_piv.html">Example for computing and recalling velocity measurements</a></li>
+</div>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="module-stripeExtraction">
+<span id="full-contents"></span><h2>Full Contents:<a class="headerlink" href="#module-stripeExtraction" title="Permalink to this headline">#</a></h2>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.anteriorMoveSegmentation">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">anteriorMoveSegmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">bw</span></em>, <em class="sig-param"><span class="pre">placement</span></em>, <em class="sig-param"><span class="pre">minsz</span></em>, <em class="sig-param"><span class="pre">maxsz</span></em>, <em class="sig-param"><span class="pre">msg</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.anteriorMoveSegmentation" title="Permalink to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>ANTERIORMOVESEGMENTATION(bw, placement, minsz, maxsz)</dt><dd><p>Select a region of the BW segmented image that is anterior or posterior</p>
+</dd>
+</dl>
+<p>to current selection (indexed by ‘placement’) to find stripe 7
+segmentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bw</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">NxM</span> <span class="pre">binary</span> <span class="pre">array</span></code></span>) – pre-size-filtered binary mask</p></li>
+<li><p><strong>placement</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">int</span></code></span>) – the rank AP position of the segmented region (stripe7, for ex) that is
+true in the mask</p></li>
+<li><p><strong>minsz</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span></code></span>) – the min allowed size of a true region in the mask, in pixels</p></li>
+<li><p><strong>maxsz</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">float</span> <span class="pre">or</span> <span class="pre">int</span></code></span>) – the max allowed size of a true region in the mask, in pixels</p></li>
 </ul>
-</div>
-</section>
-<section id="classes-and-folders">
-<h2>Classes and Folders<a class="headerlink" href="#classes-and-folders" title="Permalink to this headline">#</a></h2>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Classes in +dynamicAtlas:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="dynamicAtlas.html">dynamicAtlas</a></li>
-<li class="toctree-l1"><a class="reference internal" href="lookupMap.html">lookupMap</a></li>
-<li class="toctree-l1"><a class="reference internal" href="queriedSample.html">queriedSample</a></li>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>bw</strong> (<em>NxM binary array</em>) – pre-size-filtered binary mask</p></li>
+<li><p><strong>bw2</strong> (<em>NxM binary array</em>) – size-filtered binary mask</p></li>
+<li><p><strong>placement</strong> (<em>int</em>) – the rank AP position of the segmented region (stripe7, for ex) that is
+true in the mask</p></li>
+<li><p><strong>button</strong> (<em>waitforbuttonpress() output</em>) – what the current</p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
 </ul>
-</div>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Folders of functions:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="basics.html">basics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="curve_handling.html">curve_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="data_handling.html">data_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="external.html">external</a></li>
-<li class="toctree-l1"><a class="reference internal" href="matchTime.html">matchTime</a></li>
-<li class="toctree-l1"><a class="reference internal" href="piv_handling.html">piv_handling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plotting.html">plotting</a></li>
-<li class="toctree-l1"><a class="reference internal" href="statistics.html">statistics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="stripeExtraction.html">stripeExtraction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tiff_handling.html">tiff_handling</a></li>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.autoStripe7">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">autoStripe7</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.autoStripe7" title="Permalink to this definition">#</a></dt>
+<dd><p>default stripe7 finding protocol</p>
+<p>NPMitchell 2020</p>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.cutCurveIntoLeadingTrailingSegments">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">cutCurveIntoLeadingTrailingSegments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.cutCurveIntoLeadingTrailingSegments" title="Permalink to this definition">#</a></dt>
+<dd><p>Cut curve into left and right segments (leading and trailing segments)
+Assume clockwise motion of the curve</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>stripe</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">2</span> <span class="pre">float</span> <span class="pre">array</span></code></span>) – the (AP, DV) coordinates of a stripe (both leading and trailing edges)
+as (x,y) coordinates</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>segs</strong> (<em>length 2 cell array of xy positions</em>) – leading edge and trailing edge curves as separate coorinate positions</p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
 </ul>
-</div>
-</section>
-<section id="some-details-on-how-dynamicatlas-works">
-<h2>Some details on how dynamicAtlas works<a class="headerlink" href="#some-details-on-how-dynamicatlas-works" title="Permalink to this headline">#</a></h2>
-<p>We saw how to make a dynamicAtlas class instance and a queriedSample class instance.
-There is one more class in this toolkit that helps it all run smoothly called a lookupMap. You don’t have to use the lookupMap if you want to keep things simple, but in case you want to look under the hood, let’s take a look.
-You can instantiate the map using the <code class="docutils literal notranslate"><span class="pre">lookup</span></code> method of dynamicAtlas:</p>
-<p>Now mapWT has methods:</p>
-<p>To find embryos with a Runt stain, you can say:</p>
-<p>Alternatively, we can take a peek within the lookup map of da to get
-all Runt labels, regardless of genotype:</p>
-<p>or even index the map stored in da’s lookup map:</p>
-<p>To find embryos with a t=10 +/- 2 min</p>
-<p>To find Runt stains with a t=10 +/- 2 min</p>
-</section>
-<section id="master-timeline-generation">
-<h2>Master timeline generation<a class="headerlink" href="#master-timeline-generation" title="Permalink to this headline">#</a></h2>
-<p>Fixed samples are timestamped according to their morphology against live datasets.
-If we want to build such a master timeline from scratch, we can do so as follows.</p>
-<p>Use dynamic datasets within the lookupMap to build master timeline.
-To control how this is performed, toggle da.timeLineMethod:</p>
-<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">da</span><span class="p">.</span><span class="n">makeMasterTimeline</span><span class="p">(</span><span class="s">'WT'</span><span class="p">,</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
-</pre></div>
-</div>
-<p>Timestamp other data against the master timeline.
-To control how this is performed, toggle da.timeStampMethod.</p>
-</section>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.extractStripeEdges">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">extractStripeEdges</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">dat</span></em>, <em class="sig-param"><span class="pre">maskfn</span></em>, <em class="sig-param"><span class="pre">thres</span></em>, <em class="sig-param"><span class="pre">minmaxsz</span></em>, <em class="sig-param"><span class="pre">embryoID</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.extractStripeEdges" title="Permalink to this definition">#</a></dt>
+<dd><p>Determine the eges of a stripe in an image</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dat</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">NxM</span> <span class="pre">float</span> <span class="pre">array</span></code></span>) – the image as a grid of intensity values</p></li>
+<li><p><strong>maskfn</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – the filename where the mask to determine the stripe segmentation is to
+be saved on disk</p></li>
+<li><p><strong>thres</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">float</span></code></span>) – minimum value to use when binarizing in the segmentation</p></li>
+<li><p><strong>minmaxsz</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">length</span> <span class="pre">2</span> <span class="pre">float/int</span> <span class="pre">array</span></code></span>) – the minimum and maximum size of the segmentated region allowed</p></li>
+<li><p><strong>embryoID</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">str</span></code></span>) – ID tag for the embryo whose stripe is being segmented</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>curv</em></p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.morphologicalOpLoop">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">morphologicalOpLoop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">bw</span></em>, <em class="sig-param"><span class="pre">dcrop_orig</span></em>, <em class="sig-param"><span class="pre">placement</span></em>, <em class="sig-param"><span class="pre">thres</span></em>, <em class="sig-param"><span class="pre">minmaxsz</span></em>, <em class="sig-param"><span class="pre">msg</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.morphologicalOpLoop" title="Permalink to this definition">#</a></dt>
+<dd><dl class="simple">
+<dt>MORPHOLOGICALOPLOOP(bw, dcrop_orig, placement, thres, minmaxsz)</dt><dd><p>Loop to extract mask segmentation by iterative dilation &amp; erosion</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bw</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">NxM</span> <span class="pre">binary</span> <span class="pre">array</span></code></span>) – pre-size-filtered binary mask</p></li>
+<li><p><strong>dcrop_orig</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">original</span> <span class="pre">intensity</span> <span class="pre">data</span></code></span>) – original intensity data before thresholding to create mask</p></li>
+<li><p><strong>placement</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">int</span></code></span>) – the rank AP position of the segmented region (stripe7, for ex) that is
+true in the mask</p></li>
+<li><p><strong>thres</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">numeric</span> <span class="pre">threshold</span></code></span>) – threshold for binarizing the dcrop_orig data</p></li>
+<li><p><strong>minmaxsz</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">[minsz</span> <span class="pre">maxsz]</span></code></span>) – the min and max allowed size of a true region in the mask, in pixels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>bw</strong> (<em>NxM binary array</em>) – pre-size-filtered binary mask</p></li>
+<li><p><strong>bw2</strong> (<em>NxM binary array</em>) – size-filtered binary mask</p></li>
+<li><p><strong>good_enough</strong> (<em>bool</em>) – segmentation is good enough to save, should be true when returned</p></li>
+<li><p><strong>move_on</strong> (<em>bool</em>) – whether we are ready to continue with the pipeline</p></li>
+<li><p><strong>placement</strong> (<em>int</em>) – the rank AP position of the segmented region (stripe7, for ex) that is
+true in the mask</p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="mat function">
+<dt class="sig sig-object mat" id="stripeExtraction.ssrCurves">
+<span class="sig-prename descclassname"><span class="pre">stripeExtraction.</span></span><span class="sig-name descname"><span class="pre">ssrCurves</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">curv</span></em>, <em class="sig-param"><span class="pre">refcurv</span></em>, <em class="sig-param"><span class="pre">take_mean</span></em>, <em class="sig-param"><span class="pre">symmetrize</span></em><span class="sig-paren">)</span><a class="headerlink" href="#stripeExtraction.ssrCurves" title="Permalink to this definition">#</a></dt>
+<dd><p>Find sum of squared residual</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>curv</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">N</span> <span class="pre">x</span> <span class="pre">2</span> <span class="pre">float</span> <span class="pre">array</span></code></span>) – the curv to match refcurv</p></li>
+<li><p><strong>refcurv</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">M</span> <span class="pre">x</span> <span class="pre">2</span> <span class="pre">float</span> <span class="pre">array</span></code></span>) – the second curv, reference</p></li>
+<li><p><strong>take_mean</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">bool</span> <span class="pre">(default=false)</span></code></span>) – use mean distance between the two (discrete) curves instead of sum</p></li>
+<li><p><strong>symmetrize</strong> (<span><code class="xref mat mat-obj docutils literal notranslate"><span class="pre">bool</span> <span class="pre">(default=false)</span></code></span>) – return sqrt(ssr_12)* sqrt(ssr_21) so that curve ordering is irrelevant,
+or sum them together if take_mean==false.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ssr</strong> (<em>float</em>)</p></li>
+<li><p><em>NPMitchell 2020</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
 </section>
 <section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</section>
 </section>
 
         </article>
@@ -331,16 +394,26 @@ To control how this is performed, toggle da.timeStampMethod.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="example_usage_genes.html">
+          <a class="next-page" href="tiff_handling.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Example for gathering gene patterns from atlas</div>
+                <div class="title">tiff_handling</div>
               </div>
               <svg><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+          <a class="prev-page" href="statistics.html">
+              <svg><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">statistics</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -373,16 +446,12 @@ To control how this is performed, toggle da.timeStampMethod.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Welcome to dynamicAtlas’s documentation!</a><ul>
-<li><a class="reference internal" href="#examples-of-using-dynamicatlas">Examples of using dynamicAtlas</a></li>
-<li><a class="reference internal" href="#classes-and-folders">Classes and Folders</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#some-details-on-how-dynamicatlas-works">Some details on how dynamicAtlas works</a></li>
-<li><a class="reference internal" href="#master-timeline-generation">Master timeline generation</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">stripeExtraction</a><ul>
+<li><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li><a class="reference internal" href="#module-stripeExtraction">Full Contents:</a></li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
 </ul>
 
           </div>

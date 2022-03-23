@@ -63,22 +63,16 @@ To Do:
 handle PIV-based timeline creation
 	
 Full Contents:
-==================
+--------------
 
 .. automodule:: @dynamicAtlas
     :show-inheritance:
     :members:
 
-
-ClassFolder
-~~~~~~~~~~~
-
-.. autoclass:: dynamicAtlas
-
 	
 	
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
