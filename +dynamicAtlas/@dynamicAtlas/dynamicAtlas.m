@@ -2,32 +2,6 @@ classdef dynamicAtlas < handle
     %DYNAMICATLAS Dynamic Atlas of biological images
     %   An object that handles timing datasets of dynamic 2D images 
     %
-    % Example Usage
-    % -------------
-    % da = dynamicAtlas.dynamicAtlas('/path/to/data/', {'WT', 'TollRm9'})
-    % da.buildLookup() 
-    % da.makeGradientImages()
-    % mapWT = da.lookup('WT') ;
-    % % whose methods are
-    % methods(mapWT) 
-    % % To find embryos with a Runt stain
-    % runts = mapWT.findLabel('Runt') 
-    % % or equivalently
-    % runts = mapWT.map('Runt') 
-    % % To find embryos with a t=10 +/- 2 min
-    % snaps = mapWT.findTime(10, 2) 
-    % % To find Runt stains with a t=10 +/- 2 min
-    % runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
-    % % Use dynamic datasets within the lookupMap to build master timeline
-    % % To control how this is performed, toggle da.timeLineMethod
-    % da.makeMasterTimeline('WT', 'Runt')
-    % % Timestamp other data against the master timeline
-    % % To control how this is performed, toggle da.timeStampMethod
-    % da.timeStampStripe7('WT', 'Runt')
-    %
-    % To Do
-    % -----
-    % handle PIV-based timeline creation
     
     properties
         path                % path to the atlas parent directory
@@ -204,9 +178,10 @@ classdef dynamicAtlas < handle
             %
             % Returns
             % -------
+            % <none>
             %
-            % Outputs
-            % -------
+            % Saved to disk
+            % -------------
             % dynamicAtlas.path/timing/genotype/label/realspace_corr_ss%02d/
             % dynamicAtlas.path/timing/genotype/label/stripe7corr_ss%02d/
             % dynamicAtlas.path/timing/genotype/label/timeline_ss%02d_<corr_method>corr/
@@ -265,9 +240,10 @@ classdef dynamicAtlas < handle
             %
             % Returns
             % -------
+            % <none>
             %
-            % Outputs
-            % -------
+            % Saves to disk
+            % -------------
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.mat
             % dynamicAtlas.path/genotype/label/embryoID/timematch_curve7_chisq.txt
             if nargin < 4
@@ -355,7 +331,7 @@ classdef dynamicAtlas < handle
             % genotype : str, the genotype in which to search
             % label : string, label name (ex 'Eve' or 'Runt')
             % 
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             %   queriedSample with properties
@@ -387,7 +363,7 @@ classdef dynamicAtlas < handle
             % genotype : str, the genotype in which to search
             % label : string, label name (ex 'Eve' or 'Runt')
             % 
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             %   queriedSample with properties
@@ -421,7 +397,7 @@ classdef dynamicAtlas < handle
             % time : target timestamp to search for within da instance
             % deltaT : range of acceptable times are time+/-deltaT
             % 
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             %   queriedSample with properties
@@ -457,7 +433,7 @@ classdef dynamicAtlas < handle
             % genotype : str, the genotype in which to search
             % label : string, label name (ex 'Eve' or 'Runt')
             % 
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             
@@ -483,7 +459,7 @@ classdef dynamicAtlas < handle
             % genotype : str, the genotype in which to search
             % label : string, label name (ex 'Eve' or 'Runt')
             %
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             
@@ -503,7 +479,7 @@ classdef dynamicAtlas < handle
             % genotype : str, the genotype in which to search
             % label : string, label name (ex 'Eve' or 'Runt')
             %
-            % Outputs
+            % Returns
             % -------
             % qs : queriedSample class instance
             

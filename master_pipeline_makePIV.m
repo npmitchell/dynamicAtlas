@@ -32,7 +32,7 @@ addpath(genpath('+dynamicAtlas'))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % atlasPath = '/Volumes/minimalData/Atlas_Data' ;
 %atlasPath = '/Users/mattlefebvre/Desktop/WT_data_server/'
-atlasPath = '/Volumes/Elements/Atlas_Data' ;
+atlasPath = '/Volumes/DOGIC/Atlas_Data' ;
 % atlasPath = '/run/user/1001/gvfs/afp-volume:host=flydrive.local,user=npmitchell,volume=minimalData/Atlas_Data/' ;
 
 %% Build the dynamicAtlas
