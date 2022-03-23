@@ -296,13 +296,34 @@ We can also ask for things like the mean velocity across all the data in the que
 <p>We saw how to make a dynamicAtlas class instance and a queriedSample class instance.
 There is one more class in this toolkit that helps it all run smoothly called a lookupMap. You don’t have to use the lookupMap if you want to keep things simple, but in case you want to look under the hood, let’s take a look.
 You can instantiate the map using the <code class="docutils literal notranslate"><span class="pre">lookup</span></code> method of dynamicAtlas:</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">mapWT</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">da</span><span class="p">.</span><span class="n">lookup</span><span class="p">(</span><span class="s">'WT'</span><span class="p">)</span><span class="w"> </span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
 <p>Now mapWT has methods:</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="k">methods</span><span class="p">(</span><span class="n">mapWT</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
 <p>To find embryos with a Runt stain, you can say:</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">runts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">findGenotypeLabel</span><span class="p">(</span><span class="s">'WT'</span><span class="p">,</span><span class="w"> </span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
 <p>Alternatively, we can take a peek within the lookup map of da to get
 all Runt labels, regardless of genotype:</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">runts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">mapWT</span><span class="p">.</span><span class="n">findLabel</span><span class="p">(</span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
 <p>or even index the map stored in da’s lookup map:</p>
-<p>To find embryos with a t=10 +/- 2 min</p>
-<p>To find Runt stains with a t=10 +/- 2 min</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">runts</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">mapWT</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="s">'Runt'</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>To find all embryos with a t=10 +/- 2 min</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">snaps</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">mapWT</span><span class="p">.</span><span class="n">findTime</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
+<p>To find Runt-labeled embryos with a t=10 +/- 2 min</p>
+<div class="highlight-matlab notranslate"><div class="highlight"><pre><span></span><span class="n">runtsnaps</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">mapWT</span><span class="p">.</span><span class="n">findLabelTime</span><span class="p">(</span><span class="s">'Runt'</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+</div>
 </section>
 <section id="master-timeline-generation">
 <h2>Master timeline generation<a class="headerlink" href="#master-timeline-generation" title="Permalink to this headline">#</a></h2>

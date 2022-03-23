@@ -92,37 +92,44 @@ There is one more class in this toolkit that helps it all run smoothly called a 
 You can instantiate the map using the ``lookup`` method of dynamicAtlas:
 
 .. code-block:: matlab
+
     mapWT = da.lookup('WT') ;
 
 Now mapWT has methods:
 
 .. code-block:: matlab
+
     methods(mapWT)
 
 To find embryos with a Runt stain, you can say:
 
 .. code-block:: matlab
+
     runts = findGenotypeLabel('WT', 'Runt')
 
 Alternatively, we can take a peek within the lookup map of da to get
 all Runt labels, regardless of genotype:
 
 .. code-block:: matlab
+
     runts = mapWT.findLabel('Runt')
 
 or even index the map stored in da's lookup map:
 
 .. code-block:: matlab
+
     runts = mapWT.map('Runt')
 
-To find embryos with a t=10 +/- 2 min
+To find all embryos with a t=10 +/- 2 min
 
 .. code-block:: matlab
+
     snaps = mapWT.findTime(10, 2)
 
-To find Runt stains with a t=10 +/- 2 min
+To find Runt-labeled embryos with a t=10 +/- 2 min
 
 .. code-block:: matlab
+
     runtsnaps = mapWT.findLabelTime('Runt', 10, 2)
 
 
