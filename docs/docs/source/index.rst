@@ -14,7 +14,7 @@ Suppose we want to create an lookup table of ALL data in the library. This is si
 .. code-block:: matlab
 
 	atlasPath = '/path/to/the/data/dynamicAtlas/'
-	da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;``
+	da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}) ;
 
 Now ``da`` is an instance of the dynamicAtlas class with access to all the data through its methods.
 
@@ -25,13 +25,14 @@ What if we just want a subset of the WT library? We can look for just certain ge
 
 	options = struct() ;
 	options.labels = { 'Runt'} ;
-	da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;``
+	da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
 Then we could slice all of this data with a given timestamp range
 (timestamp-delta, timestamp+delta) via
 
 .. code-block:: matlab
-    qs = da.findTime(timestamp, delta)``
+
+    qs = da.findTime(timestamp, delta)
 
 Then we have a queriedSample object called ``qs``. It has some interesting methods like ``getData()`` and ``getPIV()`` which load the pullback images of the tissue or the velocities for us to analyze it. To execute these methods, simply run
 ``qs.getData()`` or ``qs.getPIV()``.
@@ -40,7 +41,8 @@ We can also ask for things like the mean velocity across all the data in the que
 Alternatively, we could slice the atlas data for only frames of live datasets of a given genotype and a given label with a given timestamp range:
 
 .. code-block:: matlab
-    qs = da.findDynamicGenotypeLabelTime('WT', 'Runt', timestamp, delta)``
+
+    qs = da.findDynamicGenotypeLabelTime('WT', 'Runt', timestamp, delta)
 
 Similar methods to check out are ``da.findEmbryo('202006261115')``, ``da.findStaticGenotypeLabel()`` and similar.
 
