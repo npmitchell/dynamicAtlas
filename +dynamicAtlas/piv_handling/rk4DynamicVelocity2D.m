@@ -1,4 +1,4 @@
-function [xyOut, xyPaths, xyPathsMat] = rk4DynamicVelocity2D(pts, X0v, Y0v, vx, vy, hh, tt)
+function [xyOut, xyPaths, xyPathsMat] = rk4DynamicVelocity2D(pts, X0v, Y0v, vx, vy, hh, tt, options)
 % [xyOut, xyPaths] = rk4DynamicVelocity2D(pts, XY0v, v2d, hh, tt)
 % solve Runge-Kutta 4th order in 2d space with fixed velocity field
 %
@@ -26,7 +26,24 @@ function [xyOut, xyPaths, xyPathsMat] = rk4DynamicVelocity2D(pts, X0v, Y0v, vx, 
 %   
 % NPMitchell 2022
 
-preview = true ;
+if nargin < 8
+    options = struct('boundXY', true) ;
+    preview = true ;
+else
+    if ~isfield(options, 'preview')
+        preview = true ;
+    else
+        preview = options.preview ;
+    end
+    if ~isfield(options, 'boundXY')
+        options.boundXY = true ;
+    end
+    if isfield(options, 'timeAxis')
+        timeAxis = options.timeAxis ;
+    else
+        timeAxis = 1 ;
+    end
+end
 
 % step size
 if nargin < 6
@@ -40,7 +57,24 @@ if nargin < 7
     tt = 1:hh:size(vx, 1);    
 end
 
+% bound the poisitions to lie inside extrapolation region
+bound = options.boundXY ;
+if bound
+    Xmax = max(X0v(:)) ;
+    Ymax = max(Y0v(:)) ;
+    Xmin = min(X0v(:)) ;
+    Ymin = min(Y0v(:)) ;
+end
+    
 % initial condition is xy0
+
+% Handle axes
+if timeAxis == 1
+    % no additional processing needed
+elseif timeAxis == 3
+    vx = permute(vx, [3, 1, 2]) ;
+    vy = permute(vy, [3, 1, 2]) ;
+end
 
 % Preallocation
 xyOut = zeros(size(pts)) ;
@@ -113,6 +147,7 @@ for ii=1:(length(tt)-1)
     vy1b = squeeze(vy(idx1b, :, :)) ;
     vy2a = squeeze(vy(idx2a, :, :)) ;
     vy2b = squeeze(vy(idx2b, :, :)) ;
+        
     k1x = interp2(X0v, Y0v, ...
         frac1 * vx0a + (1-frac1) * vx0b, x, y, 'makima') ;
     k1y = interp2(X0v, Y0v, ...
@@ -140,6 +175,14 @@ for ii=1:(length(tt)-1)
     x = x + (1/6)*(k1x + 2*k2x + 2*k3x + k4x)*hh;  
     y = y + (1/6)*(k1y + 2*k2y + 2*k3y + k4y)*hh;  
     
+    if bound
+        x(x>Xmax) = Xmax ;
+        y(y>Ymax) = Ymax ;
+        x(x<Xmin) = Xmin ;
+        y(y<Ymin) = Ymin ;
+        
+    end
+    
     % final position
     xyOut = [x, y] ;
     
@@ -151,9 +194,10 @@ for ii=1:(length(tt)-1)
     end
     
     if preview
-        clf; quiver(X0v, Y0v, vx0a, vy0a, 1); hold on; plot(x, y, '.')
+        clf; quiver(X0v, Y0v, vx0a, vy0a, 0); hold on; plot(x, y, '.')
         xlim([min(X0v(:)), max(X0v(:))])
         ylim([min(Y0v(:)), max(Y0v(:))])
+        title(['t = ' num2str(tt(ii))])
         pause(0.01)
     end
 end

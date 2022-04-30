@@ -34,8 +34,8 @@ end
 
 % initial condition is xy0
 % interpolate v2d from XY0v
-fx = griddedInterpolant(X0v, Y0v,  vx) ;
-fy = griddedInterpolant(X0v, Y0v,  vy) ;
+fx = griddedInterpolant(X0v, Y0v,  vx, 'makima', 'nearest') ;
+fy = griddedInterpolant(X0v, Y0v,  vy, 'makima', 'nearest') ;
 
 % calculation loop
 xyOut = zeros(size(pts)) ;

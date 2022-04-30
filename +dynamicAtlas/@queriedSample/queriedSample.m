@@ -80,15 +80,20 @@ classdef queriedSample < handle
                 dataCell = cell(1, length(obj.meta.folders)) ;
                 for qq = 1:length(obj.meta.folders)
                     tiff_fn = fullfile(obj.meta.folders{qq}, obj.meta.names{qq}) ;
-                    if isfield(obj.meta, 'tiffpages')
+                    if iscell(obj.meta.tiffpages)
+                        thesePages = obj.meta.tiffpages{qq} ;
+                    else
+                        thesePages = obj.meta.tiffpages(qq) ;
+                    end
+                    if isfield(obj.meta, 'tiffpages') && ~iscell(obj.meta.tiffpages)
                         disp(['Loading TIFF page ', ...
-                            num2str(obj.meta.tiffpages(qq)), ...
+                            num2str(thesePages), ...
                             ' from: ', tiff_fn])
                         try
-                            dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                            dataCell{qq} = imread(tiff_fn, thesePages) ;
                         catch
                             disp(['Could not load file. Incorrectly named? '  tiff_fn])
-                            dataCell{qq} = imread(tiff_fn, obj.meta.tiffpages(qq)) ;
+                            dataCell{qq} = imread(tiff_fn, thesePages) ;
                         end
                     else
                         disp(['Loading TIFF stack: ' tiff_fn])
@@ -481,6 +486,13 @@ classdef queriedSample < handle
                     end
                     
                     for pp = 1:(ntimestamps-1)
+                        try
+                            % load dt, timestep between frames in minutes
+                            dt = dlmread(fullfile(obj.meta.folders{qq}, 'dt.txt')) ;
+                        catch
+                            % default dt is 1 minute
+                            dt = 1;
+                        end
                         tiffpage = timestamps(pp) ;
                         try
                             if strcmpi(method, 'default')

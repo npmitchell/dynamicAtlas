@@ -76,11 +76,15 @@ for t = 1:  StackSize-step
     % read the image and scale
     im1     = dat(:,:,t);
     im2     = dat(:,:,t+step);
-    im1     = imresize(im1,isf,'bicubic'); % rescale image if desired
-    im2     = imresize(im2,isf,'bicubic');
-    % im1 = im1(20:end-20,20:end-20);
-    % im2 = im2(20:end-20,20:end-20);
-   if strcmpi(method, 'default')
+    
+    if isf ~= 1.0
+        im1     = imresize(im1,isf,'bicubic'); % rescale image if desired
+        im2     = imresize(im2,isf,'bicubic');
+        % im1 = im1(20:end-20,20:end-20);
+        % im2 = im2(20:end-20,20:end-20);
+    end
+    
+    if strcmpi(method, 'default')
        
        if histequilize
            im1 = histeq(im1) ;
@@ -127,35 +131,42 @@ for t = 1:  StackSize-step
 
     elseif strcmpi(method, 'pivlab')
         
-        opts = struct() ;
-        % Standard PIV Settings
-        opts.intArea1        = EdgeLength*8 ;
-        opts.step            = round(opts.intArea1 * 0.5) ;
-        opts.subpixFindr     = 1  ;
-        opts.mask            = [] ;
-        opts.roi             = [] ;
-        opts.numPasses       = 4  ;
-        opts.intArea2        = EdgeLength*4 ;
-        opts.intArea3        = EdgeLength*2 ;
-        opts.intArea4        = EdgeLength ;
-        opts.repeat          = 1  ;
-        opts.disAuto         = 0  ;
-        % Image proc
-        opts.clahe = histequilize ;
-        opts.claheW          = 40 ;
-        opts.highPass        = 0  ;
-        opts.highPassSz      = 15 ;
-        opts.clipping        = 0  ;
-        opts.wiener          = 0  ;
-        opts.wienerW         = 3  ;
-        % Post-processing        
-        opts.calu            = 1. ;
-        opts.calv            = 1  ;
-        opts.valid_vel       = [] ;
-        opts.do_stdev_check  = 1 ;
-        opts.stdthresh       = 5  ;
-        opts.do_local_median = 0  ;
-        opts.neigh_thresh    = 2  ;
+        optfn = fullfile(inputDir, 'PIVlab_settings.mat') ;
+        if exist(optfn, 'file')
+           opts = load(optfn) ;
+        else
+            opts = struct() ;
+            
+            % Standard PIV Settings
+            opts.intArea1        = EdgeLength*8 ;
+            opts.step            = round(opts.intArea1 * 0.5) ;
+            opts.subpixFindr     = 1  ;
+            opts.mask            = [] ;
+            opts.roi             = [] ;
+            opts.numPasses       = 4  ;
+            opts.intArea2        = EdgeLength*4 ;
+            opts.intArea3        = EdgeLength*2 ;
+            opts.intArea4        = EdgeLength ;
+            opts.repeat          = 1  ;
+            opts.disAuto         = 0  ;
+            % Image proc
+            opts.clahe = histequilize ;
+            opts.claheW          = 40 ;
+            opts.highPass        = 0  ;
+            opts.highPassSz      = 15 ;
+            opts.clipping        = 0  ;
+            opts.wiener          = 0  ;
+            opts.wienerW         = 3  ;
+            % Post-processing        
+            opts.calu            = 1. ;
+            opts.calv            = 1  ;
+            opts.valid_vel       = [] ;
+            opts.do_stdev_check  = 1 ;
+            opts.stdthresh       = 5  ;
+            opts.do_local_median = 0  ;
+            opts.neigh_thresh    = 2  ;
+        end
+        
         [VX, VY, VX_filt, VY_filt, X0, Y0] = ...
             getPIVLab(im1, im2, opts) ;
         
@@ -188,7 +199,12 @@ for t = 1:  StackSize-step
         Y0 = Y0' ;
         convert_to_um_per_min = pix2um / (isf * dt) ;
         save(fn,'VX','VY','VX_filt','VY_filt','X0','Y0', 'convert_to_um_per_min');
-   end
+        
+        % Save the settings used for piv as a settings.mat
+        if ~exist(optfn, 'file')
+            save(optfn, opts) ;
+        end
+    end
 end
 %play a movie;
 %implay(M) 
