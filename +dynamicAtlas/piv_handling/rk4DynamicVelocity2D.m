@@ -16,6 +16,14 @@ function [xyOut, xyPaths, xyPathsMat] = rk4DynamicVelocity2D(pts, X0v, Y0v, vx, 
 %   stepsize for finding path
 % tt : optional Qx1 float array (default=0:hh:size(v2d, 1))
 %   timestamps relative to the indices of v2d at which to compute
+% options : struct with fields
+%   boundXY : bool (default=true)
+%       keep the pathlines within the bounding box of the evaluation coords
+%   preview : bool (default=false)
+%       inspect current results as computed
+%   timeAxis : int (default=1)
+%       which axis of vx and vy is considered to be time 
+%   
 %
 % Returns
 % -------
@@ -29,6 +37,7 @@ function [xyOut, xyPaths, xyPathsMat] = rk4DynamicVelocity2D(pts, X0v, Y0v, vx, 
 if nargin < 8
     options = struct('boundXY', true) ;
     preview = true ;
+    timeAxis = 1 ;
 else
     if ~isfield(options, 'preview')
         preview = true ;
@@ -46,15 +55,31 @@ else
 end
 
 % step size
-if nargin < 6
-    hh=0.05;                                             
+if nargin < 6 || isempty(hh)
+    if nargin < 7 || isempty(tt)
+        hh=0.05;                                    
+    else
+        hhs = diff(tt) ;
+        hh = hhs(1) ;
+        try
+            assert(all(abs(hhs - hh)<1e-14))
+        catch
+            error('If tt is supplied, it must be supplied as a uniform sampling of time')
+        end
+    end
 end
 
 % check that v2d is 3D (time, vx, vy)
 
 % parameterization of the path steps in space
-if nargin < 7
+if nargin < 7 || isempty(tt)
     tt = 1:hh:size(vx, 1);    
+end
+
+try
+    assert(all(abs(diff(tt) - hh) < 1e-14))
+catch
+    error('If tt is supplied and hh is supplied, then tt must increase in increments of hh!')
 end
 
 % bound the poisitions to lie inside extrapolation region
@@ -101,7 +126,8 @@ for ii=1:(length(tt)-1)
     end
     
     % Figure out which time indices to interpolate between for this
-    % sub-step ii.
+    % sub-step ii. 
+    %  This will typically look like this if the timestep is small:
     %
     %          idx0               idx1
     %  ---------o------------------o------------------o---------
@@ -110,7 +136,16 @@ for ii=1:(length(tt)-1)
     %              tt(ii)  tt(ii+1)
     %    
     %
-    %  TODO: handle this case:
+    %  Sometimes one of the timesteps will coincide with an index:
+    %
+    %          idx0               idx1
+    %  ---------o------------------o------------------o---------
+    %           ^      ^
+    %           |      |
+    %         tt(ii)  tt(ii+1)
+    %    
+    %
+    %  Also could end up with this case if 1/hh is non-integer:
     %
     %          idx0               idx1
     %  ---------o------------------o------------------o---------
