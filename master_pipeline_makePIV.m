@@ -33,6 +33,7 @@ addpath(genpath('+dynamicAtlas'))
 % atlasPath = '/Volumes/minimalData/Atlas_Data' ;
 %atlasPath = '/Users/mattlefebvre/Desktop/WT_data_server/'
 atlasPath = '/Volumes/DOGIC/Atlas_Data' ;
+atlasPath = '/Volumes/WOON/Atlas_Data' ;
 % atlasPath = '/run/user/1001/gvfs/afp-volume:host=flydrive.local,user=npmitchell,volume=minimalData/Atlas_Data/' ;
 
 %% Build the dynamicAtlas
@@ -40,11 +41,11 @@ atlasPath = '/Volumes/DOGIC/Atlas_Data' ;
 % da = dynamicAtlas.dynamicAtlas(atlasPath) ;
 % Or choose which genotypes to include in atlas (default=all of them)
 options = struct() ;
-options.labels = { 'Runt'} ;  %'histone-mCherry' 'histone-RFP'} ; % '
+options.labels = { 'sqh-mCherry_17_Degrees', 'sqh-mCherry_27_Degrees'} ;  %'histone-mCherry' 'histone-RFP'} ; % '
 da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
 
 %% Build flow field at each point in time using PIVLab
-qs = da.findDynamicGenotypeLabel('WT', 'Runt') ;
+qs = da.findDynamicGenotypeLabel('WT', 'sqh-mCherry_17_Degrees') ;
 options = struct() ;
 options.method = 'pivlab'; % 'default' is the other option
 qs.ensurePIV(options) ;

@@ -28,8 +28,6 @@ close all
 % Add time_align_embryos directory to path so that dynamicAtlas package is
 % available to use.
 tlaDir = '/Volumes/minimalData/code/';
-% tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
-% tlaDir = '/Users/npmitchell/Dropbox/Soft_Matter/UCSB/dynamicAtlas/code';
 cd(fullfile(tlaDir)) ;
 addpath(genpath('dynamicAtlasCode')) ;
 cd('dynamicAtlasCode')

@@ -1,6 +1,7 @@
 function [fig, ax1, ax2, imhandle, shandle] = heatmap_on_image(im, xfield, yfield, cfield, options)
 % HEATMAP_ON_IMAGE Plot a scalar field as heatmap on image
 % This function has some unresolved bugs 2019-10-06: please fix
+% USE SCALARVECTORFIELDSONIMAGE(im, xx, yy, vx, vy, options) instead!
 %
 % Parameters
 % ----------
@@ -22,6 +23,10 @@ function [fig, ax1, ax2, imhandle, shandle] = heatmap_on_image(im, xfield, yfiel
 % ax2 : the heatmap axis
 % 
 % NPMitchell 2019
+
+if nargin < 5 
+    options = struct() ;
+end
 
 if isfield(options, 'colorstyle')
     colorstyle = options.colorstyle ;
@@ -52,9 +57,10 @@ end
 % Background image
 fig = figure ;
 ax1 = axes;
-imhandle = imshow(im); 
+imhandle = imshow(ax1, im); 
 colormap(ax1,'gray');
 set(ax1,'ydir','normal');
+hold on;
 
 % Foreground image
 ax2=axes;
@@ -68,7 +74,7 @@ if strcmp(colorstyle, 'pcolor')
     set(shandle, 'facealpha', alphaVal)
 elseif strcmp(colorstyle, 'imagesc')
     % Instead use imagesc
-    shandle = imagesc(xfield, yfield, cfield) ;
+    shandle = imagesc(ax2, xfield, yfield, cfield) ;
     alpha(ax2, alphaVal)
 else
     shandle = scatter(xfield, yfield, cfield, 'filled', 'edgecolor', 'none') ;
