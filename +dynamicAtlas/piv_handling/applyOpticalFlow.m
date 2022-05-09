@@ -1,4 +1,7 @@
 function applyOpticalFlow(pivStack, im0, Options)
+%applyOpticalFlow(pivStack, im0, Options)
+% Given an input image im0, advect the  intensity along the pivStack using
+% Euler integration and output the deformed image
 %
 % Parameters
 % ----------

@@ -172,7 +172,7 @@ for t = 1:  StackSize-step
         
         % Inspect velocity
         clf  
-        quiver(X0, Y0, VX, VY, 10)
+        quiver(X0, Y0, 10*VX, 10*VY, 0)
         axis equal
         title(['$\vec{v}$, t=' num2str(t)], 'interpreter', 'latex')
         xlim([0, 696]) ;
@@ -180,11 +180,11 @@ for t = 1:  StackSize-step
         pause(0.0001)
 
         % Display image and overlay flow field.
-        %     imshow(im1',[])
-        %     hold on 
-        %     f = 10;
-        %     quiver(X1,Y1,f*VX,f*VY,0,'g-')
-        %     pause(.1)
+        %  imshow(im1',[])
+        %  hold on 
+        %  f = 10;
+        %  quiver(X0,Y0,f*VX,f*VY,0,'g-')
+        %  pause(.1)
         % records a movie
         %M(t)    = getframe(gcf); 
         if ~exist(fullfile(inputDir, 'PIVlab'), 'dir')
@@ -202,7 +202,7 @@ for t = 1:  StackSize-step
         
         % Save the settings used for piv as a settings.mat
         if ~exist(optfn, 'file')
-            save(optfn, opts) ;
+            save(optfn, 'opts') ;
         end
     end
 end

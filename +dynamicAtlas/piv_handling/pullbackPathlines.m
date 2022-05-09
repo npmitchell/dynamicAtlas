@@ -1,5 +1,5 @@
 function [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options)
-% pullbackPathlines(QS, x0, y0, t0, options)
+% pullbackPathlines(pivStack, x0, y0, t0, options)
 %   Create paths in pullback space (in pixels, XY) by following optical
 %   flow of PIV measured on standardized pullback map.
 %   Note: I've chosen to use spatial smoothing via Gaussian blur rather
@@ -12,6 +12,10 @@ function [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options)
 %       velocities in x direction
 %   vy: #TP x nX x nY float
 %       velocities in y direction
+%   x : nX x nY numeric
+%       piv evaluation coordinates in x
+%   y : nX x nY numeric
+%       piv evaluation coordinates in y
 % x0 : n*m float array 
 %   x coordinates in pullback pixels to start pathlines at t0
 % y0 : n*m float array 
@@ -165,8 +169,8 @@ function [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options)
         uu = squeeze(vPIV(qq-1, :, :, 1)) ;
         vv = squeeze(vPIV(qq-1, :, :, 2)) ;
         % in transposed coords
-        ui = griddedInterpolant(xpiv, ypiv, uu', 'linear', 'nearest') ; 
-        vi = griddedInterpolant(xpiv, ypiv, vv', 'linear', 'nearest') ; 
+        ui = griddedInterpolant(xpiv, ypiv, uu, 'linear', 'nearest') ; 
+        vi = griddedInterpolant(xpiv, ypiv, vv, 'linear', 'nearest') ; 
 
         % 2. Evaluate at XY(qq-1) non-transposed coords
         xx = squeeze(XX(qq-1, :, :)) ;

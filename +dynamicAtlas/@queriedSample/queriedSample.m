@@ -32,11 +32,12 @@ classdef queriedSample < handle
     %
     % Example
     % -------
-    % a = dynamicAtlas('./', {'WT'}) 
-    % qs = a.findLabel('Eve')
+    % da = dynamicAtlas('./', {'WT'}) 
+    % qs = da.findGenotypeLabel('WT', 'Eve')
     % qs.getData()
     % qs.getGradients('dx', 10)
     % qs.getSmooth()
+    % qs.buildPIVStack(da, genotype, labels, deltaTime)
     %
     % NPMitchell 2020
     
@@ -312,7 +313,8 @@ classdef queriedSample < handle
                     output_path = fullfile(obj.meta.folders{qq}, 'PIVlab_filtered') ;
                 end
                 ffns = dir(fullfile(output_path, 'Velo*.mat')) ;
-                if options.overwrite || ~exist(output_path, 'dir') || length(ffns) < length(fns) 
+                if options.overwrite || ~exist(output_path, 'dir') || length(ffns) < length(fns)
+                    disp('Running median filter on PIV...')
                     runMedianFilterOnPIVField(input_path, output_path, median_order);
                 end
             end
@@ -376,6 +378,14 @@ classdef queriedSample < handle
         end
         
         function obj = removeEntries(obj, indicesToRemove)
+            % removeEntries(queriedSample, indicesToRemove)
+            % Remove some entries of the sample from the queriedSample
+            % instance.
+            %
+            % Example Usage 
+            % -------------
+            % qs = qs.removeEntries(indicesToRemove)
+            %
             nEntries = length(obj.meta.folders) ;
             assert(length(obj.meta.times) == nEntries)
             assert(length(obj.meta.uncs) == nEntries)
@@ -444,9 +454,15 @@ classdef queriedSample < handle
             % Returns
             % -------
             % piv : struct with fields
-            %   vx
-            %   vy 
-            %
+            %   vx : cell of PxQxNtps double arrays
+            %       velocity in x direction in pullbacks
+            %   vy : cell of PxQxNtps double arrays
+            %       velocity in y direction in pullbacks
+            %   rescaleFactor : float
+            %   X0 : QxP double
+            %       piv evaluation x coordinates
+            %   Y0 : QxP double
+            %       piv evaluation y coordinates
             method = 'default';
             if nargin < 2 
                 options = struct() ;
@@ -480,8 +496,9 @@ classdef queriedSample < handle
                         obj.piv.X0 = X0 ;
                         obj.piv.Y0 = Y0 ;
                     else
-                        vxcollection = zeros(86, 101, length(timestamps)) ;
-                        vycollection = zeros(86, 101, length(timestamps)) ;
+                        disp('preparing for loading PIVlab results...')
+                        vxcollection = zeros(length(timestamps), 86, 101) ;
+                        vycollection = zeros(length(timestamps), 86, 101) ;
                         first = true ;
                     end
                     
@@ -499,8 +516,8 @@ classdef queriedSample < handle
                                 pivfn = fullfile(obj.meta.folders{qq}, 'PIV_filtered', ...
                                     sprintf('VeloT_medfilt_%06d.mat', tiffpage)) ;
                                 tmp = load(pivfn) ;
-                                vxcollection(:, :, pp) = tmp.VX / (rescaleFactor *dt) ;
-                                vycollection(:, :, pp) = tmp.VY / (rescaleFactor *dt) ;
+                                vxcollection(pp, :, :) = tmp.VX / (rescaleFactor *dt) ;
+                                vycollection(pp, :, :) = tmp.VY / (rescaleFactor *dt) ;
                             else
                                 pivfnRaw = fullfile(obj.meta.folders{qq}, 'PIVlab', ...
                                     sprintf('VeloT_fine_%06d.mat', tiffpage)) ;
@@ -515,14 +532,14 @@ classdef queriedSample < handle
                                 else
                                     load(pivfnRaw, 'convert_to_um_per_min') ;
                                 end
-                                vxcollection(:, :, pp) = tmp.VX * convert_to_um_per_min ;
-                                vycollection(:, :, pp) = tmp.VY * convert_to_um_per_min ;
+                                vxcollection(pp, :, :) = tmp.VX * convert_to_um_per_min ;
+                                vycollection(pp, :, :) = tmp.VY * convert_to_um_per_min ;
                             end
                         catch
                             disp('Warning: some timepoints have no velocity, returned these as NaN')
 
-                            vxcollection(:, :, pp) = NaN ;
-                            vycollection(:, :, pp) = NaN ;
+                            vxcollection(pp, :, :) = NaN ;
+                            vycollection(pp, :, :) = NaN ;
                         end
                     end
                     obj.piv.vx{qq} = vxcollection ;
@@ -558,8 +575,18 @@ classdef queriedSample < handle
             % 
             % Returns
             % -------
-            % meanPIV : 
-            %   mean flow across all samples in the queriedSample
+            % meanPIV : struct with fields
+            %   mean flow across all samples in the queriedSample, as 
+            %   struct with fields
+            %       vx : cell of PxQxNtps double arrays
+            %           velocity in x direction in pullbacks
+            %       vy : cell of PxQxNtps double arrays
+            %           velocity in y direction in pullbacks
+            %       convert_to_um_per_min : float
+            %       X0 : QxP double
+            %           piv evaluation x coordinates
+            %       Y0 : QxP double
+            %           piv evaluation y coordinates
             
             % default options
             method = 'default' ;
@@ -604,17 +631,17 @@ classdef queriedSample < handle
                             sprintf('VeloT_medfilt_%06d.mat', timestamp)) ;
                         if exist(pivfn, 'file')
                             tmp = load(pivfn) ;
-                            vx(:, :, dmyk) = tmp.VX / (rescaleFactor * dt) ;
-                            vy(:, :, dmyk) = tmp.VY / (rescaleFactor * dt) ;
+                            vx(dmyk, :, :) = tmp.VX / (rescaleFactor * dt) ;
+                            vy(dmyk, :, :) = tmp.VY / (rescaleFactor * dt) ;
                         else
                             if timestamp == obj.meta.nTimePoints(qq)
                                 disp('Skipping final timepoint from meanPIV')
-                                vx(:, :, dmyk) = NaN ;
-                                vy(:, :, dmyk) = NaN ;
+                                vx(dmyk, :, :) = NaN ;
+                                vy(dmyk, :, :) = NaN ;
                             else
                                 disp(['PIV does not exist but tp is not final tp: ' pivfn])
-                                vx(:, :, dmyk) = NaN ;
-                                vy(:, :, dmyk) = NaN ;
+                                vx(dmyk, :, :) = NaN ;
+                                vy(dmyk, :, :) = NaN ;
                             end
                         end
                     elseif strcmpi(method, 'pivlab') || strcmpi(method, 'pivlab_filtered') 
@@ -635,18 +662,18 @@ classdef queriedSample < handle
                             else
                                 tmp = load(pivfn) ;
                             end
-                            vx(:, :, dmyk) = tmp.VX * tmp.convert_to_um_per_min ;
-                            vy(:, :, dmyk) = tmp.VY * tmp.convert_to_um_per_min ;
+                            vx(dmyk, :, :) = tmp.VX * tmp.convert_to_um_per_min ;
+                            vy(dmyk, :, :) = tmp.VY * tmp.convert_to_um_per_min ;
                             assert(any(~isnan(vx(:))))
                         else
                             if timestamp == obj.meta.nTimePoints(qq)
                                 disp('Skipping final timepoint from meanPIV')
-                                vx(:, :, dmyk) = NaN ;
-                                vy(:, :, dmyk) = NaN ;
+                                vx(dmyk, :, :) = NaN ;
+                                vy(dmyk, :, :) = NaN ;
                             else
                                 disp(['PIV does not exist but tp is not final tp: ' pivfn])
-                                vx(:, :, dmyk) = NaN ;
-                                vy(:, :, dmyk) = NaN ;
+                                vx(dmyk, :, :) = NaN ;
+                                vy(dmyk, :, :) = NaN ;
                             end
                         end
                     end
@@ -677,8 +704,8 @@ classdef queriedSample < handle
             end
             
             % Take mean
-            obj.meanPIV.vx = mean(vx, 3, 'omitnan') ;
-            obj.meanPIV.vy = mean(vy, 3, 'omitnan') ;
+            obj.meanPIV.vx = mean(vx, 1, 'omitnan') ;
+            obj.meanPIV.vy = mean(vy, 1, 'omitnan') ;
             obj.meanPIV.X0 = X0 ;
             obj.meanPIV.Y0 = Y0 ;
             if nargout > 0
@@ -694,8 +721,8 @@ classdef queriedSample < handle
                 
                 for dmyk = 1:nPages
                     subplot(1, 2, 1)
-                    quiver(X0, Y0, squeeze(vx(:, :, dmyk)) * 10, ...
-                        squeeze(vy(:, :, dmyk)) * 10, 0)
+                    quiver(X0, Y0, squeeze(vx(dmyk, :, :)) * 10, ...
+                        squeeze(vy(dmyk, :, :)) * 10, 0)
                     title(['page = ' num2str(dmyk)])
                     axis equal 
                     axis tight
@@ -705,42 +732,72 @@ classdef queriedSample < handle
             
         end
         
-        function pivStack = buildPIVStack(obj, da, genotype, labels, deltaTime)
+        function pivStack = buildPIVStack(obj, da, genotype, labels, deltaTime, method)
             % Build a stack of PIV flow fields over time
+            %
+            % Parameters
+            % ----------
+            % da : dynamicAtlas instance queried by current queriedSample 
+            %      instance
+            % genotype : genotype of the queried sample to query for
+            %            velocities
+            % labels : 
+            % deltaTime
+            % options : struct with fields
+            %   method : 'default' or 'pivlab'
+            %
+            % Returns
+            % -------
+            % pivStack
+            %
             
             if nargin < 5
                 % half-width of search window for each timepoint
                 deltaTime = 0.5 ;
             end
-            % Built-in pullback image size, hard-coded here:
-            % ----------------------------------------------
-            % Original image is 2000x2000, then resized is 0.4*(Lx,Ly), then PIV is 15x
-            % smaller than the resized image. 
-            % fullsizeCoordSys: 1738x2050
-            % resizeCoordSys: 696 x 820
-            % pivCoordSys: 46 x 54
-            EdgeLength = 15;
-            % rescaleFactor = 0.4;
-            % szX_orig = 1738 ;
-            % szY_orig = 2050 ;
-
-            % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
-            if obj.piv.rescaleFactor == 0.4
-                szX = 696 ;
-                szY = 820 ;
-            else
-                error('code for this rescaleFactor convention here')
+            if nargin < 6
+                options = struct() ;
             end
-                
-            % in resized pixels
-            [X0,Y0] = meshgrid(EdgeLength/2:EdgeLength:(szX-EdgeLength/2), ...
-                EdgeLength/2:EdgeLength:(szY-EdgeLength/2)); 
+            
+            method = 'default' ;
+            if isfield(options, 'method')
+                method = options.method ;
+            end
+            
+            if strcmpi(method, 'default')
+                % Built-in pullback image size, hard-coded here:
+                % ----------------------------------------------
+                % Original image is 2000x2000, then resized is 0.4*(Lx,Ly), then PIV is 15x
+                % smaller than the resized image. 
+                % fullsizeCoordSys: 1738x2050
+                % resizeCoordSys: 696 x 820
+                % pivCoordSys: 46 x 54
+                EdgeLength = 15;
+                % rescaleFactor = 0.4;
+                % szX_orig = 1738 ;
+                % szY_orig = 2050 ;
 
-            mint = obj.getMinTime() ;
-            maxt = obj.getMaxTime() ;
-            ntps = round(maxt-mint) ;
-            pivStack = struct('vx', zeros(ntps, size(X0, 2), size(X0, 1)), ...
-                'vy', zeros(ntps, size(X0, 2), size(X0, 1))) ;
+                % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
+                if obj.piv.rescaleFactor == 0.4
+                    szX = 696 ;
+                    szY = 820 ;
+                else
+                    error('code for this rescaleFactor convention here')
+                end
+
+                % in resized pixels
+                [X0,Y0] = meshgrid(EdgeLength/2:EdgeLength:(szX-EdgeLength/2), ...
+                    EdgeLength/2:EdgeLength:(szY-EdgeLength/2)); 
+
+                mint = obj.getMinTime() ;
+                maxt = obj.getMaxTime() ;
+                ntps = round(maxt-mint) ;
+                pivStack = struct('vx', zeros(ntps, size(X0, 2), size(X0, 1)), ...
+                    'vy', zeros(ntps, size(X0, 2), size(X0, 1))) ;
+            else
+                error('code for pivlab here')
+            end
+            
             tidx = 1 ;
             for tt = mint:maxt
                 disp(['obtaining mean PIV for t=' num2str(tt)])
@@ -755,6 +812,45 @@ classdef queriedSample < handle
             pivStack.x = Y0 ;
             pivStack.y = X0 ;
         end
+        
+        function [XX, YY] = getPullbackPathlines(obj, pivStack, x0, y0, t0, options)
+            % [XX, YY] = getPullbackPathlines(obj, pivStack, x0, y0, options)
+            %
+            % Parameters
+            % ----------
+            % obj : queriedSample class instance
+            % pivStack : 
+            % x0 
+            % y0 
+            % options : optional struct with fields
+            %   struct passed to pullbackPathlines()
+            if nargin < 2
+                error('Run qs.buildPIVStack() and pass pivStack to get pullback pathlines')
+            end
+            if nargin < 5
+                options = struct() ;
+            end
+            if length(obj.meta.folders) == 1
+                disp('Loading or computing pbPathlines for single embryo in queriedSample...')
+                fnout = fullfile(obj.meta.folders{1}, 'pullbackPathlines.mat') ;
+                if ~exist(fnout, 'file')
+                    disp(['Computing pbPathlines & saving to disk: ' fnout])
+                    [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options) ;
+                    XX = XX ./ pivStack.rescaleFactor ;
+                    YY = YY ./ pivStack.rescaleFactor ;
+                    save(fnout, 'XX', 'YY') ;
+                else
+                    disp(['Loading pbPathlines from disk: ' fnout])
+                    load(fnout, 'XX', 'YY') ;
+                end
+            else
+                disp('queriedSample contains multiple samples, computing pbPathlines without saving/loading...')
+                [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options) ;
+                XX = XX ./ pivStack.rescaleFactor ;
+                YY = YY ./ pivStack.rescaleFactor ;
+            end
+        end
+            
         
     end
     
