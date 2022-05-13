@@ -813,6 +813,17 @@ classdef queriedSample < handle
             pivStack.y = X0 ;
         end
         
+        function t0V = getDynamicDataT0V(obj, options)
+            % For dynamic embryo entry of the queriedSample
+            method = 'pivlab' ;
+            if isfield(options, 'pivmethod')
+                method = options.pivmethod ;
+            end
+            
+            
+            
+        end
+        
         function [XX, YY] = getPullbackPathlines(obj, pivStack, x0, y0, t0, options)
             % [XX, YY] = getPullbackPathlines(obj, pivStack, x0, y0, options)
             %
@@ -848,6 +859,50 @@ classdef queriedSample < handle
                 [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options) ;
                 XX = XX ./ pivStack.rescaleFactor ;
                 YY = YY ./ pivStack.rescaleFactor ;
+            end
+        end
+        
+        function pushForwardEmbryo(obj,XX,YY)
+            
+            if isempty(obj.pushForward)
+                %         % our little mesh with PIV coordinates avs vertices
+                %         mesh0 = struct() ;
+                %         nU = size(X0v, 2) ;
+                %         nV = size(Y0v, 1) ;
+                %         X0t = X0v' ;
+                %         Y0t = Y0v' ;
+                %         uv = cat(3, X0t, Y0t) ;
+                %         mesh0.f = defineFacesRectilinearGrid(uv, nU, nV) ;
+                %         uu = reshape(uv(:, :, 1), [nU, nV]) ;
+                %         vv = reshape(uv(:, :, 2), [nU, nV]) ;
+                %         mesh0.u = [uu(:), vv(:)] ;
+                %         mesh0.nU = nU ;
+                %         mesh0.nV = nV ;
+                %         % check it
+                %         clf
+                %         trisurf(triangulation(mesh0.f, mesh0.u(:, 1), mesh0.u(:, 2), 0*mesh0.u(:, 1)), 'facecolor', 'none')
+                %         axis equal
+                %     mesh0.v = zeros(size(mesh0.u, 1), 3) ;
+                %     mesh0.v(:, 1) = xi(mesh0.u(:, 1), mesh0.u(:, 2)) ;
+                %     mesh0.v(:, 2) = yi(mesh0.u(:, 1), mesh0.u(:, 2)) ;
+                %     mesh0.v(:, 3) = zi(mesh0.u(:, 1), mesh0.u(:, 2)) ;
+
+                % Larger mesh to use for interpolation
+                mesh3d = read_ply_mod(fullfile(rootdir, 'embryo_geometry/embryo_rect_noglue.ply')) ;
+                mesh3d.v = mesh3d.v * 0.2619 ; % convert to um
+
+                mesh2d = read_ply_mod(fullfile(rootdir, 'embryo_geometry/rect_PIVImageScale.ply')) ;
+                mesh3d.u = mesh2d.v ;
+
+                assert(all(all(mesh2d.f == mesh3d.f)))
+
+                % Project mesh0 into 3d using mesh3d
+                xi = scatteredInterpolant(mesh3d.u(:, 2), mesh3d.u(:, 1), mesh3d.v(:, 1)) ;
+                yi = scatteredInterpolant(mesh3d.u(:, 2), mesh3d.u(:, 1), mesh3d.v(:, 2)) ;
+                zi = scatteredInterpolant(mesh3d.u(:, 2), mesh3d.u(:, 1), mesh3d.v(:, 3)) ;
+                obj.pushForward.xi = xi ;
+                obj.pushForward.yi = yi ;
+                obj.pushForward.zi = zi ;
             end
         end
             

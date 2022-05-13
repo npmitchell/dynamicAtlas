@@ -1,0 +1,11 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Mitchell
+    given-names: Noah
+    orcid: https://orcid.org/0000-0003-1922-8470
+title: "MorphodynamicAtlas: an approach for integrating dynamic datasets"
+version: 1.0.0
+doi: 10.5281/zenodo.6547239
+date-released: 2022-05-13
+url: "https://github.com/npmitchell/dynamicAtlas"

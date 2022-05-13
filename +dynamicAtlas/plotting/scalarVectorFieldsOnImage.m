@@ -53,6 +53,8 @@ function [h1, h2, h3] = scalarVectorFieldsOnImage(im, xxs, yys, sf, ...
 %       (then plotted at true value, "scale=0" in quiver())
 %   qcolor : color specifier (default='k')
 %       quiver arrow color 
+%   qlinewidth : float
+%       linewidth for quiver arrows
 %   outfn : str
 %       output filename for figure as png 
 %   figWidth : int (optional, default = 16) 
@@ -105,6 +107,7 @@ style = 'phase' ;  % 'diverging' (scalar), 'nematic', or 'phase' (polar)
 figWidth = 16 ; % cm
 figHeight = 10 ; % cm
 visibility = 'off' ;
+lw = 1.2 ;
 
 %% Unpack options
 if isfield(options, 'style') 
@@ -127,6 +130,9 @@ if isfield(options, 'qscale')
 end
 if isfield(options, 'qcolor') 
     qcolor = options.qcolor ;
+end
+if isfield(options, 'qlinewidth') 
+    lw = options.qlinewidth ;
 end
 if isfield(options, 'alpha') 
     alphaVal = options.alpha ;
@@ -268,21 +274,21 @@ if overlay_quiver
         yq = 1:qsubsample:hhv ;
         [xg, yg] = meshgrid(xxv(xq), yyv(yq)) ;
         
-        h3 = quiver(xg(:), yg(:), qscale * QX(:), qscale * QY(:), 0, qcolor, 'LineWidth', 1.2) ;
+        h3 = quiver(xg(:), yg(:), qscale * QX(:), qscale * QY(:), 0, qcolor, 'LineWidth', lw) ;
     
     else
         % size(xxv)
         % size(vx)
         % size(vy)
         try
-            h3 = quiver(xxv(:), yyv(:), qscale * vx(:), qscale * vy(:), 0, qcolor, 'LineWidth', 1.2) ;
+            h3 = quiver(xxv(:), yyv(:), qscale * vx(:), qscale * vy(:), 0, qcolor, 'LineWidth', lw) ;
         catch
             try
                 % This will work if xxv and yyv are matrices matching vx and vy
                 h3 = quiver(xxv, yyv, qscale * vx, qscale * vy, ...
                     0, qcolor, 'LineWidth', 1.2) ;
             catch
-                h3 = quiver(xxv(:), yyv(:), qscale * vx, qscale * vy, 0, qcolor, 'LineWidth', 1.2) ;
+                h3 = quiver(xxv(:), yyv(:), qscale * vx, qscale * vy, 0, qcolor, 'LineWidth', lw) ;
             end
         end
     end
