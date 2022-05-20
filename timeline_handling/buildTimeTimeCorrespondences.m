@@ -1,6 +1,20 @@
 function [ttc, expts, exptIDs] = ...
     buildTimeTimeCorrespondences(expts, exptIDs, hard, ...
     timelineDir, extn, cpathFnBase, overwrite, dynamic_embryos)
+% [ttc, expts, exptIDs] = ...
+%     buildTimeTimeCorrespondences(expts, exptIDs, hard, ...
+%     timelineDir, extn, cpathFnBase, overwrite, dynamic_embryos)
+%
+% Parameters
+% Returns
+% -------
+% ttc : cell of cells
+%   ttc{ii}{jj} is an Nx2 array where ttc{ii}{jj}(:, 2) is timeline indices
+%   for ii and ttc{ii}{jj}(:, 1) is the corresponding placement into
+%   timeline jj, as floats.   
+% expts : 
+% exptIDs :
+%
 % NOTE:
 % extn specifies the subsampling and method, like:
 % extn = [sprintf('_ss%02d', ssfactor) '_' corr_method] ;
@@ -77,6 +91,8 @@ else
                     tmp = load(cpathfn) ;  
                     time_correspondences = tmp.corrPath(:, [2, 1]) ;
                 end
+                % Note: time_correspondences(:, 2) is timeline indices for ii
+                %   and time_correspondences(:, 1) is corresponding placement into jj
                 ttc{ii}{jj} = time_correspondences ;
             else
                 disp(['No correspondence for ' num2str(ii) ' to ' num2str(jj)])
