@@ -21,12 +21,12 @@ function [XX, YY] = pullbackPathlines(pivStack, x0, y0, t0, options)
 % y0 : n*m float array 
 %   y coordinates in pullback pixels to start pathlines at t0
 % t0 : 
-%   time at which to begin the pathlines, must be member of
-%   QS.xp.fileMeta.timePoints
+%   time at which to begin the pathlines, if member of
+%   options.timePoints. Otherwise, treated as an index into the PIV arrays
 % options : struct with fields 
-%   preview : bool
+%   preview : bool (default=false)
 %       view intermediate results
-%   timePoints : 1d int array
+%   timePoints : 1d int array (default= 1:size(pivStack.vx, 1))
 %       the timpepoints along which to map pathlines that intersect with
 %       (x0, y0) at t0
 % 

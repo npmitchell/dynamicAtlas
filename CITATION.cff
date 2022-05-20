@@ -4,6 +4,9 @@ authors:
   - family-names: Mitchell
     given-names: Noah
     orcid: https://orcid.org/0000-0003-1922-8470
+  - family-names: Streichan
+    given-names: Sebastian
+    orcid: https://orcid.org/0000-0002-6105-9087
 title: "MorphodynamicAtlas: an approach for integrating dynamic datasets"
 version: 1.0.0
 doi: 10.5281/zenodo.6547239

@@ -16,7 +16,6 @@ function PIVTimeseries(inputDir, options)
 method = 'default' ; % 'pivlab' or 'default'
 %Name    = 'sqhCherryII_mean_rot_scaled_view1_intensity_scaled.tif';%'cylinder1_rot_scaled_view1.ome.tif';
 Name = 'MAX_Cyl1_2_000000_c1_rot_scaled_view1.tif';
-StackSize   = length(imfinfo(fullfile(inputDir, Name)));
 EdgeLength  = 15;   % Length of box edges in pixels; 
 % EdgeLength2 = 5;    % Length of boxedges in interpolated field
 isf         = .4;   % image scaling factor. 
@@ -52,6 +51,9 @@ if nargin > 1
         histequilize = options.histequilize ;
     end
 end
+
+% Now that name is defined, find stacksize
+StackSize   = length(imfinfo(fullfile(inputDir, Name)));
 
 %% Define the grid on which to compute the flow field
 if strcmpi(method, 'default')

@@ -10,6 +10,7 @@ classdef dynamicAtlas < handle
                             % string specifiers to lookupMap instances
         timeLineMethod      % 
         timeStampMethod     % 
+        prependFileName
     end
     
     %---------------------------------------------------------------------
@@ -89,6 +90,14 @@ classdef dynamicAtlas < handle
                 da.timeStampMethod = 'stripe7' ;
             end
             
+            if isfield(Options, 'prependFileName')
+                da.prependFileName = Options.prependFileName ;
+            else
+                da.prependFileName = 'MAX_Cyl1_2_00000*_c*_rot_scaled_view1' ;
+            end
+            
+            Options.prepend = da.prependFileName ;
+                
             % Populate the lookup property
             da.buildLookup(da.genotypes, Options) 
         end

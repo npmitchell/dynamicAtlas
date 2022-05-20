@@ -133,6 +133,21 @@ Options.plot_scatterpaths = true ;
 % Apply optical flow to reference image im0
 applyOpticalFlow(pivStack, im0, Options)
 
+%% PIV Pathlines
+label = 'CAAX-mCherry-on3' ;
+atlasPath = '/Volumes/DOGIC/Atlas_Data' ;
+
+options = struct() ;
+options.labels = { label} ;  %'histone-mCherry' 'histone-RFP'} ; % '
+da = dynamicAtlas.dynamicAtlas(atlasPath, {'WT'}, options) ;
+qs = da.findEmbryo('201807021620') ;
+qs.ensurePIV(struct('method', 'pivlab')) ;
+piv = qs.getPIV(struct('method', 'pivlab')) ;
+t0 = qs.getT0V() ;
+x0 = piv.x ;
+y0 = piv.y ;
+[XX, YY] = qs.getPullbackPathlines(piv, x0, y0, t0, options) ;
+       
 
 %% Search for dynamic data with PIV
 % qs = findFlowGenotypeLabel(da, genotype, label) ;

@@ -62,6 +62,13 @@ classdef queriedSample < handle
             %   labels, folders, names, ...
             %   embryoIDs, times, uncs, tiffpages, nTimePoints
             obj.meta = sampleStruct ;
+            
+            % if we want to get the common string name of all tiffs:
+            % if all(strcmp(Scell(:), Scell{1}))
+            %     obj.prependFileName = obj.meta.names{1}(all(~diff(char(Scell(:))))) ;
+            % else
+            %     obj.prependFileName = obj.meta.names{1}(all(~diff(char(Scell(:))))) ;
+            % end
         end
         
         % function obj = findTime()
@@ -303,6 +310,7 @@ classdef queriedSample < handle
                 recompute = options.overwrite || ~exist(input_path, 'dir') || ...
                     (length(fns)<(obj.meta.nTimePoints(qq)-1)) ;
                 if recompute
+                    options.Name = obj.meta.names{qq} ;
                     PIVTimeseries(obj.meta.folders{qq}, options) 
                 end
                 
@@ -820,8 +828,7 @@ classdef queriedSample < handle
                 method = options.pivmethod ;
             end
             
-            
-            
+            error('add this function here')
         end
         
         function [XX, YY] = getPullbackPathlines(obj, pivStack, x0, y0, t0, options)
@@ -830,11 +837,29 @@ classdef queriedSample < handle
             % Parameters
             % ----------
             % obj : queriedSample class instance
-            % pivStack : 
-            % x0 
-            % y0 
+            % pivStack : struct with two #TP x nX x nY float entries
+            %   vx: #TP x nX x nY float
+            %       velocities in x direction
+            %   vy: #TP x nX x nY float
+            %       velocities in y direction
+            %   x : nX x nY numeric
+            %       piv evaluation coordinates in x
+            %   y : nX x nY numeric
+            %       piv evaluation coordinates in y
+            % x0 : n*m float array 
+            %   x coordinates in pullback pixels to start pathlines at t0
+            % y0 : n*m float array 
+            %   y coordinates in pullback pixels to start pathlines at t0
+            % t0 : 
+            %   time at which to begin the pathlines, if member of
+            %   options.timePoints. Otherwise, treated as an index into the PIV arrays
             % options : optional struct with fields
             %   struct passed to pullbackPathlines()
+            % 
+            % Example usage
+            % -------------
+            % 
+            % 
             if nargin < 2
                 error('Run qs.buildPIVStack() and pass pivStack to get pullback pathlines')
             end
