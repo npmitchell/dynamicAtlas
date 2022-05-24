@@ -14,6 +14,10 @@ function[map] = interpolate_3color_cmap(s,rgb1, rgb2, rgb3, normalize)
 %   An RGB triplet for value 0 or an integer indexing common rgb triplets
 % rgb2 : length(3) array or int
 %   An RGB triplet for value 1 or an integer indexing common rgb triplets
+% normalize : bool (default=false)
+%   normalize each row of the RGb colormap
+% gammaCorrection : bool (default = false)
+%   perform gamma correction to make colors more perceptually uniform
 %
 % Output
 % ------
@@ -46,32 +50,42 @@ if all(size(rgb3) == 1)
     rgb3 = rgbs(rgb3, :) ;
 end
 
+if nargin < 5
+    normalize = false ;
+end
+if nargin < 5
+    gammaCorrection = false ;
+end
+
 map = zeros(length(s),3);
 for i=1:length(s)
-    map(i,:) = threecolor_map_1val(s(i),rgb1,rgb2, rgb3, normalize);
+    map(i,:) = threecolor_map_1val(s(i),rgb1,rgb2, rgb3, normalize, gammaCorrection);
 end
 end
 
 % Interpolate a diverging color map.
-    function[result] = threecolor_map_1val(s, rgb1, rgb2, rgb3, normalize)
-        % s1 is a number between 0 and 1 tuning through the colormap
-        % rgb1,2,3 are RGB triplets
-        
-        % First color goes from 1 to zero in (0, 0.5)
-        s1 = max(0, 1 - 2 * s) ;
-        % First color goes from 1 to zero in (0, 0.5)
-        s2 = 1 - abs(2 * (s - 0.5)) ;
-        % Third color goes from zero to one in (0.5, 1)
-        s3 = max(2 * s - 1, 0) ;
-        
-        result(1) = s1*rgb1(1) + s2*rgb2(1) + s3*rgb3(1);
-        result(2) = s1*rgb1(2) + s2*rgb2(2) + s3*rgb3(2);
-        result(3) = s1*rgb1(3) + s2*rgb2(3) + s3*rgb3(3);
-        
-        % Renormalize the result
-        if normalize
-            result = result / vecnorm(result) ;
-        end
+function[result] = threecolor_map_1val(s, rgb1, rgb2, rgb3, normalize, gammaCorrection)
+    % s1 is a number between 0 and 1 tuning through the colormap
+    % rgb1,2,3 are RGB triplets
+
+    % First color goes from 1 to zero in (0, 0.5)
+    s1 = max(0, 1 - 2 * s) ;
+    % First color goes from 1 to zero in (0, 0.5)
+    s2 = 1 - abs(2 * (s - 0.5)) ;
+    % Third color goes from zero to one in (0.5, 1)
+    s3 = max(2 * s - 1, 0) ;
+
+    result(1) = s1*rgb1(1) + s2*rgb2(1) + s3*rgb3(1);
+    result(2) = s1*rgb1(2) + s2*rgb2(2) + s3*rgb3(2);
+    result(3) = s1*rgb1(3) + s2*rgb2(3) + s3*rgb3(3);
+
+    % Renormalize the result
+    if normalize
+        result = result / vecnorm(result) ;
+    end
+    
+    if gammaCorrection
         xyz = RGBToXYZ(result) ;    
         result = XYZToRGB(xyz);
     end
+end

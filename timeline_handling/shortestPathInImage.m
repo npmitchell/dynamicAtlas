@@ -26,9 +26,13 @@ function [tpath, tpath0, cij_exponent, Woffset] = shortestPathInImage(cij, optio
 %   cij_exponent : numeric (default = 1.0)
 %       find shortest time path with speed of path through a pixel taken to 
 %       be cij.^cij_exponent + Woffset. 
-%   Woffset : float 
+%   Woffset : float (default=0.0)
 %       weight offset for fast marching. Higher numbers lead to
 %       artificially straighter paths
+%   clims : 2x1 numeric (default = [0, 1])
+%       color limits for correspondence plot to be saved or shown
+%   cmp or colormap : Nx3 colormap (default=cky(256))
+%       colormap to use for plots and previews
 % 
 % Returns
 % -------
@@ -51,6 +55,7 @@ log_display = false ;
 preview = true ;
 Woffset = 0. ;
 cij_exponent = 1. ; 
+cmp = cbkry(256) ;
 
 if isfield(options, 'logDisplay')
     log_display = options.logDisplay ;
@@ -63,6 +68,18 @@ if isfield(options, 'Woffset')
 end
 if isfield(options, 'exponent')
     cij_exponent = options.exponent ;
+end
+if isfield(options, 'clims')
+    clims = options.clims;
+elseif log_display
+    clims = [-Inf, Inf] ;
+else
+    clims = [0, 1] ;
+end
+if isfield(options, 'cmp')
+    cmp = options.cmp;
+elseif isfield(options, 'colormap')
+    cmp = options.colormap ;
 end
 
 
@@ -127,8 +144,12 @@ while ~move_on
     else
         imagesc(cij)
     end
+    caxis(clims)
+    if clims(1) == -clims(2)
+        colormap(cmp)
+    end
     hold on;
-    plot(tpath(:, 2), tpath(:, 1), 'ro') 
+    plot(tpath(:, 2), tpath(:, 1), 'ko') 
     plot(tpath(1, 2), tpath(1, 1), 'ks')
     plot(tpath(end, 2), tpath(end, 1), 'k^')
     xtmp = (1:ntpguess) + tpath(1, 2) ;
@@ -137,6 +158,13 @@ while ~move_on
     xtmp = tpath(end, 2) - (0:ntpguess-1) ;
     ytmp = tpath(end, 1) - (0:ntpguess-1) ;
     plot(xtmp, ytmp, 'k--')
+    caxis(clims)
+    if all(abs(clims) == clims(2)) 
+        colormap(cmp)
+    end
+    axis equal
+    cb = colorbar ;
+    ylabel(cb, 'cij')
     msg = 'Do endpoints look ok? Enter=yes, Backspace=no/select' ;
     title(msg)
     disp(msg)
@@ -291,8 +319,8 @@ while ~move_on
         imagesc(DD'); hold on;
         quiver(Dx', Dy', 1)
         title('DT with gradient')
-        ccaxis = caxis ; % get current caxis
-        caxis([0, min(3, ccaxis(2))])
+        % ccaxis = caxis ; % get current caxis
+        % caxis([0, min(3, ccaxis(2))])
         cb = colorbar() ;
         ylabel(cb, 'DT') ;
         axis equal 
@@ -304,7 +332,7 @@ while ~move_on
     % Plot with streamlines
     if preview
         clf
-        disp('Saving cijstream')
+        disp('Displaying cijstream for preview')
         [xx, yy ] = meshgrid(1:size(Dx, 1), 1:size(Dx, 2)) ;
         xx2=xx(1:10:size(xx, 1), 1:10:size(xx, 2));
         yy2=yy(1:10:size(yy, 1), 1:10:size(yy, 2));
@@ -314,6 +342,10 @@ while ~move_on
             imagesc(log(cij))
         else
             imagesc(cij)
+        end
+        caxis(clims) ;
+        if clims(1) == -clims(2)
+            colormap(cmp)
         end
         hold on;
         quiver(xx, yy, Dy', Dx', 0)
@@ -464,6 +496,7 @@ while ~move_on
     plot(startpt(2), startpt(1), 'ro') 
     plot(endpt(2), endpt(1), 'ks')
     plot(cpath(:, 2), cpath(:, 1), '-') ;
+    axis equal
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Convert cpath to tpath: x timeline is integer, y timeline
@@ -480,24 +513,30 @@ while ~move_on
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     plot(tpath(:, 2), tpath(:, 1), 'o') ;
     plot(tpath0(:, 2), tpath0(:, 1), 'k.')
+    caxis(clims) ;
+    if all(abs(clims) == clims(2))
+        colormap(cmp)
+    end
     cb = colorbar() ;
     ylabel(cb, 'cij')            
-    title('Path ok? Enter=yes, backspace=no/redo')
+    msg = 'Path ok? Enter=yes, backspace=no/redo' ;
+    title(msg)
+    disp(msg)
     button = waitforbuttonpress() ;
     if button && strcmp(get(gcf, 'CurrentKey'), 'return')
         move_on = true ;
     elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
         move_on = false;
         disp('starting over with path detection')
-        Woffset = input('Set weight offset = ') ;
-        disp(' --> new Woffset')
-        if isempty(Woffset)
+        reset_Woffset = input(['Set weight offset? [Woffset=' num2str(Woffset) ', Enter=accept]'], 's') ;
+        if ~isempty(reset_Woffset)
+            disp(' --> new Woffset')
             Woffset = input('Set weight offset = ') ;
         end
 
-        cij_exponent = input('Set cij potential exponent = ') ;
-        disp(' --> new cij exponent')
-        if isempty(cij_exponent)
+        reset_cij_exponent = input(['Set cij potential exponent? [cij_exponent=' num2str(cij_exponent) ', Enter=accept]'], 's') ;
+        if ~isempty(reset_cij_exponent)
+            disp(' --> new cij_exponent')
             cij_exponent = input('Set cij potential exponent = ') ;
         end
     end

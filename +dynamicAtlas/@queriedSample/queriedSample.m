@@ -11,6 +11,8 @@ classdef queriedSample < handle
     %   example, da.findTime() will return a queriedSample of all embryos
     %   of any genotype in the da (dynamicAtlas instance) that match a
     %   timestamp range.
+    %
+    %   Indexing convention is always Ntps x spaceDim1 x spaceDim2.
     %   
     % Properties
     % ----------
@@ -462,16 +464,16 @@ classdef queriedSample < handle
             % Returns
             % -------
             % piv : struct with fields
-            %   vx : cell of PxQxNtps double arrays
+            %   vx : cell of NtpsxPxQ double arrays
             %       velocity in x direction in pullbacks
-            %   vy : cell of PxQxNtps double arrays
+            %   vy : cell of NtpsxPxQ double arrays
             %       velocity in y direction in pullbacks
             %   rescaleFactor : float
             %   X0 : QxP double
             %       piv evaluation x coordinates
             %   Y0 : QxP double
             %       piv evaluation y coordinates
-            method = 'default';
+            method = 'pivlab';
             if nargin < 2 
                 options = struct() ;
             end
@@ -533,15 +535,18 @@ classdef queriedSample < handle
                                     sprintf('VeloT_medfilt_fine_%06d.mat', tiffpage)) ;
                                 tmp = load(pivfn) ;
                                 if first
-                                    load(pivfnRaw, 'convert_to_um_per_min', 'X0', 'Y0') ;
-                                    obj.piv.X0 = X0 ;
-                                    obj.piv.Y0 = Y0 ;
+                                    tmp = load(pivfnRaw, 'convert_to_pix_per_min', 'X0', 'Y0') ;
+                                    obj.piv.X0 = tmp.X0 ;
+                                    obj.piv.Y0 = tmp.Y0 ;
                                     first = false ;
                                 else
-                                    load(pivfnRaw, 'convert_to_um_per_min') ;
+                                    % tmp = load(pivfnRaw, 'convert_to_pix_per_min') ;
+                                    % conversion = 1/dt ;
                                 end
-                                vxcollection(pp, :, :) = tmp.VX * convert_to_um_per_min ;
-                                vycollection(pp, :, :) = tmp.VY * convert_to_um_per_min ;
+                                conversion = 1/dt ;
+                                vxcollection(pp, :, :) = tmp.VX * conversion ;
+                                vycollection(pp, :, :) = tmp.VY * conversion ;
+                                obj.piv.units = 'pixels per min' ;
                             end
                         catch
                             disp('Warning: some timepoints have no velocity, returned these as NaN')
@@ -584,13 +589,13 @@ classdef queriedSample < handle
             % Returns
             % -------
             % meanPIV : struct with fields
-            %   mean flow across all samples in the queriedSample, as 
+            %   mean flow across all samples in the queriedSample, in units
+            %   of pixels per minute. 
             %   struct with fields
             %       vx : cell of PxQxNtps double arrays
             %           velocity in x direction in pullbacks
             %       vy : cell of PxQxNtps double arrays
             %           velocity in y direction in pullbacks
-            %       convert_to_um_per_min : float
             %       X0 : QxP double
             %           piv evaluation x coordinates
             %       Y0 : QxP double
@@ -614,16 +619,20 @@ classdef queriedSample < handle
             % figure out the total number of frames in the queriedSample 
             nPages = 0 ;
             for qq = 1:nEmbryos
-                nPages = nPages + length(obj.meta.tiffpages{qq}) ;
+                try
+                    nPages = nPages + length(obj.meta.tiffpages{qq}) ;
+                catch
+                    nPages = nPages + length(obj.meta.tiffpages(qq)) ;
+                end
             end
             
             % preallocate the velocity information
             if strcmpi(method, 'default')
-                vx = zeros(46, 54, nPages) ;
-                vy = zeros(46, 54, nPages) ;
+                vx = zeros(nPages, 46, 54) ;
+                vy = zeros(nPages, 46, 54) ;
             else
-                vx = zeros(86, 101, nPages) ;
-                vy = zeros(86, 101, nPages) ;
+                vx = zeros(nPages, 86, 101) ;
+                vy = zeros(nPages, 86, 101) ;
             end
             
             rescaleFactor = obj.piv.rescaleFactor ;
@@ -663,15 +672,9 @@ classdef queriedSample < handle
                                 sprintf('VeloT_fine_%06d.mat', timestamp)) ;
                         end
                         if exist(pivfn, 'file')
-                            if strcmpi(method, 'pivlab_filtered') 
-                                tmp = load(pivfn) ;
-                                load(pivfnRaw, 'convert_to_um_per_min') ;
-                                tmp.convert_to_um_per_min = convert_to_um_per_min ;
-                            else
-                                tmp = load(pivfn) ;
-                            end
-                            vx(dmyk, :, :) = tmp.VX * tmp.convert_to_um_per_min ;
-                            vy(dmyk, :, :) = tmp.VY * tmp.convert_to_um_per_min ;
+                            tmp = load(pivfn) ;
+                            vx(dmyk, :, :) = tmp.VX / dt ; % pix / min
+                            vy(dmyk, :, :) = tmp.VY / dt ; % pix / min
                             assert(any(~isnan(vx(:))))
                         else
                             if timestamp == obj.meta.nTimePoints(qq)
@@ -693,7 +696,7 @@ classdef queriedSample < handle
             if strcmpi(method, 'pivlab')
                 X0 = tmp.X0 ;
                 Y0 = tmp.Y0 ;
-                obj.meanPIV.convert_to_um_per_min = tmp.convert_to_um_per_min ;
+                obj.meanPIV.units = 'pix per minute' ;
             else
                 EdgeLength = 15;
                 % resized dimensions of piv grid --> nearly (szX_orig, szY_orig) * isf
@@ -708,12 +711,12 @@ classdef queriedSample < handle
                 else
                     error('handle this rescaleFactor here')
                 end
-                obj.meanPIV.convert_to_um_per_min = (rescaleFactor * dt) ;
+                obj.meanPIV.units = 'original pix per minute' ;
             end
             
             % Take mean
-            obj.meanPIV.vx = mean(vx, 1, 'omitnan') ;
-            obj.meanPIV.vy = mean(vy, 1, 'omitnan') ;
+            obj.meanPIV.vx = squeeze(mean(vx, 1, 'omitnan')) ;
+            obj.meanPIV.vy = squeeze(mean(vy, 1, 'omitnan')) ;
             obj.meanPIV.X0 = X0 ;
             obj.meanPIV.Y0 = Y0 ;
             if nargout > 0

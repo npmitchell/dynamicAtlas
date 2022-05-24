@@ -6,19 +6,20 @@ function [i_tau0j_tau0jrelaxed, itau0jInfo, NLKLBLInfo] =...
 % Parameters
 % ----------
 % ttc: cell of cell arrays
-%   ttc{ii}{jj} is an Nx2 array where ttc{ii}{jj}(:, 2) is timeline indices
-%   for ii and ttc{ii}{jj}(:, 1) is the corresponding placement into
-%   timeline jj, as floats.
+%   ttc{ii}{jj} is an Nx2 array where 
+%   ttc{ii}{jj}(:, 1) is timeline indices for ii, as integers >=1, and 
+%   ttc{ii}{jj}(:, 2) is the corresponding placement into timeline jj, 
+%   as floats >=1.
 % hard : int
 %   the index of the dataset for which to make 
 % expts : cell of string paths
 %   paths to the experiments used in the timelines, only used if
-%   options.save is true
+%   options.saveResults is true
 % exptIDs : cell of string identifiers
 %   name identifiers of each experiment, such as '202001011200', only used
-%   if options.save is true
+%   if options.saveResults is true
 % timelineDir : str path
-%   where the timeline will be stored on disk, if options.save is true
+%   where the timeline will be stored on disk, if options.saveResults is true
 % featureMatchedStr : string (ex 'ssR', '_curve7_chisq', 'pbPathlines')
 %    description of what feature is matched to build this network 
 % options : struct with fields
@@ -34,7 +35,7 @@ function [i_tau0j_tau0jrelaxed, itau0jInfo, NLKLBLInfo] =...
 %       instead of   1->1, 1->2, 1->3, ... 
 %                    2->1, 2->2, 2->3, ...
 %                    3->1, 3->2, 3->3, ... etc
-%   save : bool (default=true)
+%   saveResults : bool (default=true)
 %       write results to disk
 %   ensureReciprocalInteractions : bool (default=true)
 %       if there is a bond linking ii to jj, also send bond with same
@@ -60,7 +61,7 @@ function [i_tau0j_tau0jrelaxed, itau0jInfo, NLKLBLInfo] =...
 % ttc{3}{3} = [1,2,3;1,2,3]';
 % ttc{1}{2} = [1,2,3;1,3,3]'; ttc{1}{3} = [1,2,3;1,3,3]'; 
 % test{2}{3} = [1,2,3;1,2,3]';
-% options = struct('save', false, 'use_offdiagonals_only', true) ;
+% options = struct('saveResults', false, 'use_offdiagonals_only', true) ;
 % featureMatchedStr = 'test' ;
 % timelineDir = '' ;
 % expts = {'testa','testb','testc'} ;
@@ -69,7 +70,19 @@ function [i_tau0j_tau0jrelaxed, itau0jInfo, NLKLBLInfo] =...
 % relaxPairwiseCorrespondenceNetwork(ttc, hard, ...
 %    expts, exptIDs, timelineDir, featureMatchedStr, options) 
 %
+% See also 
+% --------
+% script_example_relaxPairwiseCorrespondences.m
+%
 % NPMitchell 2020-2022
+
+
+%% Default options
+maxDistReference = 30 ;
+roundTimepoints = false ;
+overwrite = false ;
+ensureReciprocalInteractions = false ;
+use_offdiagonals_only = false ;
 
 % Parse options
 if nargin < 7
@@ -78,29 +91,24 @@ end
 
 if isfield(options, 'overwrite')
     overwrite = options.overwrite ;
-else
-    overwrite = false ;
 end
-if isfield(options, 'save')
-    save = options.save ;
+if isfield(options, 'saveResults')
+    saveResults = options.saveResults ;
 else
-    save = ~isempty('timelineDir') ;
+    saveResults = ~isempty('timelineDir') ;
 end
 if isfield(options, 'roundTimepoints')
     roundTimepoints = options.roundTimepoints;
-else
-    roundTimepoints = false ;
 end
 
 if isfield(options, 'ensureReciprocalInteractions')
     ensureReciprocalInteractions = options.ensureReciprocalInteractions ;
-else
-    ensureReciprocalInteractions = false ;
 end
 if isfield(options, 'use_offdiagonals_only')
     use_offdiagonals_only = options.use_offdiagonals_only ;
-else
-    use_offdiagonals_only = false ;
+end
+if isfield(options, 'maxDistReference')
+    maxDistReference = options.maxDistReference ;
 end
 
 % load any non-standard timesteps
@@ -118,7 +126,7 @@ end
 if isfield(options, 'timelineStiffness')
     timelineStiffness = options.timelineStiffness ;
 else
-    timelineStiffness = 0.25 ;
+    timelineStiffness = 1.0 ;
 end
 
 if isempty(featureMatchedStr)
@@ -198,6 +206,12 @@ if exist(itau0jfn, 'file') && ~overwrite
         error(['exptIDs in ', itau0jfn, ' does not match variable in RAM. ', ...
             'You must erase ' itau0jfn ' on disk and try again'])
     end
+    
+    itau0jInfo = struct('i_tau0j', i_tau0j, ...
+        'ntp_tot', ntp_tot, 'addt', addt, 'ntps', ntps, ...
+        'exptIDs', exptIDs, ...
+        'hard', hard, ...
+        'hard_reference_ID', hard_reference_ID) ;
 else
     % First get #tps in each dataset, which is stored in diagonals of ttc
     ntps = zeros(length(ttc), 1) ;
@@ -207,16 +221,10 @@ else
         addt(ii) = sum(ntps) ;
         if ~isempty(ttc{ii}{ii})    
             ntps(ii) = length(ttc{ii}{ii}) ;  
-        else
-            ntps(ii) = length(ttc{hard}{ii}) ;  
         end
         % Now label each timepoint in linear indexing
-        if ii == 1
-            tpid = cat(2, tpid, 1:ntps(ii)) ;
-        else
-            tpid = cat(2, tpid, addt(ii) + (1:ntps(ii))) ;
-        end
-
+        tpid = cat(2, tpid, addt(ii) + (1:ntps(ii))) ;
+        
         % Store all indices in one array, evaluating polynomial interpolant
         % of tau0 here
         tau0extra = fnxtr(tau0(ii), 2) ;
@@ -233,7 +241,7 @@ else
             'hard', hard, ...
             'hard_reference_ID', hard_reference_ID) ;
     end
-    if save
+    if saveResults
         save(itau0jfn, 'i_tau0j', 'ntp_tot', 'addt', 'ntps', 'exptIDs', ...
             'hard', 'hard_reference_ID') ;
     end
@@ -254,12 +262,13 @@ end
 NLKLBLfn = fullfile(timelineDir, 'NL_KL_BL.mat') ;
 
 if exist(NLKLBLfn, 'file') && ~overwrite
-    tmp = load(NLKLBLfn, 'NL', 'KL', 'BL', 'BL0', ...
+    tmp = load(NLKLBLfn, 'NL', 'KL', 'BL', 'BL0', 'kL', ...
         'exptIDs','hard_reference_ID') ;
     NL = tmp.NL ;
     KL = tmp.KL ;
     BL = tmp.BL ;
     BL0 = tmp.BL0 ;
+    kL = tmp.kL ;
     
     if length(exptIDs) == length(tmp.exptIDs)
         for qq = 1:length(exptIDs) 
@@ -279,6 +288,10 @@ if exist(NLKLBLfn, 'file') && ~overwrite
         error(['Hard reference stored with NLKLBL does not match current. ', ...
             'Remove ' NLKLBLfn '  from disk and rerun'])
     end
+    
+    NLKLBLInfo = struct('NL', NL, ...
+        'KL', KL, 'BL', BL, 'BL0', BL0, 'kL', kL, 'exptIDs', exptIDs, ...
+        'hard', hard, 'hard_reference_ID', hard_reference_ID) ;
 else
     % preallocate Nxlarge array for NL, KL, do not preallocate BL
     NL = zeros(ntp_tot, 300) ;
@@ -295,66 +308,91 @@ else
                             'since timestamping is non-integer, ', ...
                             'each bond stiffness weighted by distance from partner'] ;
                         disp(msg)
-                        disp(['Asserting that partners are integer timestamps of timeline ' num2str(jj)])
-                        assert(all(mod(ttc{ii}{jj}(:, 2), 1) == 0))
+                        disp(['Asserting that partners are integer timestamps of timeline ' num2str(ii)])
+                        assert(all(mod(ttc{ii}{jj}(:, 1), 1) == 0))
                         
                         % if the match is a perfect integer, add a single
                         % bond
                         for qq = 1:length(ttc{ii}{jj}(:, 1))
-                            if ceil(ttc{ii}{jj}(qq, 1)) ==  floor(ttc{ii}{jj}(qq, 1))
+                            if ceil(ttc{ii}{jj}(qq, 2)) == floor(ttc{ii}{jj}(qq, 2)) && ttc{ii}{jj}(qq, 2) >= 1
                                 % the match is a perfect integer
-                                nodei = (ttc{ii}{jj}(qq, 1)) + addt(ii);
+                                nodei = ttc{ii}{jj}(qq, 1) + addt(ii);
                                 nodej = ttc{ii}{jj}(qq, 2) + addt(jj);
                                 bladd = [nodei, nodej] ;
                                 kladd = [1]  ;
                                 bl0add = 0 ;
-                            else
+                            elseif ttc{ii}{jj}(qq, :) >= 1
                                 % Add two bonds since the match is non-integer
                                 % ceil
-                                if ceil(ttc{ii}{jj}(qq, 1)) <= ntps(ii)
-                                    nodei = ceil(ttc{ii}{jj}(qq, 1)) + addt(ii);
-                                    nodej = ttc{ii}{jj}(qq, 2) + addt(jj);
-                                    bladd1 = [nodei, nodej] ;
-                                    % Make bond strongest when timepoints
-                                    % very nearly match an integer given by
-                                    % ceil(ttc{ii}{jj}(qq,1)), and
-                                    % weakest when nearly match floor().
-                                    kladd1 = abs(1 - (ceil(ttc{ii}{jj}(qq, 1)) - ttc{ii}{jj}(qq, 1)) ) ;
-                                    % bond length is position minus node
-                                    % position (so it is negative)
-                                    bl0add1 = ttc{ii}{jj}(qq, 1) - ceil(ttc{ii}{jj}(qq, 1))  ;
-                                else
-                                    error('handle edge point here -- sample extends beyond reference')
-                                end
+                                if ceil(ttc{ii}{jj}(qq, 2)) <= ntps(jj) && floor(ttc{ii}{jj}(qq, 2)) >= 1
+                                    if ceil(ttc{ii}{jj}(qq, 2)) <= ntps(jj)
+                                        nodei = ttc{ii}{jj}(qq, 1) + addt(ii);
+                                        nodej = ceil(ttc{ii}{jj}(qq, 2)) + addt(jj);
+                                        bladd1 = [nodei, nodej] ;
+                                        % Make bond strongest when timepoints
+                                        % very nearly match an integer given by
+                                        % ceil(ttc{ii}{jj}(qq,1)), and
+                                        % weakest when nearly match floor().
+                                        kladd1 = abs(1 - (ceil(ttc{ii}{jj}(qq, 2)) - ttc{ii}{jj}(qq, 2)) ) ;
+                                        % bond length is position minus node
+                                        % position (so it is negative)
+                                        bl0add1 = ttc{ii}{jj}(qq, 2) - ceil(ttc{ii}{jj}(qq, 2))  ;
+                                    else
+                                        error('handle edge point here -- sample extends beyond reference')
+                                    end
 
-                                % floor
-                                if floor(ttc{ii}{jj}(qq, 1)) >= 1
-                                    nodei = floor(ttc{ii}{jj}(qq, 1)) + addt(ii);
-                                    nodej = ttc{ii}{jj}(qq, 2) + addt(jj);
-                                    bladd2 = [nodei, nodej] ;
-                                    % Make bond strongest when timepoints
-                                    % very nearly match an integer given by
-                                    % floor(ttc{ii}{jj}(qq,1)), and
-                                    % weakest when nearly match ceil().
-                                    kladd2 = abs(1 - (ttc{ii}{jj}(qq, 1) - floor(ttc{ii}{jj}(qq, 1))) ) ;
-                                    % bond length is position minus node
-                                    % position (so it is positive)
-                                    bl0add2 = ttc{ii}{jj}(qq, 1) - floor(ttc{ii}{jj}(qq, 1))  ;
-                                else
-                                    error('handle edge point here -- sample extends beyond reference')
-                                end
+                                    % floor
+                                    if floor(ttc{ii}{jj}(qq, 2)) >= 1
+                                        nodei = ttc{ii}{jj}(qq, 1) + addt(ii);
+                                        nodej = floor(ttc{ii}{jj}(qq, 2)) + addt(jj);
+                                        bladd2 = [nodei, nodej] ;
+                                        % Make bond strongest when timepoints
+                                        % very nearly match an integer given by
+                                        % floor(ttc{ii}{jj}(qq,1)), and
+                                        % weakest when nearly match ceil().
+                                        kladd2 = abs(1 - (ttc{ii}{jj}(qq, 2) - floor(ttc{ii}{jj}(qq, 2))) ) ;
+                                        % bond length is position minus node
+                                        % position (so it is positive)
+                                        bl0add2 = ttc{ii}{jj}(qq, 2) - floor(ttc{ii}{jj}(qq, 2))  ;
+                                    else
+                                        error('handle edge point here -- sample extends beyond reference')
+                                    end
 
-                                % cat them
-                                bladd = [bladd1; bladd2] ;
-                                kladd = [kladd1; kladd2] ;
-                                bl0add = [bl0add1; bl0add2];
-                                try
-                                    assert(sum(kladd) == 1)
-                                catch
-                                    error('bond strengths did not sum to 1')
+                                    % cat them
+                                    bladd = [bladd1; bladd2] ;
+                                    kladd = [kladd1; kladd2] ;
+                                    bl0add = [bl0add1; bl0add2];
+                                    
+                                    try
+                                        assert(sum(kladd) == 1)
+                                        assert(sum(abs(bl0add)) == 1)
+                                    catch
+                                        error('bond strengths did not sum to 1')
+                                    end
+                                else
+                                    disp('index out of range, ignoring')
+                                    bladd = [] ;
+                                    kladd = [] ;
+                                    bl0add = [] ;
                                 end
+                            else
+                                disp('index out of range, ignoring')
+                                bladd = [] ;
+                                kladd = [] ;
+                                bl0add = [] ;
                             end
 
+                            % Check that these are not too far apart in the
+                            % hard reference timeline
+                            if ~isempty(bladd) 
+                                try
+                                    distInRefTimeline = abs(i_tau0j(bladd(:, 1), 2) - i_tau0j(bladd(:, 2), 2)) ;
+                                    assert(all(distInRefTimeline < maxDistReference))
+                                catch
+                                    error('This bond would be too long in the reference dataset timeline')
+                                end
+                            end
+                            
                             % Add to BL
                             if first
                                 BL = bladd ;
@@ -362,9 +400,9 @@ else
                                 BL0 = bl0add ;
                                 kL = kladd ;
                             else
-                                BL = cat(1, BL, bladd) ; 
-                                BL0 = cat(1, BL0, bl0add) ;
-                                kL = cat(1, kL, kladd) ;
+                                BL = cat(1, BL, bladd)  ;
+                                BL0 = cat(1, BL0, bl0add) ; 
+                                kL = cat(1, kL, kladd)  ;
                                 assert(size(BL0, 2) == 1)
                             end
                             % build NL, KL with redundancy and non-reciprocities
@@ -518,7 +556,7 @@ else
     NLKLBLInfo = struct('NL', NL, ...
         'KL', KL, 'BL', BL, 'BL0', BL0, 'kL', kL, 'exptIDs', exptIDs, ...
         'hard', hard, 'hard_reference_ID', hard_reference_ID) ;
-    if save
+    if saveResults
         save(NLKLBLfn, 'NL', 'KL', 'BL', 'BL0', 'kL', ...
             'exptIDs', 'hard', 'hard_reference_ID')
     end
@@ -534,8 +572,9 @@ for use_BL = [true false]
         disp('Visualizing network using KL, NL')
     end
     for ii = 1:1:length(ttc)  
-        if save
+        if saveResults
             close all
+            subplot(1,2,1)
         else
             subplot(1,length(ttc),ii)
         end
@@ -602,8 +641,18 @@ for use_BL = [true false]
                 title(['Time relaxation network: dataset ' exptIDs{ii}])
             end
             ylim([0, max(i_tau0j(:, 1)) + 1])
-            if save
-                saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_BL_%03d.png', ii)))
+            if saveResults
+                subplot(1,2,2)
+                for pairID = 1:length(ttc{ii})
+                    pair = ttc{ii}{pairID} ;
+                    plot(pair(:, 1), pair(:, 2), '.-', 'color', colorset(pairID, :)) 
+                    hold on;
+                end
+                axis equal
+                axis square
+                xlabel(['timeline i, ' exptIDs{ii}])
+                ylabel('timeline j')
+                saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_BL_%03d.pdf', ii)))
             end
             % disp('press any button on figure')
             pause(0.1)
@@ -624,14 +673,23 @@ for use_BL = [true false]
             end
             title(['Time relaxation network: dataset ' exptIDs{ii}])
             ylim([0, max(i_tau0j(:, 1)) + 1])
-            if save
-                saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_%03d.png', ii)))
+            if saveResults
+                subplot(1,2,2)
+                for pairID = 1:length(ttc{ii})
+                    pair = ttc{ii}{pairID} ;
+                    plot(pair(:, 1), pair(:, 2), '.-', 'color', colorset(pairID, :)) 
+                    hold on;
+                end
+                axis equal
+                xlabel(['timeline i, ' exptIDs{ii}])
+                ylabel('timeline j')
+                saveas(gcf, fullfile(timelineDir, sprintf('pairwise_corr_timeline_%03d.pdf', ii)))
             end
             % disp('press any button')
             pause(0.1)
         end
     end
-    if ~save
+    if ~saveResults
         msg = 'Inspect figures and press Continue button on figure to continue' ;
         continueButtonOnFigure(gcf, msg) ;
         clf
@@ -649,7 +707,8 @@ if exist(fn, 'file') && ~overwrite
     load(fn, 'i_tau0j_tau0jrelaxed')
 else
     % Relax: fix the time nodes of the hard reference dataset, move all others
-    options = optimset('PlotFcns',@optimplotfval, 'TolX', 1e-4, 'TolFun', 1e-6);
+    options = optimset('PlotFcns',@optimplotfval, 'TolX', 1e-4, ...
+        'TolFun', 1e-6, 'MaxIter', 1e4);
     x0 = i_tau0j(:, 2) ;
     % pop the indices of the fixed times from the array x0.
     % Here, fix only one single timepoint to avoid zero mode translation!
@@ -665,7 +724,7 @@ else
     disp('done')
 
     % Plot the relaxed network result 
-    if save
+    if saveResults
         close all
     else
         figure()
@@ -701,12 +760,12 @@ else
     ylim([0, max(i_tau0j(:, 1)) + 1])
     set(gcf, 'Units', 'centimeters');
     set(gcf, 'Position', [0 0 36 16]) ;
-    if save
-        saveas(gcf, fullfile(timelineDir, sprintf('relaxation_results.png')))
+    if saveResults
+        saveas(gcf, fullfile(timelineDir, sprintf('relaxation_results.pdf')))
     end
     % Save the result
     i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
-    if save
+    if saveResults
         save(fn, 'i_tau0j_tau0jrelaxed')
     else
         % msg = 'Time relaxation network: press Enter to continue' ;
@@ -715,10 +774,124 @@ else
 end
 disp('done')
 
+%% Show relaxed timelines
+% % Plot the dynamics
+% close all
+% colorset = define_colors() ;
+% for use_offset = [true false]
+%     offset = 0 ;
+%     for ii = 1:length(ttc)
+%         subplot(round(length(ttc)*0.5)+1, 2, ii)
+%         
+%         if useOffDiagonalsOnly
+%             % Do earlier dataset correspondences
+%             for jj = 1:ii-1
+%                 if ~isempty(ttc{jj}{ii})
+%                     % displace vertically to match
+%                     if use_offset
+%                         i0 = ttc{jj}{ii}(1, 2) ;
+%                         j0 = ttc{jj}{ii}(1, 1) ;
+%                         offset = i0 - j0 ;
+%                     end
+%                     plot(ttc{jj}{ii}(:, 2), ...
+%                         ttc{jj}{ii}(:, 1) + offset,...
+%                         '.-', 'color', colorset(jj, :))
+%                     hold on;
+%                 end
+%             end
+% 
+%             % Do this dataset to itself
+%             for jj = ii 
+%                 if ~isempty(ttc{ii}{jj})
+%                     plot(ttc{ii}{jj}(:, 1), ttc{ii}{jj}(:, 2), '.', ...
+%                         'color', colorset(jj, :))
+%                     hold on;
+%                 end
+%             end
+% 
+%             % Do later dataset correspondences
+%             for jj = ii+1:length(ttc)
+%                 if ~isempty(ttc{ii}{jj})
+%                     % displace vertically to match
+%                     if use_offset
+%                         i0 = ttc{ii}{jj}(1, 1) ;
+%                         j0 = ttc{ii}{jj}(1, 2) ;
+%                         offset = i0 - j0 ;
+%                     end
+%                     plot(ttc{ii}{jj}(:, 1), ...
+%                         ttc{ii}{jj}(:, 2) + offset,...
+%                         '.-', 'color', colorset(jj, :))
+%                     hold on;
+%                 end
+%             end
+%         else
+%             
+%             % Do all correspondences
+%             for jj = 1:length(ttc)
+%                 if ~isempty(ttc{ii}{jj})
+%                     % displace vertically to match
+%                     if use_offset
+%                         i0 = ttc{ii}{jj}(:, 1) ;
+%                         j0 = ttc{ii}{jj}(:, 2) ;
+%                         offset = mean(i0 - j0) ;
+%                     end
+%                     plot(ttc{ii}{jj}(:, 1), ...
+%                         ttc{ii}{jj}(:, 2) + offset,...
+%                         '.-', 'color', colorset(jj, :))
+%                     hold on;
+%                 end
+%             end            
+%         end
+% 
+%         % labels
+%         if isnumeric(exptIDs{ii})
+%             ylabel(['$\tau(t_{' num2str(exptIDs{ii}) '})$' ], ...
+%                 'Interpreter', 'Latex')
+%         else
+%             ylabel(['$\tau(t_{' exptIDs{ii} '})$' ], 'Interpreter', 'Latex')
+%         end
+%         if ii == 5 || ii == 6
+%             xlabel('time, $t_i$', 'Interpreter', 'latex')
+%         end
+%         xlim([0, Inf])
+%         ylim([0, Inf]) 
+%     end
+% 
+%     % Legend
+%     subplot(round(length(ttc)*0.5)+1, 2, length(ttc) + 1)
+%     labels = {} ;
+%     for ii = 1:length(ttc)
+%         plot([-1],[-1],'.-', 'color', colorset(ii, :))
+%         labels{ii} = num2str(ii) ;
+%         hold on
+%     end
+%     legend(labels, 'orientation', 'horizontal')
+%     xlim([0, 1])
+%     ylim([0, 1])
+%     axis off
+%     set(gcf, 'Units', 'centimeters');
+%     set(gcf, 'Position', [0 0 16 30]) ;
+%     set(gca,'fontsize', 12);
+%     
+%     if use_offset
+%         figurefn = fullfile(timelineDir, 'time_correspondences_offset.pdf') ;
+%     else
+%         figurefn = fullfile(timelineDir, 'time_correspondences.pdf') ;
+%     end
+%     
+%     saveas(gcf, figurefn)
+%     
+%     close all
+% end
+
 %% XIIb. Save timestamps in the original embryo folders
-if save
+if saveResults
+    maxv = -Inf ;
+    clf
+    figure('Units', 'centimeters', 'position', [0,0,6,6])
     for ii = 1:length(expts)
         tjr = i_tau0j_tau0jrelaxed(i_tau0j_tau0jrelaxed(:, 1) == ii, 3) ;
+        tjr0 = i_tau0j_tau0jrelaxed(i_tau0j_tau0jrelaxed(:, 1) == ii, 2) ;
 
         % For the moment, set uncertainty = 1 min --> todo: update this
         matchtime = tjr * 60 ;
@@ -734,5 +907,22 @@ if save
         size(matchtime_minutes)
         size(matchtime_unc_minutes)
         dlmwrite(fntxt, cat(2, matchtime_minutes, matchtime_unc_minutes))
+        
+        
+        %% plot it
+        plot((1:length(tjr))+tjr(1), tjr, '.', 'markersize', 0.2, 'color', colorset(ii, :))
+        hold on;
+        plot((1:length(tjr0))+tjr0(1), tjr0, 'o', 'markersize', 1.3, 'color', colorset(ii, :))
+        maxv = max(maxv, max(tjr(:))) ;
     end
+    
+    plot(1:maxv, 1:maxv, 'k--')
+    axis equal
+    axis square
+    xlabel('timestamp in reference timeline [min]')
+    ylabel('consensus timestamp')
+    saveas(gcf, fullfile(timelineDir, sprintf('relaxation_results_linearplot.pdf')))
+
 end
+
+

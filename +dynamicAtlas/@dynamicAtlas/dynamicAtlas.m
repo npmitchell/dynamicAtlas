@@ -27,7 +27,7 @@ classdef dynamicAtlas < handle
     methods
         function da = dynamicAtlas(atlasPath, genotypes, Options)
             %DYNAMICATLAS Construct an instance of this class
-            %   Create a dynamicAtlas instance
+            %   Create a dynamicAtlas instance -- Initialization method.
             %
             % Parameters
             % ----------
@@ -154,7 +154,6 @@ classdef dynamicAtlas < handle
             else
                 genotypes_todo = genotypes_subset ;
             end
-            
             
             genotypes_todo
             % Go through each genotype directory, build lookupMap class
@@ -395,9 +394,11 @@ classdef dynamicAtlas < handle
         end
             
         function qs = findDynamicGenotypeLabelTime(da, genotype, label, time, deltaT)
-            %FINDDYNAMICGENOTYPELABEL(genotype, label2find) Find dynamic embryos with label
+            %FINDDYNAMICGENOTYPELABEL(genotype, label2find, time, deltaT)
+            % Find dynamic embryos with given genotype+label+timestamps
             %   Give the times, folders, and time uncertainties of all
-            %   live samples matching the supplied channel 'label'
+            %   samples matching the supplied channel 'label' with
+            %   timestamps time+/-deltaT
             %
             % Parameters
             % ----------
@@ -472,7 +473,7 @@ classdef dynamicAtlas < handle
             % -------
             % qs : queriedSample class instance
             
-            if strcmp(da.timeStampMethod, 'stripe7')
+            if strcmp(da.timeStampMethod, 'stripe7') || strcmp(da.timeStampMethod, 'pullbackPathlineDisplacement') 
                 qs = da.lookup(genotype).findLabel(label) ;
             else
                 error(['dynamicAtlas.timeStampMethod not recognized: ',...

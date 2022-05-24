@@ -69,7 +69,8 @@ classdef lookupMap < handle
             % name of timer filename for loading times or cell array of
             % timer filenames in rank preference order for timing
             timerfn = {'timematch_*_*stripe7_chisq.mat', ...
-                'timematch_*_cephallicFurrowOnset.txt'} ;
+                'timematch_*_cephallicFurrowOnset.txt', ...
+                'timematch_*pullbackPathlineDisplacement.txt'} ;
             % filename for pullback without filetype extension
             prepend = 'MAX_Cyl1_2_00000*_c*_rot_scaled_view1' ;
             % string after prepend for the pullback data

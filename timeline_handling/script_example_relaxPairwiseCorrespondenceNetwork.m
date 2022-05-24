@@ -3,6 +3,24 @@
 addpath('/mnt/data/code/dynamicAtlas/+dynamicAtlas/data_handling/')
 addpath('/mnt/data/code/dynamicAtlas/timeline_handling/')
 
+%% A network to stretch
+ttc = {} ; ttc{1} = {} ; ttc{2} = {}; ttc{3} = {} ;
+ttc{1}{1} = cat(2, linspace())';
+ttc{1}{2} = [1,2.5,3;1,2,3]'; 
+ttc{1}{3} = [1,2.5,3;1,2,3]'; 
+ttc{2}{2} = [1,2,3;1,2,3]';
+ttc{2}{3} = [1,2,3;1,2,3]';
+ttc{3}{3} = [1,2,3;1,2,3]';
+options = struct('save', false, 'use_offdiagonals_only', true) ;
+featureMatchedStr = 'test' ;
+timelineDir = '' ;
+expts = {'testa','testb','testc'} ;
+exptIDs = {'testa','testb', 'testc'} ;
+hard = 1;
+relaxPairwiseCorrespondenceNetwork(ttc, hard, ...
+expts, exptIDs, timelineDir, featureMatchedStr, options) 
+
+
 %% A network with no energy and no net force
 ttc = {} ; ttc{1} = {} ; ttc{2} = {}; ttc{3} = {} ;
 ttc{1}{1} = [1,2,3;1,2,3]';
