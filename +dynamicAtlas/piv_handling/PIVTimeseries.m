@@ -23,7 +23,7 @@ step        = 1;    % stp in timeframes.
 smooth      = 1;    % set to 1 if gaussian smoothing is desired
 KernelSize  = 10;    % Smoothing kernel size
 sigma       = 2;  % standard deviation of gaussian kernel
-histequilize= true ; % equilize histograms of raw data across each image (40x40 bins of image equilized)
+histequalize= true ; % equilize histograms of raw data across each image (40x40 bins of image equilized)
 
 if nargin > 1
     if isfield(options, 'method')
@@ -47,8 +47,8 @@ if nargin > 1
     if isfield(options, 'sigma')
         sigma = options.sigma ;
     end
-    if isfield(options, 'histequilize')
-        histequilize = options.histequilize ;
+    if isfield(options, 'histequalize')
+        histequalize = options.histequalize ;
     end
 end
 
@@ -71,7 +71,6 @@ dat = loadtiff(fullfile(inputDir, Name)) ;
 
 %% Compute PIV for each frame
 dt = dlmread(fullfile(inputDir, 'dt.txt')) ;
-pix2um = dlmread(fullfile(inputDir, 'pix2um.txt')) ;
 for t = 1:  StackSize-step
     disp(['Running PIV on timestamp t = ' num2str(t)])
 
@@ -88,7 +87,7 @@ for t = 1:  StackSize-step
     
     if strcmpi(method, 'default')
        
-       if histequilize
+       if histequalize
            im1 = histeq(im1) ;
            im2 = histeq(im2) ;
        end
@@ -152,7 +151,7 @@ for t = 1:  StackSize-step
             opts.repeat          = 1  ;
             opts.disAuto         = 0  ;
             % Image proc
-            opts.clahe = histequilize ;
+            opts.clahe = histequalize ;
             opts.claheW          = 40 ;
             opts.highPass        = 0  ;
             opts.highPassSz      = 15 ;
@@ -199,8 +198,8 @@ for t = 1:  StackSize-step
         VY_filt = VY_filt' ;
         X0 = X0' ;
         Y0 = Y0' ;
-        convert_to_um_per_min = pix2um / (isf * dt) ;
-        save(fn,'VX','VY','VX_filt','VY_filt','X0','Y0', 'convert_to_um_per_min');
+        convert_to_pix_per_min = 1. / (isf * dt) ;
+        save(fn,'VX','VY','VX_filt','VY_filt','X0','Y0', 'convert_to_pix_per_min');
         
         % Save the settings used for piv as a settings.mat
         if ~exist(optfn, 'file')

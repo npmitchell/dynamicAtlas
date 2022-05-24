@@ -538,12 +538,22 @@ classdef queriedSample < handle
                                     tmp = load(pivfnRaw, 'convert_to_pix_per_min', 'X0', 'Y0') ;
                                     obj.piv.X0 = tmp.X0 ;
                                     obj.piv.Y0 = tmp.Y0 ;
+                                    try
+                                        conversion = tmp.convert_to_pix_per_min ;
+                                    catch
+                                        tmp = load(pivfnRaw, 'convert_to_um_per_min') ;
+                                        conversion = tmp.convert_to_um_per_min / 0.2619 ;  % um/min * original size pix / um
+                                    end
                                     first = false ;
                                 else
-                                    % tmp = load(pivfnRaw, 'convert_to_pix_per_min') ;
-                                    % conversion = 1/dt ;
+                                    try
+                                        tmp = load(pivfnRaw, 'convert_to_pix_per_min') ;
+                                        conversion = tmp.convert_to_pix_per_min ;
+                                    catch 
+                                        tmp = load(pivfnRaw, 'convert_to_pix_per_min') ;
+                                        conversion = tmp.convert_to_um_per_min / 0.2619;  % um/min * original size pix / um
+                                    end
                                 end
-                                conversion = 1/dt ;
                                 vxcollection(pp, :, :) = tmp.VX * conversion ;
                                 vycollection(pp, :, :) = tmp.VY * conversion ;
                                 obj.piv.units = 'pixels per min' ;
@@ -602,7 +612,7 @@ classdef queriedSample < handle
             %           piv evaluation y coordinates
             
             % default options
-            method = 'default' ;
+            method = 'pivlab_filtered' ;
             preview = false ;
             if nargin < 2
                 options = struct() ;
@@ -657,7 +667,7 @@ classdef queriedSample < handle
                                 vy(dmyk, :, :) = NaN ;
                             else
                                 disp(['PIV does not exist but tp is not final tp: ' pivfn])
-                                vx(dmyk, :, :) = NaN ;
+                                vx(dmyk, :, :) = NaN ; 
                                 vy(dmyk, :, :) = NaN ;
                             end
                         end
@@ -672,9 +682,24 @@ classdef queriedSample < handle
                                 sprintf('VeloT_fine_%06d.mat', timestamp)) ;
                         end
                         if exist(pivfn, 'file')
+                            
+                            % load conversion factor to pix per min
+                            if strcmpi(method, 'pivlab_filtered') 
+                                tmp = load(pivfn) ;
+                                try
+                                    rawPIV = load(pivfnRaw, 'convert_to_pix_per_min') ;
+                                    tmp.convert_to_pix_per_min = rawPIV.convert_to_pix_per_min ;
+                                catch
+                                    rawPIV = load(pivfnRaw, 'convert_to_um_per_min') ;
+                                    tmp.convert_to_pix_per_min = rawPIV.convert_to_um_per_min / 0.2619 ; 
+                                end
+                            else
+                                tmp = load(pivfn) ;
+                            end
+                            
                             tmp = load(pivfn) ;
-                            vx(dmyk, :, :) = tmp.VX / dt ; % pix / min
-                            vy(dmyk, :, :) = tmp.VY / dt ; % pix / min
+                            vx(dmyk, :, :) = tmp.VX / tmp.convert_to_pix_per_min ; % pix / min
+                            vy(dmyk, :, :) = tmp.VY / tmp.convert_to_pix_per_min  ; % pix / min
                             assert(any(~isnan(vx(:))))
                         else
                             if timestamp == obj.meta.nTimePoints(qq)
