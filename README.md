@@ -53,6 +53,7 @@ MATLAB release.
 
 - Hardware: No non-standard hardware required.
 
+
 ## Installation
 
 A current MATLAB version is all you need to use dynamicAtlas. 
@@ -60,7 +61,7 @@ Simply clone the repository as usual. Installation should occur within 1 minute.
 ```bash
     git clone https://github.com/npmitchell/dynamicAtlas.git && cd dynamicAtlas
 ```
-- Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 (https://datadryad.org/stash/dataset/doi:10.25349/D9WW43
+- Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 
 
 - Download the data from the Dryad repository using the link provided above, and unzip it.  
 
