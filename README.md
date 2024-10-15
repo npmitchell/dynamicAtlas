@@ -47,9 +47,11 @@ Similar methods to check out are ``da.findEmbryo('202006261115')``, ``da.findSta
 ## System and software requirements
 
 - OS: Tested on Mac OS Sequoia 15.0.1 and Linux Ubuntu 18.04.6, but will also work on other operating systems including Windows, as long as these systems support MATLAB installation.
--Software: Tested on MATLAB R2023a and R2024b, but will work with any recent
+
+- Software: Tested on MATLAB R2023a and R2024b, but will work with any recent
 MATLAB release.
-    -    Hardware: No non-standard hardware required.
+
+- Hardware: No non-standard hardware required.
 
 ## Installation
 
@@ -58,9 +60,11 @@ Simply clone the repository as usual. Installation should occur within 1 minute.
 ```bash
     git clone https://github.com/npmitchell/dynamicAtlas.git && cd dynamicAtlas
 ```
--Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 (https://datadryad.org/stash/dataset/doi:10.25349/D9WW43
--Download the data from the Dryad repository using the link provided above, and unzip it.  
--Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”.
+- Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 (https://datadryad.org/stash/dataset/doi:10.25349/D9WW43
+
+- Download the data from the Dryad repository using the link provided above, and unzip it.  
+
+- Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”.
 
 ## Demo
 -Provided in GitHub repository —“demo_dynamicAtlas_functionality.m” and as part of the Supplementary Information.
