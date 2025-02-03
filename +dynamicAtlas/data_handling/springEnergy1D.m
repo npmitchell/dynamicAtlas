@@ -1,4 +1,4 @@
-function energy = springEnergy1D(xx, BL, fixed_ind, fixed_x, stiffness, bondLength0) 
+function energy = springEnergy1D(xx, BL, fixed_ind, fixed_x) 
 % energy = springEnergy1D(xx, BL, fixed_ind, fixed_x) 
 %
 % Compute spring energy as distance between positons of nodes that share
@@ -22,10 +22,6 @@ function energy = springEnergy1D(xx, BL, fixed_ind, fixed_x, stiffness, bondLeng
 %   indices of nodes/vertices that are considered immobile
 % fixed_x : Qx1 numeric
 %   positions of the indices which are not dof
-% stiffness : #bonds x 1 numeric or 1x1 numeric
-%   spring constants (all bonds or single float)
-% bondLength0 : #bonds x 1 numeric
-%   rest bond lengths (all bonds)
 %
 % Returns
 % -------
@@ -46,5 +42,5 @@ function energy = springEnergy1D(xx, BL, fixed_ind, fixed_x, stiffness, bondLeng
 xnew1 = xx(1:fixed_ind(1)-1) ;
 xnew2 = xx(fixed_ind(1):end) ;
 xnew = [xnew1; fixed_x; xnew2 ] ;
-energy = 0.5 * sum( stiffness .* abs(xnew(BL(:, 2)) - xnew(BL(:, 1)) - bondLength0).^2) ;
+energy = 0.5 * sum(abs(xnew(BL(:, 2)) - xnew(BL(:, 1))).^2) ;
 

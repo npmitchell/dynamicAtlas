@@ -90,12 +90,14 @@ classdef queriedSample < handle
                 dataCell = cell(1, length(obj.meta.folders)) ;
                 for qq = 1:length(obj.meta.folders)
                     tiff_fn = fullfile(obj.meta.folders{qq}, obj.meta.names{qq}) ;
-                    if iscell(obj.meta.tiffpages)
-                        thesePages = obj.meta.tiffpages{qq} ;
-                    else
-                        thesePages = obj.meta.tiffpages(qq) ;
-                    end
+
+
                     if isfield(obj.meta, 'tiffpages') && ~iscell(obj.meta.tiffpages)
+
+                        %MODIFIED 2024/12/11, the if statement did nothing, put
+                        %inside this if statement
+                        thesePages = obj.meta.tiffpages{qq} ;
+
                         disp(['Loading TIFF page ', ...
                             num2str(thesePages), ...
                             ' from: ', tiff_fn])
@@ -300,6 +302,12 @@ classdef queriedSample < handle
                 median_order = 3 ;
             end
             for qq = 1:nEmbryos
+
+                %MODIFIED BY VJS 2024/12/29
+                %MODIFIED TO SKIP DATASETS WHICH ARE FIXED
+                if (obj.meta.nTimePoints(qq) == 1)
+                    continue
+                end
                 
                 % check if PIV has already been computed or if we are
                 % overwriting the existing results
@@ -328,6 +336,8 @@ classdef queriedSample < handle
                     runMedianFilterOnPIVField(input_path, output_path, median_order);
                 end
             end
+
+            disp('Done with ensurePIV')
         end
         
         function dataCell = getSmooth(obj, sigma, step)

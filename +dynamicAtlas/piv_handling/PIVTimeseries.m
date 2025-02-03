@@ -128,7 +128,14 @@ for t = 1:  StackSize-step
         if ~exist(fullfile(inputDir, 'PIV'), 'dir')
             mkdir(fullfile(inputDir, 'PIV'))
         end
-        save(sprintf(fullfile(inputDir, 'PIV', 'VeloT_%06d.mat'),t),'VX','VY');
+
+        %MODIFIED on 2025/01/23 to do sprintf on the VeloT string first
+        %before fullfile, because on windows causes errors to do 
+        %sprintf when there are no double slashes but only single slashes
+        save(fullfile(inputDir, 'PIV', sprintf('VeloT_%06d.mat',t)),'VX','VY');
+        
+        %ORIGINAL
+        %save(sprintf(fullfile(inputDir, 'PIV', 'VeloT_%06d.mat'),t),'VX','VY');
 
     elseif strcmpi(method, 'pivlab')
         
@@ -142,7 +149,7 @@ for t = 1:  StackSize-step
             opts.intArea1        = EdgeLength*8 ;
             opts.step            = round(opts.intArea1 * 0.5) ;
             opts.subpixFindr     = 1  ;
-            opts.mask            = [] ;
+             opts.mask            = [] ;
             opts.roi             = [] ;
             opts.numPasses       = 4  ;
             opts.intArea2        = EdgeLength*4 ;
@@ -191,7 +198,14 @@ for t = 1:  StackSize-step
         if ~exist(fullfile(inputDir, 'PIVlab'), 'dir')
             mkdir(fullfile(inputDir, 'PIVlab'))
         end
-        fn = sprintf(fullfile(inputDir, 'PIVlab', 'VeloT_fine_%06d.mat'),t) ; 
+
+        %MODIFIED on 2025/01/23 to do sprintf on the VeloT string first
+        %before fullfile, because on windows causes errors to do 
+        %sprintf when there are no double slashes but only single slashes
+        fn = fullfile(inputDir, 'PIVlab', sprintf('VeloT_fine_%06d.mat',t)) ; 
+        %ORIGINAL
+        %fn = sprintf(fullfile(inputDir, 'PIVlab', 'VeloT_fine_%06d.mat'),t) ; 
+        
         VX = VX' ;
         VY = VY' ;
         VX_filt = VX_filt' ;

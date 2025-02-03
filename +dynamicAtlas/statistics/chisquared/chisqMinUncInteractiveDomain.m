@@ -187,7 +187,8 @@ while ~fit_is_fine
     legend({'$\chi^2/N$', 'fit', 'data for fit',...
         '$\Sigma(x-\bar{x})^2$ (normalized)'}, ...
         'Location', 'best', 'Interpreter', 'Latex')
-    suptitle([header_preamble 'Enter=OK, up=wider, down=narrower, right/left=shift'])
+    %MODIFIED 2024/12/13 changing suptitle to subtitle
+    subtitle([header_preamble 'Enter=OK, up=wider, down=narrower, right/left=shift'])
     
     % Add overlay data to other subplot if supplied
     if do_overlay

@@ -1,7 +1,7 @@
 %% MASTER TIMING PIPELINE
 % Master pipeline for building master timelines & timestamping fixed 
 % samples using dynamic timeline.
-% Demos of functionality are shown along the way.
+% Demos of functionality are shoewn along the way.
 %
 % NPMitchell 2020
 
@@ -20,13 +20,13 @@ close all
 tlaDir = '/Volumes/minimalData/code/';
 % tlaDir = '/Users/mattlefebvre/Desktop/Code/code';
 cd(fullfile(tlaDir)) ;
-addpath(genpath('dynamicAtlasCode')) ;
-cd('dynamicAtlasCode')
+addpath(genpath('dynamicAtlas')) ;
+cd('dynamicAtlas')
 addpath(genpath('+dynamicAtlas'))
 %import dynamicAtlas
 % Atlas path is where the dynamicAtlas resides
-% atlasPath = '/Volumes/minimalData/Atlas_Data' ;
-atlasPath = '/Users/npmitchell/Desktop/Atlas_Data/'
+ atlasPath = '/Volumes/minimalData/Atlas_Data' ;
+%atlasPath = '/Users/vishank/Desktop/Atlas_Data/'
 
 %% Build the dynamicAtlas
 % Build dynamic atlas with all genotypes in the atlasPath
@@ -104,7 +104,7 @@ da.makeGradientImages({'Runt'})
 % Align dynamic runt nanobody data against each other 
 Options.apCijFrac = 0.0 ;
 Options = struct();
-da_1.makeMasterTimeline('WT', 'Runt', Options)
+da.makeMasterTimeline('WT', 'Runt', Options)
 %da.makeMasterTimeline('Tlrm9','Eve',Options)
 
 %% Timestamp other data against the master timeline

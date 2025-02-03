@@ -2,7 +2,7 @@ function [chisq, chisqn, ssr, ssr_raw, shifts] = chisquareCurves(curv, refcurvsX
     refcurvsY, refvariance, LperiodicX, LperiodicY, smooth_var, optimize_translation, preview)
 % chisquareCurves(curv, refcurvs, refvar, take_mean, symmetrize)
 % 
-% todo: enable refcurvs and refvar to be cell instead of 2D array
+% todo: enable refcurvs and re.fvar to be cell instead of 2D array
 % 
 % Parameters
 % ----------

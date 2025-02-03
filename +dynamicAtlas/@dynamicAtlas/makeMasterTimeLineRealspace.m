@@ -66,6 +66,7 @@ if nargin > 3
 end
 
 outdir = fullfile(da.path, 'timing', genotype, label) ;
+
 corrOutDir = fullfile(outdir, sprintf([corr_method 'corr_ss%02d'], ssfactor)) ;
 
 % build expts, a list of dynamic experiments to use for building master
@@ -157,8 +158,19 @@ for ii = 1:length(expts)
     % Load time sequence MIPs of dataset ii
     % Search for existing filename matching pattern
     cand = dir(fullfile(expts{ii}, ssmipfn)) ;
-    outfn = fullfile(cand(1).folder, cand(1).name) ;
-    
+
+    %MODIFIED 12/12/2024, will throw error if there are no subsampled
+    %datasets in the folder, test if is empty before defining outfn,
+    %and will define outfn as the expected name (folder name plus 
+    %the ssmip name as derived from modifying the original pullback name)
+    if (~isempty(cand))
+        outfn = fullfile(cand(1).folder, cand(1).name) ;
+    else
+        mip_name_ii = dynamic_embryos.names{ii};
+        ssmip_name_ii = [mip_name_ii(1:end-4) substr '.tif'];
+        outfn = fullfile(dynamic_embryos.folders{ii}, ssmip_name_ii);
+    end
+
     if ~exist(outfn, 'file') || overwrite
         disp('--> DOWNSAMPLING')
         disp(['Loading MIPs tiff: ' fullfile(expts{ii}, mipfn)])
@@ -195,12 +207,29 @@ end
 %% II. Train on stripe7 for each subsampled data in ilastik
 
 %% III. Extract leading edge of stripe from Loaded probabilities
-cand = dir(fullfile(expts{ii}, [ssmipfnBase '_Probabilities.h5'])) ;
-probfn = fullfile(cand(1).folder, cand(1).name) ;
+
 minsz = 5e3 ;
 maxsz = 1e6 ;
 
 for ii = 1:length(expts)
+
+    %MODIFIED 12/12/2024, this should be inside the for loop
+    %because it's for this experiment
+    cand = dir(fullfile(expts{ii}, [ssmipfnBase '_Probabilities.h5'])) ;
+    
+    %MODIFIED 12/12/2024, will throw error if there are no probabilities
+    %datasets in the folder, test if is empty before defining probfn,
+    %and will define probfn as the expected name (folder name plus 
+    %the ssmip name as derived from modifying the original pullback name)
+    if (~isempty(cand))
+        probfn = fullfile(cand(1).folder, cand(1).name) ;
+    else
+        mip_name_ii = dynamic_embryos.names{ii};
+        ssmip_name_ii = [mip_name_ii(1:end-4) substr '.tif'];
+    
+        probfn = fullfile(dynamic_embryos.folders{ii}, [ssmip_name_ii(1:end-4), '_Probabilities.h5']);
+    end
+
     disp(['Extracting stripe 7 for expt ' exptIDs{ii}])
     fns = dir(probfn) ;
     try
@@ -535,10 +564,10 @@ for ii = 1:length(expts)
         % Define the correlation matrix filename
         ijstr = [ '_' exptIDs{ii} '_' exptIDs{jj} extn ] ;
         cfn = fullfile(corrDatOutDir, ['corr' ijstr '.mat']) ;
-        disp(['Seeking corrPath ' cpathfn])
-        disp(['   -> for path on correlation from cfn = ' cfn])
         cpathfn = fullfile(corrPathOutDir, ['cpath' ijstr '.mat']) ;
-                
+        disp(['Seeking corrPath ' cpathfn])
+        disp(['   -> for path on correlation from cfn = ' cfn])  
+
         % Decide to compute the correlations or not
         if ii == jj && (~exist(cpathfn, 'file') || overwrite)
             
@@ -643,10 +672,13 @@ for ii = 1:length(expts)
             ntpguess = min(size(cij)) ;
             xtmp = (1:ntpguess) + tpath(1, 2) ;
             ytmp = (1:ntpguess) + tpath(1, 1) ;
-            plot(xtmp, ytmp, 'k--')
+
+            %MODIFIED 2025/02/02, removed the black dashed line
+            %plot(xtmp, ytmp, 'k--')
             xtmp = tpath(end, 2) - (0:ntpguess-1) ;
             ytmp = tpath(end, 1) - (0:ntpguess-1) ;
-            plot(xtmp, ytmp, 'k--')
+            %MODIFIED 2025/02/02, removed the black dashed line
+            %plot(xtmp, ytmp, 'k--')
             axis equal
             axis tight
             msg = 'Does path look ok? Enter=yes, Backspace=no, n/Delete=No correspondence' ;
@@ -686,10 +718,12 @@ for ii = 1:length(expts)
                 plot(tpath(end, 2), tpath(end, 1), 'k^')
                 xtmp = (1:ntpguess) + tpath(1, 2) ;
                 ytmp = (1:ntpguess) + tpath(1, 1) ;
-                plot(xtmp, ytmp, 'k--')
+                %MODIFIED 2025/02/02, removed the black dashed line
+                %plot(xtmp, ytmp, 'k--')
                 xtmp = tpath(end, 2) - (0:ntpguess-1) ;
                 ytmp = tpath(end, 1) - (0:ntpguess-1) ;
-                plot(xtmp, ytmp, 'k--')
+                %MODIFIED 2025/02/02, removed the black dashed line
+                %plot(xtmp, ytmp, 'k--')
                 msg = 'Do endpoints look ok? Enter=yes, Backspace=no/select' ;
                 title(msg)
                 disp(msg)
@@ -728,7 +762,33 @@ for ii = 1:length(expts)
                             disp(msg)
                             title(msg)
                             startpt = ginput(1) ;
+
+                            %%%%
+
+                            %MODIFIED 2025/02/02 to choose the closest 
+                            %point to the boundary based on click 
+                            %
+                            %(earlier would just use click coords)
+                            
+                            %size of cij
+                            cij_dims = size(cij);
+                            cij_d1 = cij_dims(1);
+                            cij_d2 = cij_dims(2);
+
+                            %boundary coords (matches [horiztonal,vertical]
+                            %convention of startpt, 2 column ary of coords)
+                            bndry_coords = [[1*ones(1,cij_d1);1:cij_d1]'; [cij_d2*ones(1,cij_d1);1:cij_d1]'; [1:cij_d2; 1*ones(1,cij_d2)]'; [1:cij_d2; cij_d1*ones(1,cij_d2)]'];
+                            [~,min_dist_idx] = pdist2(bndry_coords,startpt,'euclidean','Smallest',1);
+                            
+                            %sets startpt to the closest point on the 
+                            %boundary to that clicked (old startpt)
+                            startpt = bndry_coords(min_dist_idx,:);
+                            
+                            %%%%
+
+                            %KEEP THIS, FLIPS ORDER TO MATCH CONVENTIONS
                             startpt = [startpt(2) startpt(1)] ;
+
                         end
                     end
                     msg = 'End timept is ok? Enter=yes, Backspace=no' ;
@@ -740,19 +800,52 @@ for ii = 1:length(expts)
                     if button && strcmp(get(gcf, 'CurrentKey'), 'return')
                         disp('Great, all done.')
                     elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
-                        % New guess for startpoint is maximum along column
+                        % New guess for endpoint is maximum along column
                         [~, endpt(1, 1)] = max(cij(:, end)) ;
                         endpt(1, 2) = size(cij, 2) ;
                         scatter(endpt(2), endpt(1), 100, 'r', 'filled')
-                        msg = 'Ok, how about startpt now? Enter=yes, Backspace=no' ;
+                        msg = 'Ok, how about endpt now? Enter=yes, Backspace=no' ;
                         disp(msg)
                         title(msg)
                         button = waitforbuttonpress() ;
                         if button && strcmp(get(gcf, 'CurrentKey'), 'return')
                             disp('Great, all done.')
-                        elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')
+                        elseif button && strcmp(get(gcf, 'CurrentKey'), 'backspace')                 
+                            %MODIFIED 2025/02/02 to put in the message 
+                            %dialog (was missing before)
+                            msg = 'Find the endpoint manually by clicking' ;
+                            disp(msg)
+                            title(msg)
+
                             endpt = ginput(1) ;
+
+                            %%%%
+
+                            %MODIFIED 2025/02/02 to choose the closest 
+                            %point to the boundary based on click 
+                            %
+                            %(earlier would just use click coords)
+                            
+                            %size of cij
+                            cij_dims = size(cij);
+                            cij_d1 = cij_dims(1);
+                            cij_d2 = cij_dims(2);
+
+                            %boundary coords (matches [horiztonal,vertical]
+                            %convention of endpt, 2 column ary of coords)
+                            bndry_coords = [[1*ones(1,cij_d1);1:cij_d1]'; [cij_d2*ones(1,cij_d1);1:cij_d1]'; [1:cij_d2; 1*ones(1,cij_d2)]'; [1:cij_d2; cij_d1*ones(1,cij_d2)]'];
+                            [~,min_dist_idx] = pdist2(bndry_coords,endpt,'euclidean','Smallest',1);
+                            
+                            %sets startpt to the closest point on the 
+                            %boundary to that clicked (old startpt)
+                            endpt = bndry_coords(min_dist_idx,:);
+                            
+                            %%%%
+
+                            %KEEP THIS, FLIPS ORDER TO MATCH CONVENTIONS
                             endpt = [endpt(2) endpt(1)] ;
+
+
                         end
                     end
                 else
@@ -779,10 +872,14 @@ for ii = 1:length(expts)
                 % WW = cij - min(cij(:)) + 1e-2;
                 % Compute distance transform
                 % didn't get slow version to work
-                % [DD,S] = perform_front_propagation_2d_slow(WW',...
-                %     [startpt(2);startpt(1)], [endpt(2); endpt(1)], 4000, []);
+
+                %MODIFIED 2024/12/13 to use slow version because fast was
+                %not able to run without errors, also changed
+                %iterations from 4000 to 500
+                [DD,S] = perform_front_propagation_2d_slow(WW',...
+                     [startpt(2);startpt(1)], [endpt(2); endpt(1)], 500);
                 %
-                [DD,S] = perform_fast_marching(WW', [startpt(2)+0.1; startpt(1)+0.1], options) ;
+                %[DD,S] = perform_fast_marching(WW', [startpt(2)+0.1; startpt(1)+0.1], options) ;
                 
                 % Check DD
                 % imagesc(DD)
@@ -993,9 +1090,12 @@ for ii = 1:length(expts)
                 close all
                 imagesc(cij);
                 hold on;
-                plot(startpt(2), startpt(1), 'ro') 
+                plot(startpt(2), startpt(1), 'ks') 
                 plot(endpt(2), endpt(1), 'ks')
-                plot(cpath(:, 2), cpath(:, 1), '-') ;
+
+                %MODIFIED 2025/02/02 TO COMMENT THIS OUT, CONFUSING FOR 
+                %A USER
+                %plot(cpath(:, 2), cpath(:, 1), '-') ;
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Convert cpath to tpath: x timeline is integer, y timeline
@@ -1010,7 +1110,7 @@ for ii = 1:length(expts)
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
                 % Continue visualization
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-                plot(tpath(:, 2), tpath(:, 1), 'o') ;
+                plot(tpath(:, 2), tpath(:, 1), 'ro') ;
                 xlabel(['time, dataset ', exptIDs{jj}])
                 ylabel(['time, dataset ', exptIDs{ii}])
                 cb = colorbar() ;
@@ -1063,7 +1163,17 @@ for ii = 1:length(expts)
                 close all
                 disp('Saving overlays...')
                 for qq = 1:length(tpath) 
-                    if ~exist(sprintf(outfn, qq), 'file')
+
+                    %MODIFIED 2025/01/23 to account for sprintf error on windows
+                    if ispc
+                        outfn_swap = replace(outfn,'\','\\');
+                        string2use = sprintf(outfn_swap, qq);
+                    else
+                        %ORIGINAL
+                        string2use = sprintf(outfn, qq);
+                    end
+
+                    if ~exist(string2use, 'file')
                         if mod(qq, 10) == 0
                             disp(['Saving overlaid stripes ' num2str(qq)])
                         end
@@ -1090,7 +1200,12 @@ for ii = 1:length(expts)
                         axis tight
                         set(gcf, 'PaperUnits', 'centimeters');
                         set(gcf, 'PaperSize', [16, 16]) ;
-                        saveas(gcf, sprintf(outfn, qq))
+
+                        %MODIFIED 2025/01/23 to use the variable above
+                        saveas(gcf, string2use)
+                        %ORIGINAL
+                        %saveas(gcf, sprintf(outfn, qq))
+
                     end
                 end
 
@@ -1407,11 +1522,16 @@ to_relax = setdiff(to_relax, hard) ;
 % Tau0 is a map from timeline ti to reference timeline
 % to use, do yy = ppval(pp, xq);
 for ii = 1:length(ttc)
-    if ii <= hard
+
+    %MODIFIED 12/13/2024, spline giving errors when flip the values,
+    %since the first values of the spline need to be unique.
+    %Trying with just the first option
+
+    %if ii <= hard
         pp = spline(ttc{ii}{hard}(:, 1), ttc{ii}{hard}(:, 2)) ;
-    elseif ii > hard
-        pp = spline(ttc{hard}{ii}(:, 2), ttc{hard}{ii}(:, 1)) ;
-    end
+    %elseif ii > hard
+    %    pp = spline(ttc{hard}{ii}(:, 2), ttc{hard}{ii}(:, 1)) ;
+    %end
     if ii == 1
         tau0 = [pp] ;
     else
@@ -1674,7 +1794,17 @@ else
     fixed_ind = find(i_tau0j(:, 1) == hard) ;
     fixed_xx = i_tau0j(fixed_ind, 2) ;
     x0(fixed_ind) = [] ;
+
+    %MODIFIED 12/13/2024
+    %need to put in stiffnesses for the springs and initial bond lengths,
+    %since this is an argument for the spring energy function
+    stiffness = ones(size(BL));
+    bondlength0 = ones(size(BL));
+    %fun = @(x)springEnergy1D(x, BL, fixed_ind, fixed_xx, stiffness, bondlength0);
+
     fun = @(x)springEnergy1D(x, BL, fixed_ind, fixed_xx);
+
+
     xf = fminsearch(fun, x0, options) ;
     % reinsert indices of fixed times
     xnew1 = xf(1:fixed_ind(1)-1) ;
@@ -1712,7 +1842,9 @@ else
     ylim([0, max(i_tau0j(:, 1)) + 1])
     set(gcf, 'Units', 'centimeters');
     set(gcf, 'Position', [0 0 36 16]) ;
-    saveas(gcf, fullfile(timelineDir, sprintf('relaxation_results.png')))
+
+    %MODIFIED 2025/01/23 got rid of unnecessary sprintf
+    saveas(gcf, fullfile(timelineDir, 'relaxation_results.png'))
 
     % Save the result
     i_tau0j_tau0jrelaxed = cat(2, i_tau0j, xnew) ;
@@ -1801,7 +1933,17 @@ window = 0.5 + 1e-5 ;
 times2do = ttc{hard}{hard}(:, 1) ;
 for qi = 1:length(times2do)
     qq = times2do(qi) ;
-    if ~exist(sprintf(statfn, qi), 'file') || overwrite
+
+    %MODIFIED 2025/01/23 to account for sprintf error on windows
+    if ispc
+        statfn_swap = replace(statfn,'\','\\');
+        string2use = sprintf(statfn_swap, qq);
+    else
+        %ORIGINAL
+        string2use = sprintf(statfn, qq);
+    end
+    
+    if ~exist(string2use, 'file') || overwrite
         close all
         fig = figure('visible', 'off') ;
         disp(['qq = ' num2str(qq)])
@@ -1878,7 +2020,19 @@ for qi = 1:length(times2do)
         % Save statistics
         leading = lstat ;
         trailing = tstat ; 
-        save(sprintf(statfn, qi), 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
+
+        %MODIFIED 2025/01/23 to account for sprintf error on windows
+        if ispc
+            statfn_swap = replace(statfn,'\','\\');
+            string2use = sprintf(statfn_swap, qi);
+        else
+            string2use = sprintf(statfn, qi);
+        end
+        
+        save(string2use, 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
+        
+        %ORIGINAL
+        %save(sprintf(statfn, qi), 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
         clear leading trailing lstat tstat stripes
 
         % Check
@@ -1910,7 +2064,19 @@ if exist(curv7MatFn, 'file') && ~overwrite
     load(curv7MatFn)
 else
     % Grab xx from first timepoint's lstat
-    load(sprintf(statfn, 1), 'leading') ;
+
+    %MODIFIED 2025/01/23 to account for sprintf error on windows
+    if ispc
+        statfn_swap = replace(statfn,'\','\\');
+        string2use = sprintf(statfn_swap, 1);
+    else
+        string2use = sprintf(statfn, 1);
+    end
+
+    load(string2use, 'leading') ;
+
+    %ORIGINAL
+    %load(sprintf(statfn, 1), 'leading') ;
     xx = leading(:, 1) ;
 
     % Preallocate matrices of positions and variances in position of leading
@@ -1926,7 +2092,19 @@ else
         close all
         fig = figure('visible', 'off') ;
         qq = times2do(qi) ;
-        load(sprintf(statfn, qi), 'leadfrac', 'trailfrac') ;
+
+        %MODIFIED 2025/01/23 to account for sprintf error on windows
+        if ispc
+            statfn_swap = replace(statfn,'\','\\');
+            string2use = sprintf(statfn_swap, qi);
+        else
+            string2use = sprintf(statfn, qi);
+        end
+        
+        load(string2use, 'leadfrac', 'trailfrac') ;
+
+        %ORIGINAL
+        %load(sprintf(statfn, qi), 'leadfrac', 'trailfrac') ;
         LX(:, qi) = leadfrac(:, 2) ; % position
         LV(:, qi) = leadfrac(:, 3) ; % variance
         LS(:, qi) = leadfrac(:, 4) ; % stdev
@@ -2045,7 +2223,19 @@ end
 % Check if this has already been done
 redo_optimization = false ;
 for qi = 1:length(times2do)
-    datfn = sprintf(statCollapseFn, qi) ;
+
+    %MODIFIED 2025/01/23 to account for sprintf error on windows
+    if ispc
+        statCollapseFn_swap = replace(statCollapseFn,'\','\\');
+        string2use = sprintf(statCollapseFn_swap, qi);
+    else
+        string2use = sprintf(statCollapseFn, qi);
+    end
+
+    datfn = string2use;
+
+    %ORIGINAL
+    %datfn = sprintf(statCollapseFn, qi) ;
     if ~exist(datfn, 'file')
         redo_optimization = true ;
     end
@@ -2229,7 +2419,19 @@ if redo_optimization || overwrite
         % Save statistics
         leading = lstat ;
         trailing = tstat ; 
-        datfn = sprintf(statCollapseFn, qi) ;
+
+        %MODIFIED 2025/01/23 to account for sprintf error on windows
+        if ispc
+            statCollapseFn_swap = replace(statCollapseFn,'\','\\');
+            string2use = sprintf(statCollapseFn_swap, qi);
+        else
+            string2use = sprintf(statCollapseFn, qi);
+        end
+
+        datfn = string2use;
+
+        %ORIGINAL
+        %datfn = sprintf(statCollapseFn, qi) ;
         disp(['Saving data to ' datfn])
         save(datfn, 'leading', 'trailing', 'leadfrac', 'trailfrac') ;
         clear leading trailing lstat tstat stripes
@@ -2266,7 +2468,19 @@ imageFilter = fspecial('gaussian',filtWidth,filtSigma);
 c7MatFiltFn = fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat') ;
 if ~exist(c7MatFiltFn, 'file') || overwrite 
     % Grab xx from first timepoint's lstat 
-    load(sprintf(statCollapseFn, 1), 'leading') ;
+
+    %MODIFIED 2025/01/23 to account for sprintf error on windows
+    if ispc
+        statCollapseFn_swap = replace(statCollapseFn,'\','\\');
+        string2use = sprintf(statCollapseFn_swap, 1);
+    else
+        string2use = sprintf(statCollapseFn, 1);
+    end
+
+    load(string2use, 'leading');
+
+    %ORIGINAL
+    %load(sprintf(statCollapseFn, 1), 'leading') ;
     xx = leading(:, 1) ;
 
     % Preallocate matrices of positions and variances in position of leading
@@ -2282,7 +2496,18 @@ if ~exist(c7MatFiltFn, 'file') || overwrite
         close all
         fig = figure('visible', 'off') ;
         qq = times2do(qi) ;
-        load(sprintf(statCollapseFn, qi), 'leadfrac', 'trailfrac') ;
+
+        %MODIFIED 2025/01/23 to account for sprintf error on windows
+        if ispc
+            statCollapseFn_swap = replace(statCollapseFn,'\','\\');
+            string2use = sprintf(statCollapseFn_swap, qi);
+        else
+            string2use = sprintf(statCollapseFn, qi);
+        end
+
+        load(string2use, 'leadfrac', 'trailfrac');
+        %ORIGINAL
+        %load(sprintf(statCollapseFn, qi), 'leadfrac', 'trailfrac') ;
         LX(:, qi) = leadfrac(:, 2) ; % position
         LV(:, qi) = leadfrac(:, 3) ; % variance
         LS(:, qi) = leadfrac(:, 4) ; % stdev
@@ -2390,7 +2615,14 @@ calibDir = fullfile(outdir, 'time_alignment_calibration') ;
 load(fullfile(corrOutDir, 'curve7stats_collapsed_filtered.mat'), ...
     'LXs', 'LVs', 'xx') ;
 
-hands_on = true ;
+%MODIFIED 2024/12/13 to have hands_on false by default
+hands_on = false; %true ;
+
+%MODIFIED 2024/12/13 to put other arguments for chisquarecurves
+LperiodicX = 0;
+LperiodicY = 0;
+preview = 0;
+
 smooth_var = false ;
 save_snaps = false ;
 refcurvX = xx ;
@@ -2438,8 +2670,10 @@ for exptii = 1:length(expts)
         curv = lead(:, [2 1]) ;
         % By using 4th output argument of chisquareCurves, we grab the raw
         % SSR that is not optimized by translation of the curve.
+
+        %MODIFIED 2024/12/13 to put other arguments for chisquarecurves
         [chisq, chisqn, ~, ssr] = chisquareCurves(curv, refcurvX, ...
-            refcurvsY, refvars, smooth_var, true) ;
+            refcurvsY, refvars, LperiodicX, LperiodicY, smooth_var, true, preview) ;
         % error('here')
         chisqn = fillmissing(chisqn, 'movmedian', 5) ;
         preamble = ['frame ', num2str(qq), ' of  ', ...
@@ -2533,4 +2767,4 @@ for exptii = 1:length(expts)
     end
 end
 
-
+disp('Done making master timeline')

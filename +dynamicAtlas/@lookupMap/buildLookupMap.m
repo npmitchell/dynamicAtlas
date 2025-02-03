@@ -201,6 +201,12 @@ for ii = 1:length(labelDirs)
     end
     
     [~, inds] = sort(min_etime) ;
+    
+    %MODIFIED 2024/12/12, filenames were not being sorted before
+    %due to being identical, but if different channels are encoded
+    %(e.g. labeled for c2 instead of c1), sorting needs to be included
+    fileNames = fileNames(inds) ;
+
     embryoDirs = embryoDirs(inds) ;
     embryoIDs = embryoIDs(inds) ;
     embryoTimes = embryoTimes(inds) ;

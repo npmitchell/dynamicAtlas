@@ -100,6 +100,16 @@ if nargin > 3
     if isfield(Options, 'optimize_trans')
         timelineLeadingTrailing = Options.timelineLeadingTrailing ;
     end
+    %MODIFIED 2025/01/22 to load in the master timeline designee directory
+    if isfield(Options, 'masterDesigneeDir')
+        masterDesigneeDir = Options.masterDesigneeDir ;
+    end
+
+    %MODIFIED 2025/01/22 to use the master timeline designee directory
+    if isfield(Options, 'loadStripeMat')
+        loadStripeMat = Options.loadStripeMat ;
+    end
+
 else
     Options = struct();
 end
@@ -126,7 +136,11 @@ if isfield(Options, 'refDir')
 end
 
 % Load dt from refDir
-dt = dlmread(fullfile(refDir, '..', 'dt.txt'), ',', 1,0) ;
+
+%MODIFIED 01/22/2024 to remove the double dots, just loading dt.txt
+%in from the master designee directory, and changing the third argument
+%from 1 to 0
+dt = dlmread(fullfile(masterDesigneeDir, 'dt.txt'), ',', 0,0) ;
 
 
 %% Plotting
@@ -232,13 +246,29 @@ if strcmpi(method, 'stripe7')
 
         % Save fancy image
         fancyImFn = fullfile(embryoDir, [label 'stripe7_rgb_' embryoID '.png']) ;
-        if save_fancy && (~exist(fancyImFn, 'file') || overwriteStripe ) 
+
+        %MODIFIED 2025/01/22 to load in a stripe using the .mat if the option
+        %is indicated
+        if save_fancy && (~exist(fancyImFn, 'file') || overwriteStripe || loadStripeMat) 
 
             % Load stripe if we didn't just compute it
             if ~recomputed_stripe
                 disp(['Loading stripe7curve from ' stripefnkk])
                 load(stripefnkk, 'stripe7curve_frac', 'szAP', 'szDV') ;
                 curv = stripe7curve_frac ;
+                
+                %MODIFIED 2025/01/22 to define szAP and szDV according to 
+                %standard convention, if not present in the workspace
+                %after loading
+                if ~exist('szAP','var')
+                    szAP = 1738;
+                end
+
+                if ~exist('szDV','var')
+                    szDV = 2050;
+                end
+
+
             end
 
             disp(['Building overlay image: ' fancyImFn])
@@ -338,6 +368,18 @@ if strcmpi(method, 'stripe7')
         if overwrite || not_on_disk
             % Which adjusted curve
             load(fullfile(embryoDir, stripefn), 'stripe7curve', 'stripe7curve_frac', 'szAP', 'szDV') ;
+            
+            %MODIFIED 2025/01/22 to define szAP and szDV according to 
+            %standard convention, if not present in the workspace
+            %after loading
+            if ~exist('szAP','var')
+                szAP = 1738;
+            end
+
+            if ~exist('szDV','var')
+                szDV = 2050;
+            end
+        
             curv = stripe7curve ;
             curvFrac = stripe7curve_frac ;
 

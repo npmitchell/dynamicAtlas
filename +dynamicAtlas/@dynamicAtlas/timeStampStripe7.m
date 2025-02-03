@@ -104,6 +104,14 @@ if nargin > 3
     if isfield(Options, 'optimize_trans')
         timelineLeadingTrailing = Options.timelineLeadingTrailing ;
     end
+    %MODIFIED 2025/01/22 to load in the master timeline designee directory
+    if isfield(Options, 'masterDesigneeDir')
+        masterDesigneeDir = Options.masterDesigneeDir ;
+    end
+    %MODIFIED 2025/01/22 to load in the stripe from matlab variable
+    if isfield(Options, 'loadStripeMat')
+        loadStripeMat = Options.loadStripeMat ;
+    end
 
 end
 
@@ -158,4 +166,10 @@ opts.timerfn = timerfn ;
 opts.sigmastep = sigmastep ;
 opts.dt = dt ;
 opts.refDir = refDir ;
+
+%MODIFIED 2025/01/22 to use the master timeline designee directory
+opts.masterDesigneeDir = masterDesigneeDir;
+%MODIFIED 2025/01/22 to use the master timeline designee directory
+opts.loadStripeMat = loadStripeMat;
+
 qs.timeStamp(da, genotype, label, opts)
