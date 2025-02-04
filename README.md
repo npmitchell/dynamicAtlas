@@ -64,7 +64,8 @@ Simply clone the repository as usual. Installation should occur within 1 minute.
 
 - Demo Dataset Access: available for download on Zenodo at: https://doi.org/10.5281/zenodo.14792464
   
-- Full Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 
+- Full Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 (works best on the Firefox or Google Chrome
+browsers)
 
 - Download the data from the repository using the link(s) provided above, and unzip it.  
 
