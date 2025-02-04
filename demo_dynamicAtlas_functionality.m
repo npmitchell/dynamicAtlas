@@ -5,9 +5,9 @@
 % and timestamping fixed data onto the master timeline.
 %
 % Walkthrough is intended for use on the demo dataset with file name 
-% 'DEMO_DATASET.tar.lz4' on the Dryad repository, at the following URL: 
+% 'DEMO_DATASET.tar.lz4', on the Zenodo repository at the following URL: 
 % 
-% https://datadryad.org/stash/dataset/doi:10.25349/D9WW43
+% https://doi.org/10.5281/zenodo.14792464
 %
 % See corresponding tutorial document included with the publication.
 %
