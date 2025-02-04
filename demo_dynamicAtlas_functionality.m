@@ -9,7 +9,7 @@
 % 
 % https://doi.org/10.5281/zenodo.14792464
 %
-% See corresponding tutorial document included with the publication.
+% See tutorial document included on the Github and with the publication.
 %
 % NPMitchell 2020,
 % Edited by Vishank Jain-Sharma 2025
