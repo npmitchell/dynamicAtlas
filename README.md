@@ -71,7 +71,7 @@ Simply clone the repository as usual. Installation should occur within 1 minute.
 - Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”.
 
 ## Demo
-The demo is provided in GitHub repository —“demo_dynamicAtlas_functionality.m” and as part of the Supplementary Information. Demo run time on the demo dataset should be less than 1 hour  on a standard computer.
+A demo script is provided in GitHub repository as “demo_dynamicAtlas_functionality.m”, and also included as part of the Supplementary Information. This script is the basis of the walkthrough included in the Matlab tutorial, as part of the Supplementary Information. Demo run time on the demo dataset should be less than 1 hour on a standard computer.
 
 ## Citing
 N. P. Mitchell*, M. F. Levebvre*, V. Jain-Sharma*, N. Claussen, M. K. Raich, H. J. Gustafson, A. R. Bausch, S. J. Streichan. “Morphodynamic atlas of Drosophila development.” bioRxiv 10.1101/2022.05.26.493584 (2022). 
