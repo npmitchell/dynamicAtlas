@@ -62,7 +62,7 @@ Simply clone the repository as usual. Installation should occur within 1 minute.
     git clone https://github.com/npmitchell/dynamicAtlas.git && cd dynamicAtlas
 ```
 
-- Demo Dataset Access: available for doynload on Zenodo at: https://doi.org/10.5281/zenodo.14792464
+- Demo Dataset Access: available for download on Zenodo at: https://doi.org/10.5281/zenodo.14792464
   
 - Full Atlas Data Access: available for download on Dryad at: https://datadryad.org/stash/dataset/doi:10.25349/D9WW43 
 
