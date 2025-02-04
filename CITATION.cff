@@ -1,14 +1,14 @@
 cff-version: 1.0.0
 message: "If you use this software, please cite it as below."
 authors:
-  - family-names: Mitchell
-    given-names: Noah
+  - family-names: "Mitchell"
+    given-names: "Noah"
     orcid: https://orcid.org/0000-0003-1922-8470
  -  family-names: "Jain-Sharma"
-    given-names: Vishank
+    given-names: "Vishank"
     orcid: https://orcid.org/0000-0003-0995-1585
-  - family-names: Streichan
-    given-names: Sebastian
+  - family-names: "Streichan"
+    given-names: "Sebastian"
     orcid: https://orcid.org/0000-0002-6105-9087
 title: "MorphodynamicAtlas: an approach for integrating dynamic datasets"
 version: 1.0.0
