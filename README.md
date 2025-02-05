@@ -50,7 +50,7 @@ Similar methods to check out are ``da.findEmbryo('202006261115')``, ``da.findSta
 
 - Software: Tested on MATLAB R2024a and R2024b, but will work on any recent MATLAB release. No other software dependencies are required.
   
-- Hardware: No non-standard hardware required. Around 30 GB of hard drive space is required for MATLAB, and performance is optimized when RAM is at least 18 GB.
+- Hardware: No non-standard hardware required. Performance is optimized when RAM is at least 18 GB.
 
 ## Installation
 
