@@ -49,7 +49,7 @@ Similar methods to check out are ``da.findEmbryo('202006261115')``, ``da.findSta
 - OS: Tested on Mac OS Sequoia 15.1, Windows 10, and Linux Ubuntu 18.04.6 LTS, but will also work on other operating systems, as long as these systems support MATLAB installation.
 
 - Software: Tested on MATLAB R2024a and R2024b, but will work on any recent MATLAB release. No other software dependencies are required.
-
+  
 - Hardware: No non-standard hardware required. Around 30 GB of hard drive space is required for MATLAB, and performance is optimized when RAM is at least 18 GB.
 
 ## Installation
