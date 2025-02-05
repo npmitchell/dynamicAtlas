@@ -67,7 +67,7 @@ browsers)
 
 - Download the data from the repository using the link(s) provided above, and unzip it.  
 
-- Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”. See demo tutorial PDF ("DynamicAtlas_Demo_Tutorial.pdf") in the repository, which is also included in the Supplementary Information of the manuscript, for a tutorial walkthrough that runs this script on the demo dataset.
+- Open MATLAB, set the variable ‘atlasPath’ as the path to the directory containing the unzipped data, and set the variable 'codePath' as the path of the dynamicAtlas code folder, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”. See demo tutorial PDF ("DynamicAtlas_Demo_Tutorial.pdf") in the repository, which is also included in the Supplementary Information of the manuscript, for a tutorial walkthrough that runs this script on a demo dataset.
 
 ## Demo
 A demo script is provided on the GitHub repository as “demo_dynamicAtlas_functionality.m”, and also included as part of the Supplementary Information. This script is the basis of the walkthrough included in the tutorial mentioned above ("DynamicAtlas_Demo_Tutorial.pdf"). The tutorial includes instructions for initializing the code and running the software on the data, as well as screenshots of the expected outputs that correspond to each section of the code. Demo run time on the demo dataset should be less than 1 hour on a standard computer.
