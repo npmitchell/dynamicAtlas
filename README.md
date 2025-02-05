@@ -46,13 +46,11 @@ Similar methods to check out are ``da.findEmbryo('202006261115')``, ``da.findSta
 
 ## System and software requirements
 
-- OS: Tested on Mac OS Sequoia 15.1, Linux Ubuntu 18.04.6, and Windows 10, but will also work on other operating systems, as long as these systems support MATLAB installation.
+- OS: Tested on Mac OS Sequoia 15.1, Windows 10, and Linux Ubuntu 18.04.6 LTS, but will also work on other operating systems, as long as these systems support MATLAB installation.
 
-- Software: Tested on MATLAB R2023a and R2024a, but will work with any recent
-MATLAB release.
+- Software: Tested on MATLAB R2024a and R2024b, but will work on any recent MATLAB release. No other software dependencies are required.
 
-- Hardware: No non-standard hardware required. Around 30 GB of hard drive space required for MATLAB, and performance is optimized when RAM is around 18 GB or more.
-
+- Hardware: No non-standard hardware required. Around 30 GB of hard drive space is required for MATLAB, and performance is optimized when RAM is at least 18 GB.
 
 ## Installation
 
@@ -69,10 +67,10 @@ browsers)
 
 - Download the data from the repository using the link(s) provided above, and unzip it.  
 
-- Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”. See demo tutorial PDF ("DynamicAtlas_Demo_Tutorial.pdf") in the repository, which is also included in the Supplementary Information of the manuscript, for a tutorial walkthrough that runs through this script on the demo dataset.
+- Open MATLAB, and set the variable ‘atlasPath’  to the path where the unzipped data is located, as described in the Demo Script provided in GitHub repository: “demo_dynamicAtlas_functionality.m”. See demo tutorial PDF ("DynamicAtlas_Demo_Tutorial.pdf") in the repository, which is also included in the Supplementary Information of the manuscript, for a tutorial walkthrough that runs this script on the demo dataset.
 
 ## Demo
-A demo script is provided on the GitHub repository as “demo_dynamicAtlas_functionality.m”, and also included as part of the Supplementary Information. This script is the basis of the walkthrough included in the tutorial mentioned above. Demo run time on the demo dataset should be less than 1 hour on a standard computer.
+A demo script is provided on the GitHub repository as “demo_dynamicAtlas_functionality.m”, and also included as part of the Supplementary Information. This script is the basis of the walkthrough included in the tutorial mentioned above ("DynamicAtlas_Demo_Tutorial.pdf"). The tutorial includes instructions for initializing the code and running the software on the data, as well as screenshots of the expected outputs that correspond to each section of the code. Demo run time on the demo dataset should be less than 1 hour on a standard computer.
 
 ## Citing
 N. P. Mitchell*, M. F. Levebvre*, V. Jain-Sharma*, N. Claussen, M. K. Raich, H. J. Gustafson, A. R. Bausch, S. J. Streichan. “Morphodynamic atlas of Drosophila development.” bioRxiv 10.1101/2022.05.26.493584 (2022). 
