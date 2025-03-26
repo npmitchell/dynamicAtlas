@@ -8,7 +8,7 @@
 
 **dynamicAtlas** is a MATLAB toolkit for interfacing with a library of fixed and live datasets of a morphological process, here focusing on the stage of development called 'germ band extension' in the fruit fly.
 
-Suppose we want to create an lookup table of ALL data in the library. This is simple. First where is the data? Call that path ``atlasPath``
+Suppose we want to create a lookup table of ALL data in the library. This is simple. First where is the data? Call that path ``atlasPath``
 
 ```matlab
 	atlasPath = '/path/to/the/data/dynamicAtlas/'
