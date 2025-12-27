@@ -73,7 +73,9 @@ browsers)
 A demo script is provided on the GitHub repository as “demo_dynamicAtlas_functionality.m”, and also included as part of the Supplementary Information. This script is the basis of the walkthrough included in the tutorial mentioned above, "DynamicAtlas_Demo_Tutorial.pdf". The tutorial includes instructions for initializing the code and running the software on the data, as well as screenshots of the expected outputs that correspond to each section of the code. Demo run time on the demo dataset should be less than 1 hour on a standard computer.
 
 ## Citing
-N. P. Mitchell*, M. F. Levebvre*, V. Jain-Sharma*, N. Claussen, M. K. Raich, H. J. Gustafson, A. R. Bausch, S. J. Streichan. “Morphodynamic atlas of Drosophila development.” bioRxiv 10.1101/2022.05.26.493584 (2022). 
+Lefebvre*, M. F., Jain-Sharma*, V., Claussen*, N., Mitchell*, N. P., Raich, M. K., Gustafson,
+H. J., Streichan, F. E., Bausch, A. R. & Streichan, S. J. DynamicAtlas: a morphodynamic atlas for
+Drosophila development. _Nature Methods_ (2025). https://doi.org/10.1038/s41592-025-02897-8
 
 ## License
 
