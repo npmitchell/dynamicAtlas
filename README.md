@@ -74,8 +74,8 @@ A demo script is provided on the GitHub repository as “demo_dynamicAtlas_funct
 
 ## Citing
 Lefebvre*, M.F., Jain-Sharma*, V., Claussen*, N., Mitchell*, N.P., Raich, M.K., Gustafson,
-H.J., Streichan, F.E., Bausch, A.R. & Streichan, S.J. DynamicAtlas: a morphodynamic atlas for
-_Drosophila_ development. _Nature Methods_ (2025). https://doi.org/10.1038/s41592-025-02897-8
+H.J., Streichan, F.E., Bausch, A.R., Streichan, S.J. DynamicAtlas: a morphodynamic atlas for
+_Drosophila_ development. _Nature Methods_ **23**, 260-270 (2026). https://doi.org/10.1038/s41592-025-02897-8
 
 ## License
 
